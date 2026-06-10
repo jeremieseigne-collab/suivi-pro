@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "suivi-livraisons",
+      "runtimeExecutable": "/Users/jeremie/.nvm/versions/node/v24.16.0/bin/node",
+      "runtimeArgs": [
+        "/Users/jeremie/Desktop/App suivi Pro/suivi-livraisons/node_modules/.bin/vite",
+        "/Users/jeremie/Desktop/App suivi Pro/suivi-livraisons",
+        "--port", "5173"
+      ],
+      "port": 5173
+    }
+  ]
+}
