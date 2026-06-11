@@ -42,9 +42,7 @@ function StoreCard({ store, rows }) {
       </div>
       <GaugeBar percent={globalPct} />
       <table className="brand-table">
-        <thead>
-          <tr><th>Marque</th><th>Reçu / Attendu</th><th>Progression</th><th>%</th></tr>
-        </thead>
+        <thead style={{ display: 'none' }}></thead>
         <tbody>
           {rows.map(row => {
             const p = row.attendu > 0 ? (row.recu / row.attendu) * 100 : 0

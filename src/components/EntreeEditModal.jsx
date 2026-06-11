@@ -315,7 +315,24 @@ export default function EntreeEditModal({ entry, onClose, onSaved }) {
                 {(type?.sizes ?? []).map((size, i) => (
                   <div key={size} className="size-input-group">
                     <label>{size}</label>
-                    <input type="number" min="0" value={quantities[i] ?? ''} onChange={e => setQty(i, e.target.value)} placeholder="0" />
+                    <input
+                      type="number" min="0"
+                      value={quantities[i] ?? ''}
+                      onChange={e => setQty(i, e.target.value)}
+                      placeholder="0"
+                      data-size-index={i}
+                      onKeyDown={e => {
+                        if (e.key === 'ArrowRight') {
+                          e.preventDefault()
+                          const next = document.querySelector(`[data-size-index="${i + 1}"]`)
+                          next?.focus(); next?.select()
+                        } else if (e.key === 'ArrowLeft') {
+                          e.preventDefault()
+                          const prev = document.querySelector(`[data-size-index="${i - 1}"]`)
+                          prev?.focus(); prev?.select()
+                        }
+                      }}
+                    />
                   </div>
                 ))}
               </div>

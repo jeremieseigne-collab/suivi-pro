@@ -160,7 +160,7 @@ class SupabaseTable {
 
   async add(obj) {
     const { data, error } = await supabase.from(this.name).insert(this._to(obj)).select('id').single()
-    if (error) throw error
+    if (error) throw new Error(error.message || error.details || JSON.stringify(error))
     return data.id
   }
 
