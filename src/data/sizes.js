@@ -4,7 +4,7 @@
 //   ACC → col_10+       (offset 1, car col_9 = TU et les acc commencent à XS = col_10)
 export const SIZE_TYPES = {
   F:   { label: 'Femme',        code: 'F :',  colOffset: 0, sizes: ['34','35','35.5','36','36.5','37','37.5','38','38.5','39','39.5','40','40.5','41','41.5'] },
-  H:   { label: 'Homme',        code: 'H :',  colOffset: 0, sizes: ['39','40','40.5','41','41.5','42','42.5','43','43.5','44','44.5','45','46'] },
+  H:   { label: 'Homme',        code: 'H :',  colOffset: 0, sizes: ['39','40','40.5','41','41.5','42','42.5','43','43.5','44','44.5','45','45.5','46'] },
   E:   { label: 'Enfant',       code: 'E :',  colOffset: 0, sizes: ['17','18','19','20','21','22','23','24','25','26','27','28','29','30','31','32','33','34','35','36','37','38','39','40'] },
   B:   { label: 'Bébé',         code: 'B :',  colOffset: 0, sizes: ['17-18','19-20','21-22','23-24','25-26','27'] },
   TU:  { label: 'Taille Unique', code: '',     colOffset: 0, sizes: ['TU'] },

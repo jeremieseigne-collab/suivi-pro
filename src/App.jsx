@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { db } from './db'
 import SuiviLivraisons from './tabs/SuiviLivraisons'
 import Entrees         from './tabs/Entrees'
@@ -7,6 +7,69 @@ import PlanReglement   from './tabs/PlanReglement'
 import Parametres      from './tabs/Parametres'
 import { SeasonProvider, useSeason } from './context/SeasonContext'
 import './App.css'
+
+const PIN_CODE       = '2201'
+const PROTECTED_TABS = new Set(['reglement', 'parametres'])
+
+function PinModal({ onSuccess, onClose }) {
+  const [digits, setDigits] = useState(['', '', '', ''])
+  const [error,  setError]  = useState(false)
+  const refs = [useRef(), useRef(), useRef(), useRef()]
+
+  useEffect(() => { refs[0].current?.focus() }, [])
+
+  function handleDigit(i, val) {
+    if (!/^\d?$/.test(val)) return
+    const next = [...digits]
+    next[i] = val
+    setDigits(next)
+    setError(false)
+    if (val && i < 3) refs[i + 1].current?.focus()
+    if (next.every(d => d !== '') && i === 3) {
+      const code = next.join('')
+      if (code === PIN_CODE) { onSuccess() }
+      else { setError(true); setDigits(['', '', '', '']); setTimeout(() => refs[0].current?.focus(), 50) }
+    }
+  }
+
+  function handleKeyDown(i, e) {
+    if (e.key === 'Backspace' && !digits[i] && i > 0) {
+      refs[i - 1].current?.focus()
+    }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}>
+      <div style={{ background: '#fff', borderRadius: 16, padding: '32px 40px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', textAlign: 'center', minWidth: 280 }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ fontSize: 32, marginBottom: 8 }}>🔒</div>
+        <h2 style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 700, color: '#0f172a' }}>Accès restreint</h2>
+        <p style={{ margin: '0 0 24px', fontSize: 13, color: '#64748b' }}>Entrez le code à 4 chiffres</p>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 16 }}>
+          {digits.map((d, i) => (
+            <input key={i} ref={refs[i]}
+              type="password" inputMode="numeric" maxLength={1} value={d}
+              onChange={e => handleDigit(i, e.target.value)}
+              onKeyDown={e => handleKeyDown(i, e)}
+              style={{
+                width: 52, height: 56, textAlign: 'center', fontSize: 24, fontWeight: 700,
+                border: `2px solid ${error ? '#ef4444' : d ? '#3b82f6' : '#e2e8f0'}`,
+                borderRadius: 10, outline: 'none', background: error ? '#fef2f2' : '#f8fafc',
+                color: error ? '#ef4444' : '#0f172a', transition: 'border-color .15s',
+              }}
+            />
+          ))}
+        </div>
+        {error && <p style={{ margin: '0 0 8px', fontSize: 13, color: '#ef4444', fontWeight: 600 }}>Code incorrect</p>}
+        <button onClick={onClose}
+          style={{ marginTop: 4, fontSize: 13, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}>
+          Annuler
+        </button>
+      </div>
+    </div>
+  )
+}
 
 const TABS = [
   { id: 'suivi',      label: '📦 Suivi livraisons' },
@@ -169,9 +232,32 @@ function SeasonBadge() {
 
 function AppInner() {
   const [activeTab, setActiveTab] = useState('suivi')
+  const [unlocked,  setUnlocked]  = useState(new Set())
+  const [pinTarget, setPinTarget] = useState(null) // tab en attente de déverrouillage
+
+  function handleTabClick(id) {
+    if (PROTECTED_TABS.has(id) && !unlocked.has(id)) {
+      setPinTarget(id)
+    } else {
+      setActiveTab(id)
+    }
+  }
+
+  function handlePinSuccess() {
+    setUnlocked(prev => new Set([...prev, pinTarget]))
+    setActiveTab(pinTarget)
+    setPinTarget(null)
+  }
 
   return (
     <div className="app">
+      {pinTarget && (
+        <PinModal
+          onSuccess={handlePinSuccess}
+          onClose={() => setPinTarget(null)}
+        />
+      )}
+
       <header className="app-header">
         <div className="header-top" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h1>Suivi Pro</h1>
@@ -182,9 +268,9 @@ function AppInner() {
             <button
               key={t.id}
               className={`tab-btn${activeTab === t.id ? ' active' : ''}`}
-              onClick={() => setActiveTab(t.id)}
+              onClick={() => handleTabClick(t.id)}
             >
-              {t.label}
+              {t.label}{PROTECTED_TABS.has(t.id) && !unlocked.has(t.id) ? ' 🔒' : ''}
             </button>
           ))}
         </nav>

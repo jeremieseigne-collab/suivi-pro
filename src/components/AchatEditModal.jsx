@@ -41,6 +41,17 @@ export default function AchatEditModal({ row, onClose, onSaved }) {
 
   function set(field, val) { setForm(f => ({ ...f, [field]: val })) }
 
+  function navAchat(e) {
+    const idx = parseInt(e.currentTarget.dataset.achatIndex)
+    if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      document.querySelector(`[data-achat-index="${idx + 1}"]`)?.focus()
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      document.querySelector(`[data-achat-index="${idx - 1}"]`)?.focus()
+    }
+  }
+
   const pm = form.reel && form.quantite && Number(form.quantite) > 0
     ? Math.round((Number(form.reel) / Number(form.quantite)) * 100) / 100
     : null
@@ -170,12 +181,14 @@ export default function AchatEditModal({ row, onClose, onSaved }) {
               <div className="form-field">
                 <label>Reçu N-1 (€)</label>
                 <input type="number" step="0.01" min="0" value={form.recuN1}
-                  onChange={e => set('recuN1', e.target.value)} placeholder="0" />
+                  onChange={e => set('recuN1', e.target.value)} placeholder="0"
+                  data-achat-index="0" onKeyDown={navAchat} />
               </div>
               <div className="form-field">
                 <label>Objectif N (€)</label>
                 <input type="number" step="0.01" min="0" value={form.objectifN}
-                  onChange={e => set('objectifN', e.target.value)} placeholder="0" />
+                  onChange={e => set('objectifN', e.target.value)} placeholder="0"
+                  data-achat-index="1" onKeyDown={navAchat} />
               </div>
             </div>
 
@@ -183,12 +196,14 @@ export default function AchatEditModal({ row, onClose, onSaved }) {
               <div className="form-field">
                 <label>Réel achat N (€)</label>
                 <input type="number" step="0.01" min="0" value={form.reel}
-                  onChange={e => set('reel', e.target.value)} placeholder="0" />
+                  onChange={e => set('reel', e.target.value)} placeholder="0"
+                  data-achat-index="2" onKeyDown={navAchat} />
               </div>
               <div className="form-field">
                 <label>Quantité</label>
                 <input type="number" min="0" value={form.quantite}
-                  onChange={e => set('quantite', e.target.value)} placeholder="0" />
+                  onChange={e => set('quantite', e.target.value)} placeholder="0"
+                  data-achat-index="3" onKeyDown={navAchat} />
               </div>
               <div className="form-field">
                 <label>PM calculé</label>

@@ -5,6 +5,7 @@ import { LoadingState } from '../components/shared'
 import AchatEditModal from '../components/AchatEditModal'
 import AchatAddModal  from '../components/AchatAddModal'
 import { useSeason } from '../context/SeasonContext'
+import { SOCIETES, getSociete } from '../data/societes'
 
 const STRAT_COLORS = {
   '🚀 BOOSTER':   '#dbeafe',
@@ -18,6 +19,7 @@ function uniq(arr) { return [...new Set(arr.filter(Boolean))].sort() }
 export default function Achats() {
   const { season } = useSeason()
   const [search,    setSearch]    = useState('')
+  const [societe,   setSociete]   = useState('')
   const [magasin,   setMagasin]   = useState('')
   const [strategie, setStrategie] = useState('')
   const [editRow,   setEditRow]   = useState(null)
@@ -37,19 +39,21 @@ export default function Achats() {
       .filter(p => p.fournisseurId && p.magasinId)
       .map(p => ({
         ...p,
-        magasin:     magasinMap[p.magasinId]         || '',
-        fournisseur: fournisseurMap[p.fournisseurId]  || '',
+        magasin:     magasinMap[p.magasinId]          || '',
+        fournisseur: fournisseurMap[p.fournisseurId]   || '',
+        societe:     getSociete(magasinMap[p.magasinId] || ''),
       }))
   }, [season])
 
   const rows = data ?? []
 
   const filtered = useMemo(() => rows.filter(r => {
-    if (magasin   && r.magasin   !== magasin)   return false
+    if (societe   && r.societe   !== societe)    return false
+    if (magasin   && r.magasin   !== magasin)    return false
     if (strategie && r.strategie !== strategie)  return false
     if (search && !r.fournisseur.toLowerCase().includes(search.toLowerCase())) return false
     return true
-  }).sort((a, b) => a.fournisseur.localeCompare(b.fournisseur, 'fr')), [rows, search, magasin, strategie])
+  }).sort((a, b) => a.fournisseur.localeCompare(b.fournisseur, 'fr')), [rows, search, societe, magasin, strategie])
 
   const magasinList  = useMemo(() => uniq(rows.map(r => r.magasin)),   [rows])
   const strategies   = useMemo(() => uniq(rows.map(r => r.strategie)), [rows])
@@ -108,6 +112,10 @@ export default function Achats() {
       <div className="controls" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
         <input type="text" placeholder="🔍 Fournisseur…" value={search}
           onChange={e => setSearch(e.target.value)} className="search-input" />
+        <select value={societe} onChange={e => { setSociete(e.target.value); setMagasin('') }} className="sel">
+          <option value="">Toutes les sociétés</option>
+          {SOCIETES.map(s => <option key={s}>{s}</option>)}
+        </select>
         <select value={magasin} onChange={e => setMagasin(e.target.value)} className="sel">
           <option value="">Tous les magasins</option>
           {magasinList.map(m => <option key={m}>{m}</option>)}

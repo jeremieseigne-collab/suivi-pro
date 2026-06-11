@@ -48,7 +48,7 @@ class SupabaseTable {
   _f(field) { return dbf(this.name, field) }
 
   async toArray() {
-    const { data, error } = await supabase.from(this.name).select('*')
+    const { data, error } = await supabase.from(this.name).select('*').limit(50000)
     if (error) throw error
     return this._fromAll(data)
   }
@@ -63,7 +63,7 @@ class SupabaseTable {
     const self = this
     return {
       toArray: async () => {
-        const { data, error } = await supabase.from(self.name).select('*').order(self._f(field))
+        const { data, error } = await supabase.from(self.name).select('*').order(self._f(field)).limit(50000)
         if (error) throw error
         return self._fromAll(data)
       }
@@ -79,14 +79,14 @@ class SupabaseTable {
       return {
         filter: (fn) => ({
           first: async () => {
-            let q = supabase.from(self.name).select('*')
+            let q = supabase.from(self.name).select('*').limit(50000)
             for (const [k, v] of Object.entries(conditions)) q = q.eq(self._f(k), v)
             const { data, error } = await q
             if (error) throw error
             return self._fromAll(data).find(fn)
           },
           toArray: async () => {
-            let q = supabase.from(self.name).select('*')
+            let q = supabase.from(self.name).select('*').limit(50000)
             for (const [k, v] of Object.entries(conditions)) q = q.eq(self._f(k), v)
             const { data, error } = await q
             if (error) throw error
@@ -102,7 +102,7 @@ class SupabaseTable {
     return {
       equals: (value) => ({
         toArray: async () => {
-          const { data, error } = await supabase.from(self.name).select('*').eq(dbField, value)
+          const { data, error } = await supabase.from(self.name).select('*').eq(dbField, value).limit(50000)
           if (error) throw error
           return self._fromAll(data)
         },
@@ -118,12 +118,12 @@ class SupabaseTable {
         // .where('f').equals(v).and(fn).first() — fetch matching rows, filter in JS
         and: (fn) => ({
           first: async () => {
-            const { data, error } = await supabase.from(self.name).select('*').eq(dbField, value)
+            const { data, error } = await supabase.from(self.name).select('*').eq(dbField, value).limit(50000)
             if (error) throw error
             return self._fromAll(data).find(fn)
           },
           toArray: async () => {
-            const { data, error } = await supabase.from(self.name).select('*').eq(dbField, value)
+            const { data, error } = await supabase.from(self.name).select('*').eq(dbField, value).limit(50000)
             if (error) throw error
             return self._fromAll(data).filter(fn)
           }
@@ -134,6 +134,7 @@ class SupabaseTable {
             const { data, error } = await supabase.from(self.name).select('*')
               .eq(dbField, value)
               .order(self._f(sortField), { ascending: false })
+              .limit(50000)
             if (error) throw error
             return self._fromAll(data)
           }
@@ -146,12 +147,12 @@ class SupabaseTable {
     const self = this
     return {
       first: async () => {
-        const { data, error } = await supabase.from(self.name).select('*')
+        const { data, error } = await supabase.from(self.name).select('*').limit(50000)
         if (error) throw error
         return self._fromAll(data).find(fn)
       },
       toArray: async () => {
-        const { data, error } = await supabase.from(self.name).select('*')
+        const { data, error } = await supabase.from(self.name).select('*').limit(50000)
         if (error) throw error
         return self._fromAll(data).filter(fn)
       }

@@ -3,6 +3,7 @@ import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { LoadingState } from '../components/shared'
 import { useSeason } from '../context/SeasonContext'
+import { SOCIETE_MAP, SOCIETES, getSociete } from '../data/societes'
 
 // ─── Utilitaires dates ───────────────────────────────────────────────────────
 function parseDate(str) {
@@ -65,22 +66,13 @@ const MODE_COLORS = {
   GMS:         { bg: '#fce7f3', color: '#9d174d' },
 }
 
-const SOCIETE_MAP = {
-  'Bailly Albi':    "B'Shoes",
-  'les 2 Zèbres':   "B'Shoes",
-  'Bailly Rouffiac': 'JR Shoes',
-}
-const SOCIETES = [...new Set(Object.values(SOCIETE_MAP))].sort()
-
-function getSociete(magasin) {
-  return SOCIETE_MAP[magasin] || magasin
-}
 
 export default function PlanReglement() {
   const { season } = useSeason()
-  const [magasinFilter, setMagasinFilter] = useState('')
-  const [modeFilter,    setModeFilter]    = useState('')
-  const [societeFilter, setSocieteFilter] = useState('')
+  const [magasinFilter,  setMagasinFilter]  = useState('')
+  const [modeFilter,     setModeFilter]     = useState('')
+  const [societeFilter,  setSocieteFilter]  = useState('')
+  const [marqueFilter,   setMarqueFilter]   = useState('')
 
   const data = useLiveQuery(async () => {
     const [params, entrees, magasins, fournisseurs, modesReglement] = await Promise.all([
@@ -146,14 +138,16 @@ export default function PlanReglement() {
   const allEcheances = data?.echeances ?? []
   const magasins     = data?.magasins  ?? []
 
-  const modes = useMemo(() => [...new Set(allEcheances.map(e => e.mode).filter(Boolean))].sort(), [allEcheances])
+  const modes   = useMemo(() => [...new Set(allEcheances.map(e => e.mode).filter(Boolean))].sort(), [allEcheances])
+  const marques = useMemo(() => [...new Set(allEcheances.map(e => e.fournisseur).filter(Boolean))].sort(), [allEcheances])
 
   const filtered = useMemo(() => allEcheances.filter(e => {
-    if (magasinFilter && e.magasin !== magasinFilter) return false
-    if (modeFilter    && e.mode    !== modeFilter)    return false
-    if (societeFilter && e.societe !== societeFilter) return false
+    if (societeFilter && e.societe    !== societeFilter) return false
+    if (magasinFilter && e.magasin    !== magasinFilter) return false
+    if (marqueFilter  && e.fournisseur !== marqueFilter) return false
+    if (modeFilter    && e.mode        !== modeFilter)   return false
     return true
-  }), [allEcheances, magasinFilter, modeFilter, societeFilter])
+  }), [allEcheances, magasinFilter, modeFilter, societeFilter, marqueFilter])
 
   const withDate    = filtered.filter(e => e.date)
   const withoutDate = filtered.filter(e => !e.date)
@@ -210,6 +204,10 @@ export default function PlanReglement() {
         <select value={magasinFilter} onChange={e => setMagasinFilter(e.target.value)} className="sel">
           <option value="">Tous les magasins</option>
           {magasins.map(m => <option key={m}>{m}</option>)}
+        </select>
+        <select value={marqueFilter} onChange={e => setMarqueFilter(e.target.value)} className="sel">
+          <option value="">Toutes les marques</option>
+          {marques.map(m => <option key={m}>{m}</option>)}
         </select>
         <select value={modeFilter} onChange={e => setModeFilter(e.target.value)} className="sel">
           <option value="">Tous les modes</option>

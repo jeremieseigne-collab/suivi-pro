@@ -2,7 +2,6 @@ import { useState, useRef } from 'react'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { useSeason } from '../context/SeasonContext'
-import { migrateLocalToSupabase } from '../lib/migrate'
 
 const MODES_REGLEMENT = ['', 'PRELEVEMENT', 'CHEQUE', 'GARANT', 'VIREMENT', 'GMS', 'LCR']
 
@@ -229,7 +228,9 @@ function ImportCSVPanel() {
 function SectionFournisseurs() {
   const { season }   = useSeason()
   const fournisseurs = useLiveQuery(() => db.fournisseurs.orderBy('nom').toArray(), [])
-  const [newModele, setNewModele] = useState({})
+  const [newModele,  setNewModele]  = useState({})
+  const [editingId,  setEditingId]  = useState(null)
+  const [editingNom, setEditingNom] = useState('')
 
   async function add(nom) {
     const existing = await db.fournisseurs.where('nom').equals(nom).first()
@@ -257,6 +258,15 @@ function SectionFournisseurs() {
     setNewModele(prev => ({ ...prev, [fId]: '' }))
   }
 
+  async function renommer(id, nouveauNom) {
+    const nom = nouveauNom.trim()
+    if (!nom) return
+    const existing = await db.fournisseurs.where('nom').equals(nom).first()
+    if (existing && existing.id !== id) throw new Error(`"${nom}" existe déjà`)
+    await db.fournisseurs.update(id, { nom })
+    setEditingId(null)
+  }
+
   async function delModele(fId, nom) {
     const f = await db.fournisseurs.get(fId)
     if (!f) return
@@ -270,12 +280,35 @@ function SectionFournisseurs() {
         const modeles = f.modelesBySeason?.[season] ?? []
         return (
         <div key={f.id} className="store-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>{f.nom}</h3>
-            <button onClick={() => del(f.id)} style={{
-              background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444',
-              fontSize: 13, padding: '4px 8px', borderRadius: 6,
-            }}>🗑️ Supprimer</button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
+            {editingId === f.id ? (
+              <form onSubmit={async e => { e.preventDefault(); await renommer(f.id, editingNom) }}
+                style={{ display: 'flex', gap: 6, flex: 1 }}>
+                <input
+                  autoFocus
+                  value={editingNom}
+                  onChange={e => setEditingNom(e.target.value)}
+                  onKeyDown={e => e.key === 'Escape' && setEditingId(null)}
+                  style={{ flex: 1, maxWidth: 240, padding: '4px 10px', border: '2px solid #3b82f6', borderRadius: 6, fontSize: 14, fontWeight: 700, outline: 'none' }}
+                />
+                <button type="submit" style={{ padding: '4px 12px', borderRadius: 6, border: 'none', background: '#2563eb', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>✓</button>
+                <button type="button" onClick={() => setEditingId(null)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 13 }}>✕</button>
+              </form>
+            ) : (
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', margin: 0 }}>{f.nom}</h3>
+            )}
+            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+              {editingId !== f.id && (
+                <button onClick={() => { setEditingId(f.id); setEditingNom(f.nom) }} style={{
+                  background: 'none', border: 'none', cursor: 'pointer', color: '#64748b',
+                  fontSize: 13, padding: '4px 8px', borderRadius: 6,
+                }}>✏️ Renommer</button>
+              )}
+              <button onClick={() => del(f.id)} style={{
+                background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444',
+                fontSize: 13, padding: '4px 8px', borderRadius: 6,
+              }}>🗑️ Supprimer</button>
+            </div>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, minHeight: 28 }}>
             {modeles.length === 0
@@ -475,64 +508,6 @@ function SectionSuivi() {
   )
 }
 
-// ─── Section Migration IndexedDB → Supabase ─────────────────────────────────
-function SectionMigration() {
-  const [running,  setRunning]  = useState(false)
-  const [log,      setLog]      = useState([])
-  const [done,     setDone]     = useState(null)
-  const [error,    setError]    = useState('')
-
-  async function start() {
-    setRunning(true)
-    setLog([])
-    setDone(null)
-    setError('')
-    try {
-      const result = await migrateLocalToSupabase(msg => setLog(l => [...l, msg]))
-      setDone(result)
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setRunning(false)
-    }
-  }
-
-  return (
-    <div className="store-card">
-      <h3 style={{ marginBottom: 8, fontSize: 15, fontWeight: 700 }}>🔄 Migration des données locales vers Supabase</h3>
-      <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
-        À n'effectuer <strong>qu'une seule fois</strong>, depuis cet appareil, avant de passer à la version en ligne.
-        Cela copie toutes les données stockées localement (IndexedDB) vers la base Supabase.
-      </p>
-
-      {!done && (
-        <button onClick={start} disabled={running} className="btn-primary">
-          {running ? '⏳ Migration en cours…' : '🚀 Lancer la migration'}
-        </button>
-      )}
-
-      {log.length > 0 && (
-        <div style={{ marginTop: 12, padding: 12, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', fontFamily: 'monospace', fontSize: 12 }}>
-          {log.map((l, i) => <div key={i} style={{ padding: '2px 0', color: '#475569' }}>{'▶ ' + l}</div>)}
-        </div>
-      )}
-
-      {error && (
-        <div style={{ marginTop: 12, padding: 12, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>
-          ⚠️ {error}
-        </div>
-      )}
-
-      {done && (
-        <div style={{ marginTop: 12, padding: 16, background: '#d1fae5', border: '1px solid #6ee7b7', borderRadius: 8, fontSize: 13, color: '#065f46' }}>
-          <strong>✅ Migration réussie !</strong><br />
-          {done.magasins} magasin{done.magasins !== 1 ? 's' : ''} · {done.fournisseurs} marque{done.fournisseurs !== 1 ? 's' : ''} · {done.parametres} achat{done.parametres !== 1 ? 's' : ''} · {done.entrees} entrée{done.entrees !== 1 ? 's' : ''} importé{done.entrees !== 1 ? 's' : ''}
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ─── Onglet principal ────────────────────────────────────────────────────────
 export default function Parametres() {
   const [section, setSection] = useState('magasins')
@@ -541,7 +516,6 @@ export default function Parametres() {
     { id: 'magasins',     label: '🏪 Magasins' },
     { id: 'fournisseurs', label: '🏷️ Marques' },
     { id: 'modes',        label: '💳 Modes de règlement' },
-    { id: 'migration',    label: '🔄 Migration' },
   ]
 
   return (
@@ -550,7 +524,6 @@ export default function Parametres() {
       {section === 'magasins'     && <SectionMagasins />}
       {section === 'fournisseurs' && <SectionFournisseurs />}
       {section === 'modes'        && <SectionModes />}
-      {section === 'migration'    && <SectionMigration />}
     </div>
   )
 }

@@ -4,7 +4,9 @@ import { db } from '../db'
 import { LoadingState } from '../components/shared'
 import EntreeForm from '../components/EntreeForm'
 import EntreeEditModal from '../components/EntreeEditModal'
+import EntreeImportModal from '../components/EntreeImportModal'
 import { useSeason } from '../context/SeasonContext'
+import { SOCIETES, getSociete } from '../data/societes'
 
 function uniq(arr) { return [...new Set(arr.filter(Boolean))].sort() }
 
@@ -20,12 +22,14 @@ function numeroColor(n) {
 export default function Entrees() {
   const { season } = useSeason()
   const [search,    setSearch]    = useState('')
+  const [societe,   setSociete]   = useState('')
   const [magasin,   setMagasin]   = useState('')
   const [marque,    setMarque]    = useState('')
   const [categorie, setCategorie] = useState('')
   const [page,      setPage]      = useState(1)
-  const [showForm,  setShowForm]  = useState(false)
-  const [editEntry, setEditEntry] = useState(null)
+  const [showForm,   setShowForm]   = useState(false)
+  const [showImport, setShowImport] = useState(false)
+  const [editEntry,  setEditEntry]  = useState(null)
   const PAGE = 50
 
   const data = useLiveQuery(async () => {
@@ -39,23 +43,25 @@ export default function Entrees() {
 
     return entries.map(e => ({
       ...e,
-      magasin: magasinMap[e.magasinId]     || '',
-      marque:  fournisseurMap[e.fournisseurId] || '',
+      magasin: magasinMap[e.magasinId]          || '',
+      marque:  fournisseurMap[e.fournisseurId]   || '',
+      societe: getSociete(magasinMap[e.magasinId] || ''),
     }))
   }, [season])
 
   const rows = data ?? []
 
   const filtered = useMemo(() => rows.filter(r => {
-    if (magasin   && r.magasin   !== magasin)   return false
-    if (marque    && r.marque    !== marque)     return false
+    if (societe   && r.societe   !== societe)    return false
+    if (magasin   && r.magasin   !== magasin)    return false
+    if (marque    && r.marque    !== marque)      return false
     if (categorie && r.categorie !== categorie)  return false
     if (search) {
       const q = search.toLowerCase()
       if (!r.marque.toLowerCase().includes(q) && !(r.modele || '').toLowerCase().includes(q)) return false
     }
     return true
-  }), [rows, search, magasin, marque, categorie])
+  }), [rows, search, societe, magasin, marque, categorie])
 
   const totalUnites = filtered.reduce((s, r) => s + (r.total || 0), 0)
   const totalPHT    = filtered.reduce((s, r) => s + (r.pht   || 0), 0)
@@ -73,8 +79,9 @@ export default function Entrees() {
 
   return (
     <div>
-      {showForm  && <EntreeForm onClose={() => setShowForm(false)}  onSaved={() => setShowForm(false)} />}
-      {editEntry && <EntreeEditModal entry={editEntry} onClose={() => setEditEntry(null)} onSaved={() => setEditEntry(null)} />}
+      {showForm   && <EntreeForm onClose={() => setShowForm(false)} onSaved={() => setShowForm(false)} />}
+      {showImport && <EntreeImportModal onClose={() => setShowImport(false)} onSaved={() => {}} />}
+      {editEntry  && <EntreeEditModal entry={editEntry} onClose={() => setEditEntry(null)} onSaved={() => setEditEntry(null)} />}
 
       <div className="tab-stats">
         {[
@@ -99,6 +106,10 @@ export default function Entrees() {
           onChange={e => { setSearch(e.target.value); resetPage() }}
           className="search-input"
         />
+        <select value={societe} onChange={e => { setSociete(e.target.value); setMagasin(''); resetPage() }} className="sel">
+          <option value="">Toutes les sociétés</option>
+          {SOCIETES.map(s => <option key={s}>{s}</option>)}
+        </select>
         <select value={magasin} onChange={e => { setMagasin(e.target.value); resetPage() }} className="sel">
           <option value="">Tous les magasins</option>
           {magasinList.map(m => <option key={m}>{m}</option>)}
@@ -112,6 +123,7 @@ export default function Entrees() {
           {categList.map(c => <option key={c}>{c}</option>)}
         </select>
         <button className="btn-primary" onClick={() => setShowForm(true)}>+ Nouvelle entrée</button>
+        <button className="btn-secondary" onClick={() => setShowImport(true)}>📂 Importer CSV</button>
       </div>
 
       <div className="store-card" style={{ marginTop: 0, padding: 0, overflow: 'hidden' }}>
@@ -164,8 +176,32 @@ export default function Entrees() {
         {pages > 1 && (
           <div className="pagination">
             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>←</button>
-            <span>Page {page} / {pages} ({filtered.length} lignes)</span>
+
+            {(() => {
+              const btns = []
+              for (let i = 1; i <= pages; i++) {
+                if (i === 1 || i === pages || (i >= page - 2 && i <= page + 2)) {
+                  btns.push(i)
+                } else if (btns[btns.length - 1] !== '…') {
+                  btns.push('…')
+                }
+              }
+              return btns.map((b, idx) =>
+                b === '…'
+                  ? <span key={`e${idx}`} style={{ padding: '0 4px', color: '#94a3b8' }}>…</span>
+                  : <button key={b} onClick={() => setPage(b)} style={{
+                      padding: '4px 10px', borderRadius: 6, border: '1px solid',
+                      borderColor: b === page ? '#3b82f6' : '#e2e8f0',
+                      background: b === page ? '#3b82f6' : '#fff',
+                      color: b === page ? '#fff' : '#374151',
+                      fontWeight: b === page ? 700 : 400,
+                      cursor: 'pointer', fontSize: 13,
+                    }}>{b}</button>
+              )
+            })()}
+
             <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages}>→</button>
+            <span style={{ fontSize: 12, color: '#94a3b8', marginLeft: 4 }}>({filtered.length} lignes)</span>
           </div>
         )}
       </div>
