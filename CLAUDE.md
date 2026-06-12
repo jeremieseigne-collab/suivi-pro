@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠️ Rituel de début de session (IMPORTANT)
+
+Quand l'utilisateur **ouvre une session de travail** — par un message du type « Bonjour », « Bonjour Claude », « c'est parti pour aujourd'hui », « on commence », « salut », ou toute salutation/ouverture équivalente en début de conversation — lancer **automatiquement** `git pull` (sans demander de confirmation) pour récupérer le travail effectué depuis l'autre ordinateur.
+
+Après le pull, résumer brièvement ce qui a été récupéré (ou indiquer que tout était déjà à jour), puis demander sur quoi il veut travailler.
+
 ## ⚠️ Rituel de fin de session (IMPORTANT)
 
 L'utilisateur travaille sur **2 ordinateurs différents** et synchronise via git (voir `MEMO.md`).
