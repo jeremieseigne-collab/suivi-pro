@@ -38,8 +38,9 @@ export default function AgendaModal({ event, defaultDate, onClose, onSaved }) {
   }
 
   const textareaStyle = {
-    padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 8,
+    padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 8,
     fontSize: 14, fontFamily: 'inherit', resize: 'vertical', outline: 'none', width: '100%',
+    background: 'var(--surface)', color: 'var(--text)',
   }
 
   return (
@@ -82,11 +83,11 @@ export default function AgendaModal({ event, defaultDate, onClose, onSaved }) {
                   <button onClick={handleDelete} disabled={saving}
                     style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: '#dc2626', color: '#fff', cursor: 'pointer', fontSize: 13 }}>Oui</button>
                   <button onClick={() => setConfirmDel(false)}
-                    style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 13 }}>Non</button>
+                    style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 13 }}>Non</button>
                 </span>
               ) : (
                 <button onClick={() => setConfirmDel(true)}
-                  style={{ padding: '9px 14px', borderRadius: 8, border: '1px solid #fecaca', background: '#fff', color: '#dc2626', cursor: 'pointer', fontSize: 14 }}>🗑 Supprimer</button>
+                  style={{ padding: '9px 14px', borderRadius: 8, border: '1px solid #fecaca', background: 'var(--surface)', color: '#dc2626', cursor: 'pointer', fontSize: 14 }}>🗑 Supprimer</button>
               )
             )}
             <span style={{ display: 'inline-flex', gap: 10 }}>

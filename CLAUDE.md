@@ -41,7 +41,7 @@ Il n'y a **aucun framework de test** dans ce projet. Pour vérifier un changemen
 
 ## Configuration requise
 
-Crée un `.env.local` (voir `.env.example`) avec `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`. Sans ces variables, `src/lib/supabase.js` remplace tout le `<body>` par un message d'erreur et throw au démarrage. Après modification du `.env.local`, **redémarre** le serveur Vite.
+Crée un `.env.local` (voir `.env.example`) avec `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`. Sans ces variables, `src/lib/supabase.js` remplace tout le `<body>` par un message d'erreur et throw au démarrage. Après modification du `.env.local`, **redémarre** le serveur Vite. `VITE_GOOGLE_API_KEY` (Google Calendar) y vit aussi (voir App Agenda). `.env.local` est ignoré par git → à recréer sur chaque machine.
 
 Schémas Postgres (à exécuter dans le SQL Editor Supabase) : `supabase-schema.sql` (Suivi Pro), `supabase-commandes.sql` (table `commandes`), `supabase-agenda.sql` (table `evenements`). RLS est **désactivé** sur toutes les tables (app interne, pas d'auth publique) et le temps réel est activé.
 
@@ -87,7 +87,9 @@ Les modèles d'une marque sont stockés **par saison** dans `fournisseurs.modele
 Commandes magasins / BtoB. Table `commandes`. `constants.js` définit les listes (MAGASINS, SALARIES, PROVENANCES, STATUTS) et les couleurs de badges. Au lancement, **écran de sélection du magasin** (`StoreSelect`) mémorisé dans `localStorage['commandes_magasin']` ; la liste est filtrée sur ce magasin et chaque nouvelle commande y est rattachée. `CommandeModal` = ajout/édition. La colonne legacy `commandes.type` n'est plus utilisée (remplacée par `provenance`).
 
 ### App Agenda (`src/agenda/`)
-Agenda **partagé** (table `evenements`, pas de notion de magasin/saison). `AgendaBoard` = composant principal affiché sur l'accueil, avec sélecteur de vue **Jour / Semaine / Mois / Année** (façon Apple) ; la semaine va du **lundi au samedi** (6 jours). `AgendaModal` = ajout/édition/suppression. `dates.js` regroupe les helpers de dates **en heure locale** (`isoDate`, `parseLocal`, `mondayOf`, …) — important pour éviter les décalages de fuseau ; les dates sont stockées en texte `AAAA-MM-JJ` et comparées en chaînes.
+Agenda **partagé** (table `evenements`, pas de notion de magasin/saison). `AgendaBoard` = composant principal affiché **directement sur l'accueil** (pas de carte d'app séparée), avec sélecteur de vue **Jour / Semaine / Mois / Année** (façon Apple) ; la semaine va du **lundi au samedi** (6 jours). `AgendaModal` = ajout/édition/suppression. `dates.js` regroupe les helpers de dates **en heure locale** (`isoDate`, `parseLocal`, `mondayOf`, …) — important pour éviter les décalages de fuseau ; les dates sont stockées en texte `AAAA-MM-JJ` et comparées en chaînes.
+
+**Intégration Google Calendar** (`src/agenda/googleCalendars.js`) : affichage **lecture seule** de 3 calendriers Google **publics** (abonnements iCloud des 3 magasins), via la **Google Calendar API v3 + clé API** (`VITE_GOOGLE_API_KEY`). Les IDs des 3 calendriers sont en dur dans `GOOGLE_CALENDARS` (publics, non secrets) ; la clé est dans `.env.local`. `fetchGoogleEvents()` charge les événements de la fenêtre visible (`rangeFor`), fusionnés avec les événements Supabase dans `byDay`. Événements Google = `source:'google'` (couleur par magasin, clic → fiche lecture seule `GoogleDetail`) ; événements de l'app = `source:'app'` (modifiables). `singleEvents=true` déroule les récurrences. Sans clé, l'agenda reste fonctionnel (juste sans Google).
 
 ### Domaine métier
 - **`src/data/societes.js`** : mapping magasin → société (B'Shoes / JR Shoes), codé en dur dans `SOCIETE_MAP`. `getSociete(magasin)` est insensible à la casse/espaces.
@@ -96,6 +98,12 @@ Agenda **partagé** (table `evenements`, pas de notion de magasin/saison). `Agen
 
 ### Migration historique
 `src/lib/migrate.js` (`migrateLocalToSupabase`) est un import **ponctuel** IndexedDB (ancienne base Dexie locale `SuiviPro`) → Supabase, déclenché depuis l'onglet Paramètres. Refuse de s'exécuter si Supabase contient déjà des magasins.
+
+## Thème clair / sombre
+
+Le thème repose sur des **variables CSS** définies dans `src/App.css` (`:root` = clair, `html[data-theme="dark"]` = sombre) : `--bg`, `--bg-grad`, `--surface`, `--surface-2/3`, `--border`, `--text` … `--text-5`, `--accent`, `--accent-2`, `--accent-bg`, `--on-accent`, `--shadow*`. Le bascule se fait via `ThemeToggle` (bouton flottant 🌙/☀️ dans `App.jsx`) qui pose `document.documentElement.dataset.theme` et persiste dans `localStorage['theme']`.
+
+**Règle pour tout nouveau style** : utiliser les variables (`color: 'var(--text)'`, `background: 'var(--surface)'`, etc.) — y compris dans les styles inline — plutôt que des hex en dur, sinon l'élément ne suivra pas le mode sombre. **Exceptions volontairement laissées en hex** : les couleurs **sémantiques** (états/provenance/calendriers, rouge d'erreur, vert de succès) et le **texte sur fond coloré** (`--on-accent` / `#fff` sur un bouton accent).
 
 ## Conventions de style
 

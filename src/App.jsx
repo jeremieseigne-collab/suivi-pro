@@ -13,6 +13,30 @@ import './App.css'
 const PIN_CODE       = '2201'
 const PROTECTED_TABS = new Set(['reglement', 'parametres'])
 
+function useDarkMode() {
+  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
+  useEffect(() => {
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+    localStorage.setItem('theme', dark ? 'dark' : 'light')
+  }, [dark])
+  return [dark, () => setDark(d => !d)]
+}
+
+function ThemeToggle() {
+  const [dark, toggle] = useDarkMode()
+  return (
+    <button onClick={toggle} title={dark ? 'Passer en mode clair' : 'Passer en mode sombre'}
+      style={{
+        position: 'fixed', bottom: 20, right: 20, zIndex: 3000,
+        width: 46, height: 46, borderRadius: '50%', cursor: 'pointer',
+        border: '1px solid var(--border)', background: 'var(--surface)',
+        fontSize: 20, boxShadow: '0 4px 14px var(--shadow-lg)',
+      }}>
+      {dark ? '☀️' : '🌙'}
+    </button>
+  )
+}
+
 function PinModal({ onSuccess, onClose }) {
   const [digits, setDigits] = useState(['', '', '', ''])
   const [error,  setError]  = useState(false)
@@ -43,11 +67,11 @@ function PinModal({ onSuccess, onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       onClick={onClose}>
-      <div style={{ background: '#fff', borderRadius: 16, padding: '32px 40px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', textAlign: 'center', minWidth: 280 }}
+      <div style={{ background: 'var(--surface)', borderRadius: 16, padding: '32px 40px', boxShadow: '0 20px 60px var(--shadow-lg)', textAlign: 'center', minWidth: 280 }}
         onClick={e => e.stopPropagation()}>
         <div style={{ fontSize: 32, marginBottom: 8 }}>🔒</div>
-        <h2 style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 700, color: '#0f172a' }}>Accès restreint</h2>
-        <p style={{ margin: '0 0 24px', fontSize: 13, color: '#64748b' }}>Entrez le code à 4 chiffres</p>
+        <h2 style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>Accès restreint</h2>
+        <p style={{ margin: '0 0 24px', fontSize: 13, color: 'var(--text-3)' }}>Entrez le code à 4 chiffres</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 16 }}>
           {digits.map((d, i) => (
             <input key={i} ref={refs[i]}
@@ -56,16 +80,16 @@ function PinModal({ onSuccess, onClose }) {
               onKeyDown={e => handleKeyDown(i, e)}
               style={{
                 width: 52, height: 56, textAlign: 'center', fontSize: 24, fontWeight: 700,
-                border: `2px solid ${error ? '#ef4444' : d ? '#3b82f6' : '#e2e8f0'}`,
-                borderRadius: 10, outline: 'none', background: error ? '#fef2f2' : '#f8fafc',
-                color: error ? '#ef4444' : '#0f172a', transition: 'border-color .15s',
+                border: `2px solid ${error ? '#ef4444' : d ? 'var(--accent)' : 'var(--border)'}`,
+                borderRadius: 10, outline: 'none', background: error ? '#fef2f2' : 'var(--surface-2)',
+                color: error ? '#ef4444' : 'var(--text)', transition: 'border-color .15s',
               }}
             />
           ))}
         </div>
         {error && <p style={{ margin: '0 0 8px', fontSize: 13, color: '#ef4444', fontWeight: 600 }}>Code incorrect</p>}
         <button onClick={onClose}
-          style={{ marginTop: 4, fontSize: 13, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}>
+          style={{ marginTop: 4, fontSize: 13, color: 'var(--text-4)', background: 'none', border: 'none', cursor: 'pointer' }}>
           Annuler
         </button>
       </div>
@@ -128,9 +152,9 @@ function SeasonBadge() {
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
           padding: '5px 12px', borderRadius: 20, border: '2px solid',
-          borderColor: current?.color ?? '#94a3b8',
-          background: (current?.color ?? '#94a3b8') + '22',
-          color: current?.color ?? '#94a3b8',
+          borderColor: current?.color ?? 'var(--text-4)',
+          background: (current?.color ?? 'var(--text-4)') + '22',
+          color: current?.color ?? 'var(--text-4)',
           fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
         }}
       >
@@ -142,7 +166,7 @@ function SeasonBadge() {
           <div style={{ position: 'fixed', inset: 0, zIndex: 199 }} onClick={close} />
           <div style={{
             position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 200,
-            background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10,
+            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
             boxShadow: '0 8px 24px rgba(0,0,0,0.12)', minWidth: 210, overflow: 'hidden',
           }}>
             {seasons.map(s => (
@@ -158,7 +182,7 @@ function SeasonBadge() {
                         {deleting ? '⏳' : 'Supprimer'}
                       </button>
                       <button onClick={() => setConfirmDel(null)}
-                        style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 12 }}>
+                        style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 12 }}>
                         Annuler
                       </button>
                     </div>
@@ -169,10 +193,10 @@ function SeasonBadge() {
                       style={{
                         flex: 1, display: 'flex', alignItems: 'center', gap: 8,
                         padding: '10px 12px 10px 16px', border: 'none',
-                        background: s.id === season ? s.color + '22' : '#fff',
+                        background: s.id === season ? s.color + '22' : 'var(--surface)',
                         cursor: 'pointer', fontSize: 14,
                         fontWeight: s.id === season ? 700 : 400,
-                        color: s.id === season ? s.color : '#1e293b', textAlign: 'left',
+                        color: s.id === season ? s.color : 'var(--text)', textAlign: 'left',
                       }}
                     >
                       <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
@@ -193,13 +217,13 @@ function SeasonBadge() {
               </div>
             ))}
 
-            <div style={{ borderTop: '1px solid #f1f5f9' }}>
+            <div style={{ borderTop: '1px solid var(--surface-3)' }}>
               {!adding ? (
                 <button onClick={openAdd}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                    padding: '10px 16px', border: 'none', background: '#fff',
-                    cursor: 'pointer', fontSize: 13, color: '#64748b', textAlign: 'left',
+                    padding: '10px 16px', border: 'none', background: 'var(--surface)',
+                    cursor: 'pointer', fontSize: 13, color: 'var(--text-3)', textAlign: 'left',
                   }}
                 >
                   <span style={{ fontSize: 16, lineHeight: 1 }}>＋</span> Nouvelle saison
@@ -211,14 +235,14 @@ function SeasonBadge() {
                     value={newName}
                     onChange={e => setNewName(e.target.value)}
                     placeholder="ex: Hiver 2027"
-                    style={{ flex: 1, padding: '5px 8px', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 13, outline: 'none' }}
+                    style={{ flex: 1, padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 13, outline: 'none' }}
                     onKeyDown={e => e.key === 'Escape' && setAdding(false)}
                   />
                   <button type="submit" disabled={!newName.trim()}
                     style={{
                       padding: '5px 10px', borderRadius: 6, border: 'none',
-                      background: newName.trim() ? '#2563eb' : '#e2e8f0',
-                      color: newName.trim() ? '#fff' : '#94a3b8',
+                      background: newName.trim() ? '#2563eb' : 'var(--border)',
+                      color: newName.trim() ? '#fff' : 'var(--text-4)',
                       cursor: newName.trim() ? 'pointer' : 'default', fontSize: 13, fontWeight: 600,
                     }}
                   >OK</button>
@@ -233,7 +257,7 @@ function SeasonBadge() {
 }
 
 const APPS = [
-  { id: 'suivipro',  icon: '📦',  title: 'Suivi Pro',        desc: 'Suivi des livraisons, achats et règlements', gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)' },
+  { id: 'suivipro',  icon: '📦',  title: 'Suivi Pro',        desc: 'Suivi des livraisons, achats et règlements', gradient: 'linear-gradient(135deg, var(--accent), #2563eb)' },
   { id: 'commandes', icon: '🛍️', title: 'Commandes Clients', desc: 'Commandes inter-magasins, B2B et clients',     gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
 ]
 
@@ -246,9 +270,9 @@ function AppCard({ app, onClick }) {
       onMouseLeave={() => setHover(false)}
       style={{
         display: 'flex', alignItems: 'center', gap: 20,
-        background: '#fff', border: '2px solid', borderColor: hover ? '#3b82f6' : '#e2e8f0',
+        background: 'var(--surface)', border: '2px solid', borderColor: hover ? 'var(--accent)' : 'var(--border)',
         borderRadius: 20, padding: '26px 34px', cursor: 'pointer',
-        boxShadow: hover ? '0 16px 40px rgba(59,130,246,0.20)' : '0 4px 16px rgba(0,0,0,0.06)',
+        boxShadow: hover ? '0 16px 40px rgba(59,130,246,0.20)' : '0 4px 16px var(--shadow)',
         transform: hover ? 'translateY(-4px)' : 'none',
         transition: 'all 0.2s ease', textAlign: 'left', width: 360, maxWidth: '100%',
       }}
@@ -258,10 +282,10 @@ function AppCard({ app, onClick }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32,
       }}>{app.icon}</div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 20, fontWeight: 700, color: '#0f172a' }}>{app.title}</div>
-        <div style={{ fontSize: 14, color: '#64748b', marginTop: 2 }}>{app.desc}</div>
+        <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>{app.title}</div>
+        <div style={{ fontSize: 14, color: 'var(--text-3)', marginTop: 2 }}>{app.desc}</div>
       </div>
-      <span style={{ fontSize: 24, color: hover ? '#3b82f6' : '#cbd5e1', transition: 'color 0.2s' }}>→</span>
+      <span style={{ fontSize: 24, color: hover ? 'var(--accent)' : 'var(--text-5)', transition: 'color 0.2s' }}>→</span>
     </button>
   )
 }
@@ -270,14 +294,14 @@ function HomeScreen({ onOpen }) {
   return (
     <div style={{
       minHeight: '100vh', padding: '32px 16px 56px',
-      background: 'linear-gradient(160deg, #f0f4f8 0%, #dbe7ff 100%)',
+      background: 'var(--bg-grad)',
     }}>
       <div style={{ maxWidth: 1120, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <h1 style={{ fontSize: 36, fontWeight: 800, color: '#0f172a', letterSpacing: -1 }}>
+          <h1 style={{ fontSize: 36, fontWeight: 800, color: 'var(--text)', letterSpacing: -1 }}>
             Bienvenue
           </h1>
-          <p style={{ fontSize: 15, color: '#64748b', marginTop: 6 }}>
+          <p style={{ fontSize: 15, color: 'var(--text-3)', marginTop: 6 }}>
             Choisissez une application pour commencer
           </p>
         </div>
@@ -330,11 +354,11 @@ function AppInner({ onHome }) {
               title="Retour à l'accueil"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 34, height: 34, borderRadius: 9, border: '1px solid #e2e8f0',
-                background: '#fff', cursor: 'pointer', fontSize: 17, color: '#475569', lineHeight: 1,
+                width: 34, height: 34, borderRadius: 9, border: '1px solid var(--border)',
+                background: 'var(--surface)', cursor: 'pointer', fontSize: 17, color: 'var(--text-2)', lineHeight: 1,
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#3b82f6' }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#475569' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--accent)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.color = 'var(--text-2)' }}
             >←</button>
             <h1>Suivi Pro</h1>
           </div>
@@ -375,6 +399,7 @@ function Root() {
 export default function App() {
   return (
     <SeasonProvider>
+      <ThemeToggle />
       <Root />
     </SeasonProvider>
   )

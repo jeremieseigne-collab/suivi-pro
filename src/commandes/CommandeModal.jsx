@@ -40,8 +40,9 @@ export default function CommandeModal({ commande, defaultMagasin, onClose, onSav
   }
 
   const textareaStyle = {
-    padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 8,
+    padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 8,
     fontSize: 14, fontFamily: 'inherit', resize: 'vertical', outline: 'none', width: '100%',
+    background: 'var(--surface)', color: 'var(--text)',
   }
 
   return (

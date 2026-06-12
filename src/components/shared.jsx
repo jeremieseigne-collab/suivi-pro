@@ -32,9 +32,9 @@ export function Badge({ children, color }) {
 
 export function LoadingState() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '80px 0', color: '#64748b' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '80px 0', color: 'var(--text-3)' }}>
       <div style={{
-        width: 36, height: 36, border: '3px solid #e2e8f0', borderTopColor: '#3b82f6',
+        width: 36, height: 36, border: '3px solid var(--border)', borderTopColor: 'var(--accent)',
         borderRadius: '50%', animation: 'spin 0.7s linear infinite'
       }} />
       <p>Chargement…</p>

@@ -6,8 +6,8 @@ import CommandeModal from './CommandeModal'
 import { MAGASINS, SALARIES, PROVENANCES, STATUTS, STATUTS_CLOS, STATUT_COLOR, PROVENANCE_COLOR } from './constants'
 
 function Pill({ map, value }) {
-  if (!value) return <span style={{ color: '#cbd5e1' }}>—</span>
-  const c = map[value] || { bg: '#f1f5f9', text: '#64748b' }
+  if (!value) return <span style={{ color: 'var(--text-5)' }}>—</span>
+  const c = map[value] || { bg: '#f1f5f9', text: 'var(--text-3)' }
   return (
     <span style={{ padding: '3px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: c.bg, color: c.text, whiteSpace: 'nowrap' }}>
       {value}
@@ -29,20 +29,20 @@ function StoreSelect({ onSelect, onHome }) {
     <div style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center', padding: 24,
-      background: 'linear-gradient(160deg, #f0f4f8 0%, #ede9fe 100%)',
+      background: 'var(--bg-grad)',
     }}>
       <button
         onClick={onHome}
-        style={{ position: 'fixed', top: 20, left: 20, border: '1px solid #e2e8f0', background: '#fff', borderRadius: 9, width: 38, height: 38, cursor: 'pointer', fontSize: 17, color: '#475569' }}
+        style={{ position: 'fixed', top: 20, left: 20, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 9, width: 38, height: 38, cursor: 'pointer', fontSize: 17, color: 'var(--text-2)' }}
         title="Retour à l'accueil"
       >←</button>
 
       <div style={{ textAlign: 'center', marginBottom: 36 }}>
         <div style={{ fontSize: 34 }}>🏪</div>
-        <h1 style={{ fontSize: 30, fontWeight: 800, color: '#0f172a', letterSpacing: -0.5, marginTop: 6 }}>
+        <h1 style={{ fontSize: 30, fontWeight: 800, color: 'var(--text)', letterSpacing: -0.5, marginTop: 6 }}>
           Dans quel magasin êtes-vous ?
         </h1>
-        <p style={{ fontSize: 15, color: '#64748b', marginTop: 8 }}>
+        <p style={{ fontSize: 15, color: 'var(--text-3)', marginTop: 8 }}>
           Les commandes seront enregistrées pour ce magasin
         </p>
       </div>
@@ -56,9 +56,9 @@ function StoreSelect({ onSelect, onHome }) {
             onMouseLeave={() => setHover(null)}
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
-              background: '#fff', border: '2px solid', borderColor: hover === m ? '#7c3aed' : '#e2e8f0',
+              background: 'var(--surface)', border: '2px solid', borderColor: hover === m ? '#7c3aed' : 'var(--border)',
               borderRadius: 18, padding: '28px 24px', cursor: 'pointer', width: 200,
-              boxShadow: hover === m ? '0 14px 34px rgba(124,58,237,0.18)' : '0 4px 16px rgba(0,0,0,0.06)',
+              boxShadow: hover === m ? '0 14px 34px rgba(124,58,237,0.18)' : '0 4px 16px var(--shadow)',
               transform: hover === m ? 'translateY(-4px)' : 'none', transition: 'all 0.2s ease',
             }}
           >
@@ -67,7 +67,7 @@ function StoreSelect({ onSelect, onHome }) {
               background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28,
             }}>🏪</div>
-            <span style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', textAlign: 'center' }}>{m}</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', textAlign: 'center' }}>{m}</span>
           </button>
         ))}
       </div>
@@ -85,7 +85,7 @@ function NoteView({ commande, onClose }) {
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
-          <p style={{ whiteSpace: 'pre-wrap', fontSize: 15, color: '#1e293b', lineHeight: 1.5 }}>
+          <p style={{ whiteSpace: 'pre-wrap', fontSize: 15, color: 'var(--text)', lineHeight: 1.5 }}>
             {commande.note}
           </p>
         </div>
@@ -162,11 +162,11 @@ export default function Commandes({ onHome }) {
               title="Retour à l'accueil"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 34, height: 34, borderRadius: 9, border: '1px solid #e2e8f0',
-                background: '#fff', cursor: 'pointer', fontSize: 17, color: '#475569', lineHeight: 1,
+                width: 34, height: 34, borderRadius: 9, border: '1px solid var(--border)',
+                background: 'var(--surface)', cursor: 'pointer', fontSize: 17, color: 'var(--text-2)', lineHeight: 1,
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#3b82f6' }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#475569' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--accent)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.color = 'var(--text-2)' }}
             >←</button>
             <h1>🛍️ Commandes Clients</h1>
             <button
@@ -230,13 +230,13 @@ export default function Commandes({ onHome }) {
                 </thead>
                 <tbody>
                   {filtered.length === 0 && (
-                    <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>
+                    <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40, color: 'var(--text-4)' }}>
                       {rows.length === 0 ? 'Aucune commande pour ce magasin — cliquez sur « + Nouvelle commande ».' : 'Aucun résultat.'}
                     </td></tr>
                   )}
                   {filtered.map(r => (
                     <tr key={r.id}>
-                      <td style={{ whiteSpace: 'nowrap', fontSize: 13, color: '#64748b' }}>{fmtDate(r.date || r.createdAt)}</td>
+                      <td style={{ whiteSpace: 'nowrap', fontSize: 13, color: 'var(--text-3)' }}>{fmtDate(r.date || r.createdAt)}</td>
                       <td style={{ fontSize: 13 }}>{r.salarie || '—'}</td>
                       <td><Pill map={PROVENANCE_COLOR} value={r.provenance} /></td>
                       <td>
@@ -261,11 +261,11 @@ export default function Commandes({ onHome }) {
                           style={{
                             border: 'none', borderRadius: 999, padding: '4px 8px', fontSize: 12, fontWeight: 600,
                             cursor: 'pointer', outline: 'none',
-                            background: (STATUT_COLOR[r.statut] || {}).bg || '#f1f5f9',
-                            color: (STATUT_COLOR[r.statut] || {}).text || '#64748b',
+                            background: (STATUT_COLOR[r.statut] || {}).bg || 'var(--surface-3)',
+                            color: (STATUT_COLOR[r.statut] || {}).text || 'var(--text-3)',
                           }}
                         >
-                          {STATUTS.map(s => <option key={s} value={s} style={{ background: '#fff', color: '#1e293b' }}>{s}</option>)}
+                          {STATUTS.map(s => <option key={s} value={s} style={{ background: 'var(--surface)', color: 'var(--text)' }}>{s}</option>)}
                         </select>
                       </td>
                       <td style={{ whiteSpace: 'nowrap' }}>
@@ -274,7 +274,7 @@ export default function Commandes({ onHome }) {
                             <button onClick={() => handleDelete(r.id)}
                               style={{ padding: '3px 8px', borderRadius: 6, border: 'none', background: '#dc2626', color: '#fff', cursor: 'pointer', fontSize: 12 }}>Oui</button>
                             <button onClick={() => setConfirmDel(null)}
-                              style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 12 }}>Non</button>
+                              style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 12 }}>Non</button>
                           </span>
                         ) : (
                           <>
