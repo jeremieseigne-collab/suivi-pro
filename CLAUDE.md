@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠️ Rituel de fin de session (IMPORTANT)
+
+L'utilisateur travaille sur **2 ordinateurs différents** et synchronise via git (voir `MEMO.md`).
+
+Quand l'utilisateur signale qu'il **termine sa session de travail** — par une phrase du type « c'est fini pour aujourd'hui », « j'arrête de travailler », « j'ai terminé », « on s'arrête là », « à demain », ou équivalent — proposer **systématiquement** de :
+
+1. **Mettre à jour ce `CLAUDE.md`** si l'architecture, les conventions ou des points importants ont changé pendant la session (sinon, le mentionner et passer).
+2. **Sauvegarder et synchroniser avec git** : `git add` → `git commit` (avec un message décrivant le travail de la session) → `git push`.
+
+Attendre la confirmation de l'utilisateur avant de pousser. Ce rituel garantit que l'autre ordinateur récupère bien le travail au prochain `git pull`.
+
 ## Présentation
 
 **Suivi Pro** est une application interne (React 19 + Vite 8, **sans TypeScript**) de suivi des livraisons / achats pour des magasins de chaussures. L'interface est entièrement en **français** — garde cette langue pour les libellés, messages et commentaires utilisateur. Les données sont stockées dans **Supabase** (Postgres + temps réel) et synchronisées instantanément entre appareils.
