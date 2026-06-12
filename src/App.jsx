@@ -5,6 +5,8 @@ import Entrees         from './tabs/Entrees'
 import Achats          from './tabs/Achats'
 import PlanReglement   from './tabs/PlanReglement'
 import Parametres      from './tabs/Parametres'
+import Commandes        from './commandes/Commandes'
+import AgendaBoard      from './agenda/AgendaBoard'
 import { SeasonProvider, useSeason } from './context/SeasonContext'
 import './App.css'
 
@@ -230,7 +232,69 @@ function SeasonBadge() {
   )
 }
 
-function AppInner() {
+const APPS = [
+  { id: 'suivipro',  icon: '📦',  title: 'Suivi Pro',        desc: 'Suivi des livraisons, achats et règlements', gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)' },
+  { id: 'commandes', icon: '🛍️', title: 'Commandes Clients', desc: 'Commandes inter-magasins, B2B et clients',     gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
+]
+
+function AppCard({ app, onClick }) {
+  const [hover, setHover] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 20,
+        background: '#fff', border: '2px solid', borderColor: hover ? '#3b82f6' : '#e2e8f0',
+        borderRadius: 20, padding: '26px 34px', cursor: 'pointer',
+        boxShadow: hover ? '0 16px 40px rgba(59,130,246,0.20)' : '0 4px 16px rgba(0,0,0,0.06)',
+        transform: hover ? 'translateY(-4px)' : 'none',
+        transition: 'all 0.2s ease', textAlign: 'left', width: 360, maxWidth: '100%',
+      }}
+    >
+      <div style={{
+        width: 64, height: 64, borderRadius: 16, flexShrink: 0, background: app.gradient,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32,
+      }}>{app.icon}</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 20, fontWeight: 700, color: '#0f172a' }}>{app.title}</div>
+        <div style={{ fontSize: 14, color: '#64748b', marginTop: 2 }}>{app.desc}</div>
+      </div>
+      <span style={{ fontSize: 24, color: hover ? '#3b82f6' : '#cbd5e1', transition: 'color 0.2s' }}>→</span>
+    </button>
+  )
+}
+
+function HomeScreen({ onOpen }) {
+  return (
+    <div style={{
+      minHeight: '100vh', padding: '32px 16px 56px',
+      background: 'linear-gradient(160deg, #f0f4f8 0%, #dbe7ff 100%)',
+    }}>
+      <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <h1 style={{ fontSize: 36, fontWeight: 800, color: '#0f172a', letterSpacing: -1 }}>
+            Bienvenue
+          </h1>
+          <p style={{ fontSize: 15, color: '#64748b', marginTop: 6 }}>
+            Choisissez une application pour commencer
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {APPS.map(app => <AppCard key={app.id} app={app} onClick={() => onOpen(app.id)} />)}
+        </div>
+
+        <div style={{ marginTop: 40 }}>
+          <AgendaBoard />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AppInner({ onHome }) {
   const [activeTab, setActiveTab] = useState('suivi')
   const [unlocked,  setUnlocked]  = useState(new Set())
   const [pinTarget, setPinTarget] = useState(null) // tab en attente de déverrouillage
@@ -260,7 +324,20 @@ function AppInner() {
 
       <header className="app-header">
         <div className="header-top" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h1>Suivi Pro</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button
+              onClick={onHome}
+              title="Retour à l'accueil"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 34, height: 34, borderRadius: 9, border: '1px solid #e2e8f0',
+                background: '#fff', cursor: 'pointer', fontSize: 17, color: '#475569', lineHeight: 1,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#3b82f6' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#475569' }}
+            >←</button>
+            <h1>Suivi Pro</h1>
+          </div>
           <SeasonBadge />
         </div>
         <nav className="tab-nav">
@@ -287,10 +364,18 @@ function AppInner() {
   )
 }
 
+function Root() {
+  const [view, setView] = useState('home')
+
+  if (view === 'suivipro')  return <AppInner onHome={() => setView('home')} />
+  if (view === 'commandes') return <Commandes onHome={() => setView('home')} />
+  return <HomeScreen onOpen={setView} />
+}
+
 export default function App() {
   return (
     <SeasonProvider>
-      <AppInner />
+      <Root />
     </SeasonProvider>
   )
 }

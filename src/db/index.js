@@ -7,6 +7,8 @@ const FIELD_TO_DB = {
   entrees:         { magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', typeKey: 'type_key' },
   modes_reglement: { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id', modeReglement: 'mode_reglement' },
   suivi:           { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id' },
+  commandes:       { createdAt: 'created_at', clientNom: 'client_nom', clientPrenom: 'client_prenom' },
+  evenements:      { createdAt: 'created_at' },
 }
 
 const FIELD_FROM_DB = {}
@@ -198,4 +200,6 @@ export const db = {
   entrees:        new SupabaseTable('entrees'),
   suivi:          new SupabaseTable('suivi'),
   modesReglement: new SupabaseTable('modes_reglement'),
+  commandes:      new SupabaseTable('commandes'),
+  evenements:     new SupabaseTable('evenements'),
 }
