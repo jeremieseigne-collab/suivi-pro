@@ -21,7 +21,12 @@ Attendre la confirmation de l'utilisateur avant de pousser. Ce rituel garantit q
 
 ## Présentation
 
-**Suivi Pro** est une application interne (React 19 + Vite 8, **sans TypeScript**) de suivi des livraisons / achats pour des magasins de chaussures. L'interface est entièrement en **français** — garde cette langue pour les libellés, messages et commentaires utilisateur. Les données sont stockées dans **Supabase** (Postgres + temps réel) et synchronisées instantanément entre appareils.
+Application interne (React 19 + Vite 8, **sans TypeScript**) pour des magasins de chaussures. L'interface est entièrement en **français** — garde cette langue pour les libellés, messages et commentaires utilisateur. Les données sont dans **Supabase** (Postgres + temps réel), synchronisées instantanément entre appareils.
+
+C'est devenu une **suite de plusieurs apps** accessibles depuis un écran d'accueil (launcher), pas seulement « Suivi Pro » :
+- **Suivi Pro** — suivi livraisons / achats / règlements (les onglets historiques)
+- **Commandes Clients** (`src/commandes/`) — commandes magasins & BtoB
+- **Agenda** (`src/agenda/`) — agenda partagé multi-vues, affiché directement sur l'accueil
 
 ## Commandes
 
@@ -38,12 +43,23 @@ Il n'y a **aucun framework de test** dans ce projet. Pour vérifier un changemen
 
 Crée un `.env.local` (voir `.env.example`) avec `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`. Sans ces variables, `src/lib/supabase.js` remplace tout le `<body>` par un message d'erreur et throw au démarrage. Après modification du `.env.local`, **redémarre** le serveur Vite.
 
-Le schéma Postgres complet est dans `supabase-schema.sql` (à exécuter dans le SQL Editor du dashboard Supabase). RLS est **désactivé** (app interne, pas d'auth publique) et le temps réel est activé sur toutes les tables métier.
+Schémas Postgres (à exécuter dans le SQL Editor Supabase) : `supabase-schema.sql` (Suivi Pro), `supabase-commandes.sql` (table `commandes`), `supabase-agenda.sql` (table `evenements`). RLS est **désactivé** sur toutes les tables (app interne, pas d'auth publique) et le temps réel est activé.
+
+## Environnement dev / prod (IMPORTANT)
+
+- **`.env.local` pointe sur une base Supabase de DÉVELOPPEMENT** (bac à sable), séparée de la prod, pour ne jamais toucher les vraies données. Le dev se fait sur la branche **`dev`** ; la prod est déployée depuis **`main`** (Vercel). `.env.local` est ignoré par git → à recréer sur chaque machine.
+- **Migrations de schéma sur la base dev** : ne PAS demander à l'utilisateur de copier-coller du SQL. Un fichier **`.dev-db-url.local`** (ignoré par git) contient l'URL de connexion Postgres de la base dev. Lancer les `CREATE TABLE` / `ALTER TABLE` directement :
+  ```bash
+  export PATH="/opt/homebrew/opt/libpq/bin:$PATH"   # psql installé via brew (libpq)
+  psql "$(cat .dev-db-url.local)" -q -c "alter table ... ;"
+  ```
+  ⚠️ Le pooler renvoie le tag de commande (`INSERT 0 1`) sur stdout ; utiliser `-q` et ne pas le capturer dans une variable d'`id`.
+- ⚠️ **Lors d'un passage en prod** : les nouvelles tables (`commandes`, `evenements`) et colonnes doivent être créées dans la **base de prod** aussi (via les fichiers `supabase-*.sql` dans le SQL Editor). La connexion `.dev-db-url.local` ne vise QUE la dev.
 
 ## Architecture — points clés
 
 ### La couche `db` est un shim Dexie → Supabase
-`src/db/index.js` expose un objet `db` dont les tables (`magasins`, `fournisseurs`, `parametres`, `entrees`, `suivi`, `modesReglement`) **imitent l'API Dexie** (`where().equals().toArray()`, `.first()`, `.add()`, `.put()`, `.update()`, `.delete()`, `.orderBy()`, `.filter()`, `.where({...}).filter(fn)`, `.reverse().sortBy()`) mais tapent en réalité Supabase. Le code applicatif est donc écrit « comme du Dexie » alors qu'il parle à Postgres.
+`src/db/index.js` expose un objet `db` dont les tables (`magasins`, `fournisseurs`, `parametres`, `entrees`, `suivi`, `modesReglement`, `commandes`, `evenements`) **imitent l'API Dexie** (`where().equals().toArray()`, `.first()`, `.add()`, `.put()`, `.update()`, `.delete()`, `.orderBy()`, `.filter()`, `.where({...}).filter(fn)`, `.reverse().sortBy()`) mais tapent en réalité Supabase. Le code applicatif est donc écrit « comme du Dexie » alors qu'il parle à Postgres.
 
 Conséquences importantes :
 - **Mapping camelCase ↔ snake_case** : le code JS utilise `fournisseurId`, `magasinId`, `modelesBySeason`, `typeKey`, `recuN1`, `objectifN`, `reelN`, `modeReglement` ; la base utilise les colonnes snake_case. La conversion se fait **uniquement** dans `db/index.js` via `FIELD_TO_DB`. Si tu ajoutes une colonne dont le nom JS diffère du nom SQL, **ajoute-la à `FIELD_TO_DB`**.
@@ -58,11 +74,20 @@ La saison active n'est **pas** une table : elle vit dans `localStorage` et dans 
 
 Les modèles d'une marque sont stockés **par saison** dans `fournisseurs.modeles_by_season` (un objet JSONB `{ [seasonId]: string[] }`).
 
-### Onglets et protection PIN
-`src/App.jsx` est le routeur (state local `activeTab`, pas de react-router). Les onglets `reglement` et `parametres` sont protégés par un **code PIN en clair** (`PIN_CODE = '2201'` dans `App.jsx`). Le déverrouillage est en mémoire pour la session.
+### Launcher multi-apps et navigation
+`src/App.jsx` est le routeur, **sans react-router**. Deux niveaux :
+- **`Root`** (state local `view`) bascule entre l'accueil et les apps : `home` → `<HomeScreen>`, `suivipro` → `<AppInner>` (les onglets historiques), `commandes` → `<Commandes>`. Chaque app reçoit une prop `onHome` (bouton retour ← dans son en-tête).
+- **`HomeScreen`** = le menu : un tableau `APPS` (cartes cliquables) + le composant **`<AgendaBoard>`** affiché directement dessous. Pour ajouter une app : ajouter une entrée à `APPS`, un cas dans `Root`, et le composant.
+- **`AppInner`** garde sa propre navigation par onglets (`activeTab`) pour Suivi Pro. Les onglets `reglement` et `parametres` sont protégés par un **code PIN en clair** (`PIN_CODE = '2201'`), déverrouillage en mémoire pour la session.
 
-`src/tabs/` : `SuiviLivraisons`, `Entrees`, `Achats`, `PlanReglement`, `Parametres`.
-⚠️ `src/tabs/PlanAchat.jsx` existe mais **n'est pas importé** dans `App.jsx` (composant orphelin).
+`src/tabs/` (onglets Suivi Pro) : `SuiviLivraisons`, `Entrees`, `Achats`, `PlanReglement`, `Parametres`.
+⚠️ `src/tabs/PlanAchat.jsx` existe mais **n'est pas importé** (composant orphelin).
+
+### App Commandes Clients (`src/commandes/`)
+Commandes magasins / BtoB. Table `commandes`. `constants.js` définit les listes (MAGASINS, SALARIES, PROVENANCES, STATUTS) et les couleurs de badges. Au lancement, **écran de sélection du magasin** (`StoreSelect`) mémorisé dans `localStorage['commandes_magasin']` ; la liste est filtrée sur ce magasin et chaque nouvelle commande y est rattachée. `CommandeModal` = ajout/édition. La colonne legacy `commandes.type` n'est plus utilisée (remplacée par `provenance`).
+
+### App Agenda (`src/agenda/`)
+Agenda **partagé** (table `evenements`, pas de notion de magasin/saison). `AgendaBoard` = composant principal affiché sur l'accueil, avec sélecteur de vue **Jour / Semaine / Mois / Année** (façon Apple) ; la semaine va du **lundi au samedi** (6 jours). `AgendaModal` = ajout/édition/suppression. `dates.js` regroupe les helpers de dates **en heure locale** (`isoDate`, `parseLocal`, `mondayOf`, …) — important pour éviter les décalages de fuseau ; les dates sont stockées en texte `AAAA-MM-JJ` et comparées en chaînes.
 
 ### Domaine métier
 - **`src/data/societes.js`** : mapping magasin → société (B'Shoes / JR Shoes), codé en dur dans `SOCIETE_MAP`. `getSociete(magasin)` est insensible à la casse/espaces.
