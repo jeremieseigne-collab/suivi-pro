@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git pull --ff-only 2>&1 || true",
+            "statusMessage": "git pull (récupération du travail de l'autre ordi)…"
+          }
+        ]
+      }
+    ]
+  }
+}
