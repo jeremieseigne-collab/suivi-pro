@@ -3,7 +3,8 @@ import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { LoadingState } from '../components/shared'
 import { useSeason } from '../context/SeasonContext'
-import { SOCIETE_MAP, SOCIETES, getSociete } from '../data/societes'
+import { SOCIETES, getSociete } from '../data/societes'
+import { DEFAULT_NB_CHEQUE, DEFAULT_DELAIS } from '../data/reglement'
 
 // ─── Utilitaires dates ───────────────────────────────────────────────────────
 function parseDate(str) {
@@ -31,30 +32,31 @@ function monthLabel(key) {
   return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
 }
 
-// ─── Règles de paiement ──────────────────────────────────────────────────────
-function echeancesCheque(fournisseur, magasin, reelTotal, firstDate) {
-  if (!firstDate || !reelTotal) return []
-  return [0, 1, 2, 3].map(i => ({
+// ─── Règles de paiement ───────────────────────────────────────────────────────
+// CHEQUE : montant ÷ nb, sur nb fins de mois successives (à partir de la 1ère réception)
+function echeancesCheque(fournisseur, magasin, reelTotal, firstDate, nb) {
+  if (!firstDate || !reelTotal || !nb) return []
+  return Array.from({ length: nb }, (_, i) => ({
     date:        endOfMonth(firstDate, i),
-    montant:     reelTotal / 4,
-    info:        `Échéance ${i + 1}/4`,
+    montant:     reelTotal / nb,
+    info:        `Échéance ${i + 1}/${nb}`,
     fournisseur, magasin, mode: 'CHEQUE',
     societe:     getSociete(magasin),
     source: `Commande totale (${reelTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })})`,
   }))
 }
 
-function echeancesLivraison(fournisseur, magasin, montant, livraisonDate, mode) {
-  if (!livraisonDate || !montant || montant <= 0) return []
-  const e = (date, m, info) => ({ date, montant: m, info, fournisseur, magasin, mode, societe: getSociete(magasin), source: `Livraison du ${fmtDate(livraisonDate)}` })
-  switch (mode) {
-    case 'VIREMENT':    return [e(addDays(livraisonDate, 90), montant, '90 jours')]
-    case 'LCR':         return [e(addDays(livraisonDate, 60), montant / 2, '60 jours (1/2)'), e(addDays(livraisonDate, 90), montant / 2, '90 jours (2/2)')]
-    case 'GARANT':
-    case 'GMS':         return [e(addDays(livraisonDate, 120), montant, '120 jours')]
-    case 'PRELEVEMENT': return [e(addDays(livraisonDate, 30), montant, '30 jours')]
-    default:            return []
-  }
+// Autres modes : montant réparti à parts égales sur la liste de délais (jours après livraison)
+function echeancesLivraison(fournisseur, magasin, montant, livraisonDate, mode, delais) {
+  if (!livraisonDate || !montant || montant <= 0 || !delais || !delais.length) return []
+  const n = delais.length
+  return delais.map((d, i) => ({
+    date:    addDays(livraisonDate, d),
+    montant: montant / n,
+    info:    d === 0 ? 'Jour de livraison' : (n > 1 ? `${d} jours (${i + 1}/${n})` : `${d} jours`),
+    fournisseur, magasin, mode, societe: getSociete(magasin),
+    source:  `Livraison du ${fmtDate(livraisonDate)}`,
+  }))
 }
 
 const MODE_COLORS = {
@@ -84,7 +86,7 @@ export default function PlanReglement() {
     ])
     const magasinMap     = Object.fromEntries(magasins.map(m => [m.id, m.nom]))
     const fournisseurMap = Object.fromEntries(fournisseurs.map(f => [f.id, f.nom]))
-    const modeByIdKey    = Object.fromEntries(modesReglement.map(m => [`${m.fournisseurId}_${m.magasinId}`, m.modeReglement || '']))
+    const regleByKey     = Object.fromEntries(modesReglement.map(m => [`${m.fournisseurId}_${m.magasinId}`, { mode: m.modeReglement || '', cond: m.condition || {} }]))
 
     const result = []
 
@@ -101,13 +103,14 @@ export default function PlanReglement() {
     })
 
     params.forEach(p => {
-      const mode = modeByIdKey[`${p.fournisseurId}_${p.magasinId}`]
-      if (mode !== 'CHEQUE') return
+      const regle = regleByKey[`${p.fournisseurId}_${p.magasinId}`]
+      if (!regle || regle.mode !== 'CHEQUE') return
       const fNom = fournisseurMap[p.fournisseurId]
       const mNom = magasinMap[p.magasinId]
       if (!fNom || !mNom || !p.reelN) return
       const firstDate = firstReception[fNom + mNom]
-      result.push(...echeancesCheque(fNom, mNom, p.reelN, firstDate))
+      const nb = parseInt(regle.cond.nb) || DEFAULT_NB_CHEQUE
+      result.push(...echeancesCheque(fNom, mNom, p.reelN, firstDate, nb))
     })
 
     // ── 2. Autres modes : par livraison individuelle (pht + date) ──
@@ -118,10 +121,12 @@ export default function PlanReglement() {
       const date = parseDate(e.date)
       if (!date) return
 
-      const mode = modeByIdKey[`${e.fournisseurId}_${e.magasinId}`]
+      const regle = regleByKey[`${e.fournisseurId}_${e.magasinId}`]
+      const mode = regle?.mode
       if (!mode || mode === 'CHEQUE') return
+      const delais = (Array.isArray(regle.cond.delais) && regle.cond.delais.length) ? regle.cond.delais : (DEFAULT_DELAIS[mode] || [])
 
-      result.push(...echeancesLivraison(fNom, mNom, e.pht, date, mode))
+      result.push(...echeancesLivraison(fNom, mNom, e.pht, date, mode, delais))
     })
 
     return {

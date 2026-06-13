@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams } from '../hooks/useParams'
 import { SIZE_TYPES } from '../data/sizes'
 import { db } from '../db'
@@ -58,8 +58,7 @@ export default function EntreeEditModal({ entry, onClose, onSaved }) {
   const [error,   setError]   = useState('')
   const [copied,  setCopied]  = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [pmBase,  setPmBase]  = useState(0)
-  const [phtAuto, setPhtAuto] = useState(false)
+  const [paramRow, setParamRow] = useState(null)
 
   const type  = SIZE_TYPES[form.typeKey]
   const total = quantities.reduce((s, v) => s + (parseInt(v) || 0), 0)
@@ -70,25 +69,33 @@ export default function EntreeEditModal({ entry, onClose, onSaved }) {
     setQuantities(extractQuantities(entry.sizes, form.typeKey))
   }, [form.typeKey, entry.sizes])
 
-  // Récupère le PM depuis Achats quand magasin+marque changent
+  // Ligne Achats (paramètres) pour magasin × marque × saison : quantités/prix par modèle (+ PM de secours)
   useEffect(() => {
-    if (!form.magasin || !form.marque) { setPmBase(0); return }
+    if (!form.magasin || !form.marque) { setParamRow(null); return }
     let cancelled = false
     ;(async () => {
       const mag  = await db.magasins.where('nom').equals(form.magasin).first()
       const four = await db.fournisseurs.where('nom').equals(form.marque).first()
       if (!mag || !four || cancelled) return
       const param = await db.parametres.where('fournisseurId').equals(four.id).and(p => p.magasinId === mag.id && p.season === season).first()
-      if (!cancelled) setPmBase(param?.pm || 0)
+      if (!cancelled) setParamRow(param || null)
     })()
     return () => { cancelled = true }
-  }, [form.magasin, form.marque])
+  }, [form.magasin, form.marque, season])
 
-  // Recalcule automatiquement si mode auto activé
+  // Prix unitaire HT = prix HT total du modèle ÷ quantité commandée (sinon PM de secours)
+  const unitPrice = useMemo(() => {
+    if (!paramRow) return 0
+    const q  = paramRow.modeles?.[form.modele]
+    const px = paramRow.prixModeles?.[form.modele]
+    if (q > 0 && px > 0) return px / q
+    return paramRow.pm || 0
+  }, [paramRow, form.modele])
+
+  // PHT livré = prix unitaire × quantité reçue (toujours auto, non modifiable)
   useEffect(() => {
-    if (!phtAuto || pmBase <= 0) return
-    setForm(f => ({ ...f, pht: total > 0 ? Math.round(pmBase * total * 100) / 100 : '' }))
-  }, [total, pmBase, phtAuto])
+    setForm(f => ({ ...f, pht: (unitPrice > 0 && total > 0) ? Math.round(unitPrice * total * 100) / 100 : '' }))
+  }, [unitPrice, total])
 
   function set(field, val) { setForm(f => ({ ...f, [field]: val })) }
   function setQty(i, val)  { setQuantities(q => { const n = [...q]; n[i] = val; return n }) }
@@ -262,27 +269,21 @@ export default function EntreeEditModal({ entry, onClose, onSaved }) {
               <div className="form-field">
                 <label>
                   PHT livré (€)
-                  {pmBase > 0 && (
-                    <span style={{ fontWeight: 400, color: phtAuto ? '#059669' : '#64748b', fontSize: 11, marginLeft: 6 }}>
-                      {phtAuto
-                        ? `● auto (PM: ${pmBase.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })})`
-                        : `PM: ${pmBase.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })}`}
-                    </span>
-                  )}
+                  <span style={{ fontWeight: 400, color: '#059669', fontSize: 11, marginLeft: 6 }}>● calculé auto</span>
                 </label>
-                <input
-                  type="number" step="0.01" min="0"
-                  value={form.pht}
-                  onChange={e => { setPhtAuto(false); set('pht', e.target.value) }}
-                  placeholder="0.00"
-                  style={{ borderColor: phtAuto && pmBase > 0 ? '#86efac' : undefined }}
-                />
-                {pmBase > 0 && (
-                  <button type="button" onClick={() => setPhtAuto(v => !v)}
-                    style={{ marginTop: 4, fontSize: 11, color: phtAuto ? '#f59e0b' : '#059669', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-                    {phtAuto ? '✏️ Saisir manuellement' : '↩ Recalculer automatiquement'}
-                  </button>
-                )}
+                <div style={{
+                  padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 8,
+                  background: 'var(--surface-2)', fontSize: 14, fontWeight: 700, color: 'var(--text)',
+                }}>
+                  {form.pht
+                    ? Number(form.pht).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })
+                    : '—'}
+                </div>
+                <span style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 4 }}>
+                  {unitPrice > 0
+                    ? `prix unitaire ${unitPrice.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })} × ${total} u.`
+                    : 'Renseigne le prix HT du modèle dans Paramètres → Marques'}
+                </span>
               </div>
             </div>
 

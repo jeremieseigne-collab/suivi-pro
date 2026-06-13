@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams } from '../hooks/useParams'
 import { SIZE_TYPES } from '../data/sizes'
 import { db } from '../db'
@@ -43,8 +43,8 @@ export default function EntreeForm({ onClose, onSaved }) {
   const [error,      setError]      = useState('')
   const [copied,     setCopied]     = useState(false)
   const [clipData,   setClipData]   = useState(() => getClipboard())
-  const [pmBase,     setPmBase]     = useState(0)
-  const [phtAuto,    setPhtAuto]    = useState(true)
+  const [paramRow,   setParamRow]   = useState(null)
+  const [toast,      setToast]      = useState(false)
 
   const type = SIZE_TYPES[form.typeKey]
 
@@ -52,31 +52,39 @@ export default function EntreeForm({ onClose, onSaved }) {
     setQuantities(Array(type?.sizes?.length ?? 0).fill(''))
   }, [form.typeKey])
 
-  // Récupère le PM depuis Achats quand magasin+marque sont sélectionnés
+  // Récupère la ligne Achats (paramètres) pour magasin × marque × saison :
+  // elle porte les quantités/prix par modèle (et le PM de secours).
   useEffect(() => {
-    setPhtAuto(true)
-    if (!form.magasin || !form.marque) { setPmBase(0); return }
+    if (!form.magasin || !form.marque) { setParamRow(null); return }
     let cancelled = false
     ;(async () => {
       const mag  = await db.magasins.where('nom').equals(form.magasin).first()
       const four = await db.fournisseurs.where('nom').equals(form.marque).first()
       if (!mag || !four || cancelled) return
       const param = await db.parametres.where('fournisseurId').equals(four.id).and(p => p.magasinId === mag.id && p.season === season).first()
-      if (!cancelled) setPmBase(param?.pm || 0)
+      if (!cancelled) setParamRow(param || null)
     })()
     return () => { cancelled = true }
-  }, [form.magasin, form.marque])
+  }, [form.magasin, form.marque, season])
+
+  // Prix unitaire HT = prix HT total du modèle ÷ quantité commandée (sinon PM de secours)
+  const unitPrice = useMemo(() => {
+    if (!paramRow) return 0
+    const q  = paramRow.modeles?.[form.modele]
+    const px = paramRow.prixModeles?.[form.modele]
+    if (q > 0 && px > 0) return px / q
+    return paramRow.pm || 0
+  }, [paramRow, form.modele])
 
   function set(field, val) { setForm(f => ({ ...f, [field]: val })) }
   function setQty(i, val)  { setQuantities(q => { const n = [...q]; n[i] = val; return n }) }
 
   const total = quantities.reduce((s, v) => s + (parseInt(v) || 0), 0)
 
-  // Recalcule le PHT automatiquement quand le total ou le PM changent
+  // PHT livré = prix unitaire × quantité reçue (toujours auto, non modifiable)
   useEffect(() => {
-    if (!phtAuto || pmBase <= 0) return
-    setForm(f => ({ ...f, pht: total > 0 ? Math.round(pmBase * total * 100) / 100 : '' }))
-  }, [total, pmBase, phtAuto])
+    setForm(f => ({ ...f, pht: (unitPrice > 0 && total > 0) ? Math.round(unitPrice * total * 100) / 100 : '' }))
+  }, [unitPrice, total])
 
   const modelesSuggestions = params?.modelesByMarque?.[form.marque] ?? []
 
@@ -99,8 +107,7 @@ export default function EntreeForm({ onClose, onSaved }) {
     }
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function doSave(continueAfter) {
     if (!form.magasin) { setError('Magasin obligatoire'); return }
     if (!form.marque)  { setError('Marque obligatoire');  return }
     if (total === 0)   { setError('Aucune quantité saisie'); return }
@@ -139,14 +146,27 @@ export default function EntreeForm({ onClose, onSaved }) {
       const clipboardData = { typeKey: form.typeKey, quantities: [...quantities] }
       setClipboard(clipboardData)
       setClipData(clipboardData)
-      setSaved(true)
-      setTimeout(() => { onSaved?.(); onClose?.() }, 1500)
+
+      if (continueAfter) {
+        // Reste sur le formulaire : on garde magasin / date / marque, on vide le reste.
+        // La liste sous la fenêtre se rafraîchit toute seule (temps réel) — surtout NE PAS
+        // appeler onSaved() ici car le parent l'utilise pour fermer la fenêtre.
+        setForm(f => ({ ...INITIAL, magasin: f.magasin, marque: f.marque, date: f.date, dateIso: f.dateIso }))
+        setQuantities(Array(SIZE_TYPES.F.sizes.length).fill(''))
+        setToast(true)
+        setTimeout(() => setToast(false), 2000)
+      } else {
+        setSaved(true)
+        setTimeout(() => { onSaved?.(); onClose?.() }, 1500)
+      }
     } catch (err) {
       setError('Erreur : ' + (err.message || 'Réessayez.'))
     } finally {
       setSaving(false)
     }
   }
+
+  function handleSubmit(e) { e.preventDefault(); doSave(false) }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -163,6 +183,11 @@ export default function EntreeForm({ onClose, onSaved }) {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="modal-body">
+            {toast && (
+              <div style={{ padding: '8px 12px', background: '#d1fae5', borderRadius: 8, fontSize: 13, color: '#059669', fontWeight: 600 }}>
+                ✅ Entrée enregistrée — prête pour la suivante (magasin, date et marque conservés)
+              </div>
+            )}
             <div className="form-grid">
               <div className="form-field">
                 <label>Statut</label>
@@ -221,26 +246,21 @@ export default function EntreeForm({ onClose, onSaved }) {
               <div className="form-field">
                 <label>
                   PHT livré (€)
-                  {pmBase > 0 && (
-                    <span style={{ fontWeight: 400, color: phtAuto ? '#059669' : '#f59e0b', fontSize: 11, marginLeft: 6 }}>
-                      {phtAuto ? `● auto (PM: ${pmBase.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })})` : '● manuel'}
-                    </span>
-                  )}
+                  <span style={{ fontWeight: 400, color: '#059669', fontSize: 11, marginLeft: 6 }}>● calculé auto</span>
                 </label>
-                <input
-                  type="number" step="0.01" min="0"
-                  value={form.pht || ''}
-                  onChange={e => { setPhtAuto(false); set('pht', e.target.value) }}
-                  onFocus={() => { if (phtAuto && pmBase > 0) setPhtAuto(false) }}
-                  placeholder={pmBase > 0 ? `auto (PM × qtés)` : '0.00'}
-                  style={{ borderColor: phtAuto && pmBase > 0 ? '#86efac' : undefined }}
-                />
-                {!phtAuto && pmBase > 0 && (
-                  <button type="button" onClick={() => setPhtAuto(true)}
-                    style={{ marginTop: 4, fontSize: 11, color: '#059669', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-                    ↩ Recalculer automatiquement
-                  </button>
-                )}
+                <div style={{
+                  padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 8,
+                  background: 'var(--surface-2)', fontSize: 14, fontWeight: 700, color: 'var(--text)',
+                }}>
+                  {form.pht
+                    ? Number(form.pht).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })
+                    : '—'}
+                </div>
+                <span style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 4 }}>
+                  {unitPrice > 0
+                    ? `prix unitaire ${unitPrice.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })} × ${total} u.`
+                    : 'Renseigne le prix HT du modèle dans Paramètres → Marques'}
+                </span>
               </div>
             </div>
 
@@ -303,6 +323,10 @@ export default function EntreeForm({ onClose, onSaved }) {
 
             <div className="modal-actions">
               <button type="button" className="btn-secondary" onClick={onClose}>Annuler</button>
+              <button type="button" className="btn-secondary" onClick={() => doSave(true)} disabled={saving || paramsLoading}
+                title="Enregistre et reste sur le formulaire (garde magasin, date et marque)">
+                {saving ? '⏳…' : '➕ Enregistrer et continuer'}
+              </button>
               <button type="submit" className="btn-primary" disabled={saving || paramsLoading}>
                 {saving ? '⏳ Enregistrement…' : '💾 Enregistrer'}
               </button>

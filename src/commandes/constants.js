@@ -2,7 +2,7 @@
 
 export const MAGASINS = ['Bailly Albi', 'Bailly Rouffiac-Tolosan', 'Les 2 Zèbres']
 
-export const SALARIES = ['Eve', 'Louise', 'Ines', 'Marie', 'Sabrina', 'Raphaël', 'Jérémie']
+// La liste des salariés vit désormais dans la table `salaries` (gérée dans Paramètres).
 
 export const PROVENANCES = ['Bailly Albi', 'Bailly Rouffiac', 'Les 2 Zèbres', 'BtoB']
 

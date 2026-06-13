@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { db } from '../db'
-import { PROVENANCES, SALARIES, STATUTS } from './constants'
+import { PROVENANCES, STATUTS } from './constants'
 
 const todayStr = () => new Date().toISOString().slice(0, 10)
 
-export default function CommandeModal({ commande, defaultMagasin, onClose, onSaved }) {
+export default function CommandeModal({ commande, defaultMagasin, salaries = [], onClose, onSaved }) {
   const editing = !!commande?.id
   const [form, setForm] = useState({
     magasin:      commande?.magasin      || defaultMagasin || '',
@@ -63,7 +63,7 @@ export default function CommandeModal({ commande, defaultMagasin, onClose, onSav
               <label>Salarié *</label>
               <select value={form.salarie} onChange={e => set('salarie', e.target.value)}>
                 <option value="">— Choisir —</option>
-                {SALARIES.map(s => <option key={s}>{s}</option>)}
+                {salaries.map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
           </div>

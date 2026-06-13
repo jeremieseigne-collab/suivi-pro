@@ -2,6 +2,7 @@ import { useState, useRef, useMemo } from 'react'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { useSeason } from '../context/SeasonContext'
+import { DEFAULT_DELAIS, DEFAULT_NB_CHEQUE } from '../data/reglement'
 
 const MODES_REGLEMENT = ['', 'PRELEVEMENT', 'CHEQUE', 'GARANT', 'VIREMENT', 'GMS', 'LCR']
 
@@ -99,7 +100,68 @@ function SectionMagasins() {
   )
 }
 
-// ─── Import CSV : Marque, Modèle, Quantité (pour le magasin sélectionné) ──────
+// ─── Section Salariés ────────────────────────────────────────────────────────
+function SectionSalaries() {
+  const salaries = useLiveQuery(() => db.salaries.orderBy('nom').toArray(), [])
+
+  async function add(nom) {
+    const existing = await db.salaries.where('nom').equals(nom).first()
+    if (existing) throw new Error(`"${nom}" existe déjà`)
+    await db.salaries.add({ nom })
+  }
+
+  async function del(id) {
+    if (!confirm('Supprimer ce salarié ? Il ne sera plus proposé dans les listes (les commandes déjà enregistrées gardent son nom).')) return
+    await db.salaries.delete(id)
+  }
+
+  return (
+    <div className="store-card">
+      <h3 style={{ marginBottom: 16, fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>👤 Salariés</h3>
+      {(salaries || []).length === 0
+        ? <p style={{ color: 'var(--text-4)', fontSize: 14 }}>Aucun salarié — ajoutez-en un ci-dessous.</p>
+        : <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {(salaries || []).map(s => <TagChip key={s.id} label={s.nom} onDelete={() => del(s.id)} />)}
+          </div>
+      }
+      <AddForm placeholder="Nom du salarié…" onAdd={add} />
+    </div>
+  )
+}
+
+// Découpe une ligne CSV en respectant les guillemets (virgules autorisées dans les champs)
+function parseCsvLine(line, sep) {
+  const out = []
+  let cur = '', inQ = false
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]
+    if (inQ) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') { cur += '"'; i++ } // guillemet échappé ""
+        else inQ = false
+      } else cur += ch
+    } else if (ch === '"') {
+      inQ = true
+    } else if (ch === sep) {
+      out.push(cur); cur = ''
+    } else cur += ch
+  }
+  out.push(cur)
+  return out.map(c => c.trim())
+}
+
+// Nombre tolérant : "684.00", "684,00", "1 234,56", "684 €" → number
+function parseNum(s) {
+  let v = String(s ?? '').replace(/[^\d.,-]/g, '').trim()
+  if (v.includes(',') && v.includes('.')) {
+    v = v.lastIndexOf(',') > v.lastIndexOf('.') ? v.replace(/\./g, '').replace(',', '.') : v.replace(/,/g, '')
+  } else if (v.includes(',')) {
+    v = v.replace(',', '.')
+  }
+  return parseFloat(v) || 0
+}
+
+// ─── Import CSV : Marque, Modèle, Quantité, PA HT (colonnes suivantes ignorées) ──
 function ImportCSVPanel({ magasinId, magasinNom, season }) {
   const fileRef = useRef(null)
   const [preview,   setPreview]   = useState(null)
@@ -109,15 +171,22 @@ function ImportCSVPanel({ magasinId, magasinNom, season }) {
   function parseCSV(text) {
     const out = []
     const lines = text.split(/\r?\n/).filter(l => l.trim())
-    const sep = lines[0]?.includes(';') ? ';' : ','
+    // séparateur : ';' s'il domine sur la 1ère ligne, sinon ','
+    const head = lines[0] || ''
+    const sep = (head.match(/;/g) || []).length > (head.match(/,/g) || []).length ? ';' : ','
     lines.forEach((line, i) => {
-      const cols = line.split(sep).map(c => c.trim().replace(/^"|"$/g, ''))
-      const marque = cols[0]
+      const cols = parseCsvLine(line, sep)
+      const marque = (cols[0] || '').trim()
       if (!marque) return
-      if (i === 0 && /^marque$/i.test(marque)) return // entête
-      const modele = cols[1] || ''
+      if (i === 0 && /^marques?$/i.test(marque)) return // entête (Marque/Marques)
+      const modele = (cols[1] || '').trim()
       if (!modele) return
-      out.push({ marque, modele, qte: parseInt(cols[2]) || 0 })
+      // cols 0..3 = Marque, Modèle, Qté, PA HT ; les colonnes suivantes sont ignorées
+      out.push({
+        marque, modele,
+        qte:  parseInt(String(cols[2] || '').replace(/[^\d-]/g, '')) || 0,
+        prix: parseNum(cols[3]),
+      })
     })
     return out
   }
@@ -145,12 +214,13 @@ function ImportCSVPanel({ magasinId, magasinNom, season }) {
         const current = f.modelesBySeason?.[season] ?? f.modeles ?? []
         const names = [...new Set([...current, ...items.map(i => i.modele)])].sort()
         await db.fournisseurs.update(f.id, { modelesBySeason: { ...(f.modelesBySeason || {}), [season]: names } })
-        // quantités pour le magasin sélectionné
+        // quantités + prix HT total pour le magasin sélectionné
         const existing = await db.parametres.where({ fournisseurId: f.id, magasinId }).filter(p => p.season === season).first()
-        const modeles = { ...(existing?.modeles || {}) }
-        items.forEach(i => { modeles[i.modele] = i.qte })
-        if (existing) await db.parametres.update(existing.id, { modeles })
-        else          await db.parametres.add({ fournisseurId: f.id, magasinId, season, modeles })
+        const modeles     = { ...(existing?.modeles || {}) }
+        const prixModeles = { ...(existing?.prixModeles || {}) }
+        items.forEach(i => { modeles[i.modele] = i.qte; if (i.prix) prixModeles[i.modele] = i.prix })
+        if (existing) await db.parametres.update(existing.id, { modeles, prixModeles })
+        else          await db.parametres.add({ fournisseurId: f.id, magasinId, season, modeles, prixModeles })
         nbModeles += items.length
       }
       setDone({ modeles: nbModeles, marques: Object.keys(byMarque).length })
@@ -166,7 +236,7 @@ function ImportCSVPanel({ magasinId, magasinNom, season }) {
         <div style={{ flex: 1 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)' }}>📂 Import CSV</span>
           <span style={{ fontSize: 12, color: 'var(--text-4)', marginLeft: 8 }}>
-            Format : <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>Marque,Modèle,Quantité</code> (une ligne par modèle) — pour <strong>{magasinNom || '—'}</strong>
+Colonnes lues : <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>Marque, Modèle, Qté, PA HT</code> (les colonnes suivantes sont ignorées) — pour <strong>{magasinNom || '—'}</strong>
           </span>
         </div>
         <input ref={fileRef} type="file" accept=".csv,.txt" style={{ display: 'none' }} onChange={handleFile} />
@@ -194,7 +264,8 @@ function ImportCSVPanel({ magasinId, magasinNom, season }) {
               <div key={i} style={{ padding: '6px 12px', borderBottom: '1px solid var(--surface-3)', fontSize: 13, display: 'flex', gap: 10, alignItems: 'baseline' }}>
                 <span style={{ fontWeight: 700, minWidth: 140 }}>{row.marque}</span>
                 <span style={{ flex: 1, color: 'var(--text-3)' }}>{row.modele}</span>
-                <span style={{ fontWeight: 700, color: 'var(--text-2)' }}>{row.qte}</span>
+                <span style={{ color: 'var(--text-3)', minWidth: 50, textAlign: 'right' }}>{row.qte} u.</span>
+                <span style={{ fontWeight: 700, color: 'var(--text-2)', minWidth: 70, textAlign: 'right' }}>{row.prix ? row.prix.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }) : '—'}</span>
               </div>
             ))}
           </div>
@@ -223,6 +294,7 @@ function SectionFournisseurs() {
   const [selM,       setSelM]       = useState(null)
   const [newModele,  setNewModele]  = useState({})
   const [newQte,     setNewQte]     = useState({})
+  const [newPrix,    setNewPrix]    = useState({})
   const [editingId,  setEditingId]  = useState(null)
   const [editingNom, setEditingNom] = useState('')
 
@@ -233,6 +305,13 @@ function SectionFournisseurs() {
   const qteMap = useMemo(() => {
     const m = {}
     ;(params || []).filter(p => p.magasinId === selectedMagasin).forEach(p => { m[p.fournisseurId] = p.modeles || {} })
+    return m
+  }, [params, selectedMagasin])
+
+  // prix HT total du magasin sélectionné : { [fournisseurId]: { [modele]: prixHTtotal } }
+  const prixMap = useMemo(() => {
+    const m = {}
+    ;(params || []).filter(p => p.magasinId === selectedMagasin).forEach(p => { m[p.fournisseurId] = p.prixModeles || {} })
     return m
   }, [params, selectedMagasin])
 
@@ -267,15 +346,31 @@ function SectionFournisseurs() {
     }
   }
 
-  async function addModele(fId, nom, qte) {
+  async function setModelePrix(fId, nom, prixRaw) {
+    if (!selectedMagasin) return
+    const existing = await db.parametres.where({ fournisseurId: fId, magasinId: selectedMagasin }).filter(p => p.season === season).first()
+    const prix = (prixRaw === '' || prixRaw == null) ? null : (parseFloat(String(prixRaw).replace(',', '.')) || 0)
+    if (existing) {
+      const prixModeles = { ...(existing.prixModeles || {}) }
+      if (prix == null) delete prixModeles[nom]
+      else prixModeles[nom] = prix
+      await db.parametres.update(existing.id, { prixModeles })
+    } else if (prix != null) {
+      await db.parametres.add({ fournisseurId: fId, magasinId: selectedMagasin, season, prixModeles: { [nom]: prix } })
+    }
+  }
+
+  async function addModele(fId, nom, qte, prix) {
     const f = await db.fournisseurs.get(fId)
     if (!f || !nom.trim()) return
     const current = f.modelesBySeason?.[season] ?? f.modeles ?? []
     const updated = [...new Set([...current, nom.trim()])].sort()
     await db.fournisseurs.update(fId, { modelesBySeason: { ...(f.modelesBySeason || {}), [season]: updated } })
-    if (qte != null && qte !== '') await setModeleQte(fId, nom.trim(), qte)
+    if (qte != null && qte !== '')   await setModeleQte(fId, nom.trim(), qte)
+    if (prix != null && prix !== '') await setModelePrix(fId, nom.trim(), prix)
     setNewModele(prev => ({ ...prev, [fId]: '' }))
     setNewQte(prev => ({ ...prev, [fId]: '' }))
+    setNewPrix(prev => ({ ...prev, [fId]: '' }))
   }
 
   async function renommer(id, nouveauNom) {
@@ -307,7 +402,8 @@ function SectionFournisseurs() {
 
       {(fournisseurs || []).map(f => {
         const modeles = f.modelesBySeason?.[season] ?? []
-        const qtes = qteMap[f.id] || {}
+        const qtes  = qteMap[f.id] || {}
+        const prixes = prixMap[f.id] || {}
         return (
           <div key={f.id} className="store-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
@@ -333,29 +429,46 @@ function SectionFournisseurs() {
               <span style={{ fontSize: 13, color: 'var(--text-4)' }}>Aucun modèle pour cette saison</span>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {modeles.map(m => (
-                  <div key={m} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ flex: 1, fontSize: 14, color: 'var(--text)' }}>{m}</span>
+                {modeles.map(m => {
+                  const q = qtes[m], px = prixes[m]
+                  const unit = (q && px) ? px / q : null
+                  return (
+                  <div key={m} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ flex: 1, minWidth: 110, fontSize: 14, color: 'var(--text)' }}>{m}</span>
                     <input
-                      key={m + '_' + selectedMagasin + '_' + season}
+                      key={m + '_q_' + selectedMagasin + '_' + season}
                       type="number" min="0" inputMode="numeric"
                       defaultValue={qtes[m] ?? ''}
                       onBlur={e => setModeleQte(f.id, m, e.target.value)}
                       placeholder="qté"
                       title={`Quantité pour ${selMagasinNom}`}
-                      style={{ width: 76, padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 13, textAlign: 'center', background: 'var(--surface)', color: 'var(--text)' }}
+                      style={{ width: 70, padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 13, textAlign: 'center', background: 'var(--surface)', color: 'var(--text)' }}
                     />
+                    <input
+                      key={m + '_p_' + selectedMagasin + '_' + season}
+                      type="number" min="0" step="0.01"
+                      defaultValue={prixes[m] ?? ''}
+                      onBlur={e => setModelePrix(f.id, m, e.target.value)}
+                      placeholder="Prix HT €"
+                      title={`Prix HT total du modèle pour ${selMagasinNom}`}
+                      style={{ width: 96, padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 13, textAlign: 'center', background: 'var(--surface)', color: 'var(--text)' }}
+                    />
+                    <span style={{ fontSize: 11, color: 'var(--text-4)', minWidth: 78, textAlign: 'right' }}>
+                      {unit != null ? `${unit.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} €/u` : ''}
+                    </span>
                     <button onClick={() => delModele(f.id, m)} title="Retirer le modèle" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-4)', fontSize: 16, lineHeight: 1, padding: '0 4px' }}>×</button>
                   </div>
-                ))}
+                )})}
               </div>
             )}
 
-            <form onSubmit={e => { e.preventDefault(); addModele(f.id, newModele[f.id] || '', newQte[f.id]) }} style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+            <form onSubmit={e => { e.preventDefault(); addModele(f.id, newModele[f.id] || '', newQte[f.id], newPrix[f.id]) }} style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
               <input value={newModele[f.id] || ''} onChange={e => setNewModele(prev => ({ ...prev, [f.id]: e.target.value }))} placeholder="Ajouter un modèle…"
-                style={{ flex: 1, maxWidth: 220, padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, background: 'var(--surface)', color: 'var(--text)' }} />
+                style={{ flex: 1, minWidth: 150, maxWidth: 200, padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, background: 'var(--surface)', color: 'var(--text)' }} />
               <input value={newQte[f.id] || ''} onChange={e => setNewQte(prev => ({ ...prev, [f.id]: e.target.value }))} type="number" min="0" placeholder="qté"
-                style={{ width: 76, padding: '6px 8px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, textAlign: 'center', background: 'var(--surface)', color: 'var(--text)' }} />
+                style={{ width: 70, padding: '6px 8px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, textAlign: 'center', background: 'var(--surface)', color: 'var(--text)' }} />
+              <input value={newPrix[f.id] || ''} onChange={e => setNewPrix(prev => ({ ...prev, [f.id]: e.target.value }))} type="number" min="0" step="0.01" placeholder="Prix HT €" title="Prix HT total du modèle"
+                style={{ width: 96, padding: '6px 8px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, textAlign: 'center', background: 'var(--surface)', color: 'var(--text)' }} />
               <button type="submit" style={{ padding: '6px 14px', background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', borderRadius: 8, color: 'var(--accent-2)', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>+ Modèle</button>
             </form>
           </div>
@@ -379,25 +492,32 @@ function SectionModes() {
 
   const modeMap = {}
   const idMap   = {}
+  const condMap = {}
   ;(modesReglement || []).forEach(m => {
     const k = m.fournisseurId + '_' + m.magasinId
     modeMap[k] = m.modeReglement || ''
     idMap[k]   = m.id
+    condMap[k] = m.condition || {}
   })
 
   async function setMode(fId, mId, mode) {
     const k = fId + '_' + mId
-    if (idMap[k]) {
-      await db.modesReglement.update(idMap[k], { modeReglement: mode })
-    } else {
-      await db.modesReglement.add({ fournisseurId: fId, magasinId: mId, modeReglement: mode })
-    }
+    // changer de mode réinitialise la condition (elle dépend du mode)
+    if (idMap[k]) await db.modesReglement.update(idMap[k], { modeReglement: mode, condition: {} })
+    else          await db.modesReglement.add({ fournisseurId: fId, magasinId: mId, modeReglement: mode, condition: {} })
+  }
+
+  async function setCondition(fId, mId, condition) {
+    const k = fId + '_' + mId
+    if (idMap[k]) await db.modesReglement.update(idMap[k], { condition })
+    else          await db.modesReglement.add({ fournisseurId: fId, magasinId: mId, condition })
   }
 
   const MODE_COLORS = {
     CHEQUE:      '#dbeafe', VIREMENT:    '#d1fae5', LCR: '#fef3c7',
     GARANT:      '#ede9fe', PRELEVEMENT: '#fee2e2', GMS: '#fce7f3',
   }
+  const inputStyle = { width: 92, padding: '4px 6px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, textAlign: 'center', background: 'var(--surface)', color: 'var(--text)' }
 
   if (!magasins || !fournisseurs) return null
 
@@ -405,7 +525,8 @@ function SectionModes() {
     <div className="store-card" style={{ padding: 0, overflow: 'hidden' }}>
       <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
         <p style={{ fontSize: 13, color: 'var(--text-3)', margin: 0 }}>
-          Définissez le mode de règlement par marque × magasin. Il sera utilisé dans le plan de règlement.
+          Mode de règlement <strong>et conditions</strong> par marque × magasin (utilisé dans le plan de règlement).
+          <br /><strong>CHEQUE</strong> : nombre de chèques (montant ÷ N sur N fins de mois). <strong>Autres</strong> : délais en jours, séparés par des virgules — ex. <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>0</code> (jour de livraison), <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>30, 60</code> (2 échéances). Vide = valeur par défaut.
         </p>
       </div>
       <div style={{ overflowX: 'auto' }}>
@@ -413,7 +534,7 @@ function SectionModes() {
           <thead>
             <tr>
               <th style={{ minWidth: 140 }}>Marque</th>
-              {magasins.map(m => <th key={m.id} style={{ textAlign: 'center', minWidth: 140 }}>{m.nom}</th>)}
+              {magasins.map(m => <th key={m.id} style={{ textAlign: 'center', minWidth: 150 }}>{m.nom}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -423,8 +544,9 @@ function SectionModes() {
                 {magasins.map(m => {
                   const k = f.id + '_' + m.id
                   const cur = modeMap[k] || ''
+                  const cond = condMap[k] || {}
                   return (
-                    <td key={m.id} style={{ textAlign: 'center' }}>
+                    <td key={m.id} style={{ textAlign: 'center', verticalAlign: 'top' }}>
                       <select
                         value={cur}
                         onChange={e => setMode(f.id, m.id, e.target.value)}
@@ -436,6 +558,24 @@ function SectionModes() {
                       >
                         {MODES_REGLEMENT.map(mo => <option key={mo} value={mo}>{mo || '—'}</option>)}
                       </select>
+                      {cur === 'CHEQUE' && (
+                        <div style={{ marginTop: 5 }}>
+                          <input key={k + '-ch'} type="number" min="1" defaultValue={cond.nb ?? ''}
+                            onBlur={e => setCondition(f.id, m.id, { nb: parseInt(e.target.value) || null })}
+                            placeholder={String(DEFAULT_NB_CHEQUE)} title="Nombre de chèques"
+                            style={{ ...inputStyle, width: 64 }} />
+                          <span style={{ fontSize: 11, color: 'var(--text-4)', marginLeft: 4 }}>chèq.</span>
+                        </div>
+                      )}
+                      {cur && cur !== 'CHEQUE' && (
+                        <div style={{ marginTop: 5 }}>
+                          <input key={k + '-de'} type="text" defaultValue={(cond.delais || []).join(', ')}
+                            onBlur={e => setCondition(f.id, m.id, { delais: e.target.value.split(/[^0-9]+/).filter(Boolean).map(Number) })}
+                            placeholder={(DEFAULT_DELAIS[cur] || []).join(', ')} title="Délais en jours (séparés par des virgules)"
+                            style={inputStyle} />
+                          <span style={{ fontSize: 11, color: 'var(--text-4)', marginLeft: 4 }}>j.</span>
+                        </div>
+                      )}
                     </td>
                   )
                 })}
@@ -459,6 +599,7 @@ export default function Parametres() {
 
   const TABS = [
     { id: 'magasins',     label: '🏪 Magasins' },
+    { id: 'salaries',     label: '👤 Salariés' },
     { id: 'fournisseurs', label: '🏷️ Marques' },
     { id: 'modes',        label: '💳 Modes de règlement' },
   ]
@@ -467,6 +608,7 @@ export default function Parametres() {
     <div>
       <SubNav tabs={TABS} active={section} onChange={setSection} />
       {section === 'magasins'     && <SectionMagasins />}
+      {section === 'salaries'     && <SectionSalaries />}
       {section === 'fournisseurs' && <SectionFournisseurs />}
       {section === 'modes'        && <SectionModes />}
     </div>

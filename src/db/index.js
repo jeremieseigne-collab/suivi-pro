@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 // ─── Mapping camelCase JS ↔ snake_case Postgres ───────────────────────────────
 const FIELD_TO_DB = {
   fournisseurs:    { modelesBySeason: 'modeles_by_season' },
-  parametres:      { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id', recuN1: 'recu_n1', objectifN: 'objectif_n', reelN: 'reel_n' },
+  parametres:      { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id', recuN1: 'recu_n1', objectifN: 'objectif_n', reelN: 'reel_n', prixModeles: 'prix_modeles' },
   entrees:         { magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', typeKey: 'type_key' },
   modes_reglement: { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id', modeReglement: 'mode_reglement' },
   suivi:           { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id' },
@@ -202,4 +202,5 @@ export const db = {
   modesReglement: new SupabaseTable('modes_reglement'),
   commandes:      new SupabaseTable('commandes'),
   evenements:     new SupabaseTable('evenements'),
+  salaries:       new SupabaseTable('salaries'),
 }

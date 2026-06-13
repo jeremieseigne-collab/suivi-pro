@@ -3,7 +3,7 @@ import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { LoadingState } from '../components/shared'
 import CommandeModal from './CommandeModal'
-import { MAGASINS, SALARIES, PROVENANCES, STATUTS, STATUTS_CLOS, STATUT_COLOR, PROVENANCE_COLOR } from './constants'
+import { MAGASINS, PROVENANCES, STATUTS, STATUTS_CLOS, STATUT_COLOR, PROVENANCE_COLOR } from './constants'
 
 function Pill({ map, value }) {
   if (!value) return <span style={{ color: 'var(--text-5)' }}>—</span>
@@ -104,6 +104,7 @@ export default function Commandes({ onHome }) {
   const [editCmd,    setEditCmd]    = useState(null)
   const [confirmDel, setConfirmDel] = useState(null)
   const [noteView,   setNoteView]   = useState(null)
+  const [hoverNote,  setHoverNote]  = useState(null)
 
   function setMagasin(m) {
     localStorage.setItem('commandes_magasin', m)
@@ -115,6 +116,9 @@ export default function Commandes({ onHome }) {
     rows.sort((a, b) => b.id - a.id) // plus récentes en premier
     return rows
   }, [])
+
+  const salaries = useLiveQuery(() => db.salaries.orderBy('nom').toArray(), [])
+  const salarieNames = (salaries || []).map(s => s.nom)
 
   const rows = useMemo(() => (data ?? []).filter(r => r.magasin === magasin), [data, magasin])
 
@@ -150,9 +154,20 @@ export default function Commandes({ onHome }) {
 
   return (
     <div className="app">
-      {showForm && <CommandeModal defaultMagasin={magasin} onClose={() => setShowForm(false)} onSaved={() => setShowForm(false)} />}
-      {editCmd  && <CommandeModal commande={editCmd} defaultMagasin={magasin} onClose={() => setEditCmd(null)} onSaved={() => setEditCmd(null)} />}
+      {showForm && <CommandeModal defaultMagasin={magasin} salaries={salarieNames} onClose={() => setShowForm(false)} onSaved={() => setShowForm(false)} />}
+      {editCmd  && <CommandeModal commande={editCmd} defaultMagasin={magasin} salaries={salarieNames} onClose={() => setEditCmd(null)} onSaved={() => setEditCmd(null)} />}
       {noteView && <NoteView commande={noteView} onClose={() => setNoteView(null)} />}
+      {hoverNote && (
+        <div style={{
+          position: 'fixed', top: hoverNote.top, left: hoverNote.left, width: 300, maxWidth: '90vw', zIndex: 500,
+          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
+          boxShadow: '0 8px 24px var(--shadow-lg)', padding: '10px 14px', fontSize: 13, color: 'var(--text)',
+          whiteSpace: 'pre-wrap', lineHeight: 1.45, pointerEvents: 'none',
+        }}>
+          {hoverNote.client && <div style={{ fontWeight: 700, marginBottom: 4, fontSize: 12, color: 'var(--text-3)' }}>📝 {hoverNote.client}</div>}
+          {hoverNote.text}
+        </div>
+      )}
 
       <header className="app-header">
         <div className="header-top" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
@@ -213,7 +228,7 @@ export default function Commandes({ onHome }) {
           </select>
           <select value={fSalarie} onChange={e => setFSalarie(e.target.value)} className="sel">
             <option value="">Tous les salariés</option>
-            {SALARIES.map(s => <option key={s}>{s}</option>)}
+            {salarieNames.map(s => <option key={s}>{s}</option>)}
           </select>
         </div>
 
@@ -223,37 +238,30 @@ export default function Commandes({ onHome }) {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Date</th><th>Salarié</th><th>Provenance</th><th>Client</th>
+                    <th>État</th><th>Date</th><th>Salarié</th><th>Provenance</th><th>Client</th>
                     <th>Téléphone</th><th>Marque</th><th>Modèle</th><th>Réf N°</th><th>Pointure</th>
-                    <th>État</th><th></th>
+                    <th>Note</th><th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.length === 0 && (
-                    <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40, color: 'var(--text-4)' }}>
+                    <tr><td colSpan={12} style={{ textAlign: 'center', padding: 40, color: 'var(--text-4)' }}>
                       {rows.length === 0 ? 'Aucune commande pour ce magasin — cliquez sur « + Nouvelle commande ».' : 'Aucun résultat.'}
                     </td></tr>
                   )}
-                  {filtered.map(r => (
-                    <tr key={r.id}>
-                      <td style={{ whiteSpace: 'nowrap', fontSize: 13, color: 'var(--text-3)' }}>{fmtDate(r.date || r.createdAt)}</td>
-                      <td style={{ fontSize: 13 }}>{r.salarie || '—'}</td>
-                      <td><Pill map={PROVENANCE_COLOR} value={r.provenance} /></td>
-                      <td>
-                        <strong>{[r.clientPrenom, r.clientNom].filter(Boolean).join(' ') || '—'}</strong>
-                        {r.note && (
-                          <button
-                            onClick={() => setNoteView(r)}
-                            title="Voir la note"
-                            style={{ marginLeft: 6, border: 'none', background: 'none', cursor: 'pointer', fontSize: 15, padding: 0, verticalAlign: 'middle' }}
-                          >📝</button>
-                        )}
-                      </td>
-                      <td style={{ whiteSpace: 'nowrap', fontSize: 13 }}>{r.telephone || '—'}</td>
-                      <td>{r.marque || '—'}</td>
-                      <td style={{ fontSize: 13 }}>{r.modele || '—'}</td>
-                      <td style={{ fontSize: 13 }}>{r.reference || '—'}</td>
-                      <td style={{ fontSize: 13 }}>{r.pointure || '—'}</td>
+                  {filtered.map(r => {
+                    const clientName = [r.clientPrenom, r.clientNom].filter(Boolean).join(' ')
+                    return (
+                    <tr key={r.id}
+                      onMouseEnter={e => {
+                        if (!r.note) return
+                        const cell = e.currentTarget.querySelector('[data-note-cell]')
+                        if (!cell) return
+                        const rect = cell.getBoundingClientRect()
+                        setHoverNote({ text: r.note, client: clientName, top: rect.bottom + 6, left: Math.max(8, rect.right - 300) })
+                      }}
+                      onMouseLeave={() => setHoverNote(null)}
+                    >
                       <td>
                         <select
                           value={r.statut}
@@ -267,6 +275,20 @@ export default function Commandes({ onHome }) {
                         >
                           {STATUTS.map(s => <option key={s} value={s} style={{ background: 'var(--surface)', color: 'var(--text)' }}>{s}</option>)}
                         </select>
+                      </td>
+                      <td style={{ whiteSpace: 'nowrap', fontSize: 13, color: 'var(--text-3)' }}>{fmtDate(r.date || r.createdAt)}</td>
+                      <td style={{ fontSize: 13 }}>{r.salarie || '—'}</td>
+                      <td><Pill map={PROVENANCE_COLOR} value={r.provenance} /></td>
+                      <td><strong>{clientName || '—'}</strong></td>
+                      <td style={{ whiteSpace: 'nowrap', fontSize: 13 }}>{r.telephone || '—'}</td>
+                      <td>{r.marque || '—'}</td>
+                      <td style={{ fontSize: 13 }}>{r.modele || '—'}</td>
+                      <td style={{ fontSize: 13 }}>{r.reference || '—'}</td>
+                      <td style={{ fontSize: 13 }}>{r.pointure || '—'}</td>
+                      <td data-note-cell onClick={() => r.note && setNoteView(r)} style={{ cursor: r.note ? 'pointer' : 'default' }}>
+                        {r.note
+                          ? <span style={{ display: 'inline-block', maxWidth: 170, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, color: 'var(--accent-2)', background: 'var(--accent-bg)', padding: '3px 8px', borderRadius: 6, verticalAlign: 'middle' }}>📝 {r.note}</span>
+                          : <span style={{ color: 'var(--text-5)' }}>—</span>}
                       </td>
                       <td style={{ whiteSpace: 'nowrap' }}>
                         {confirmDel === r.id ? (
@@ -284,7 +306,7 @@ export default function Commandes({ onHome }) {
                         )}
                       </td>
                     </tr>
-                  ))}
+                  )})}
                 </tbody>
               </table>
             </div>
