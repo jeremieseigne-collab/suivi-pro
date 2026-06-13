@@ -48,13 +48,13 @@ Schémas Postgres (à exécuter dans le SQL Editor Supabase) : `supabase-schema.
 ## Environnement dev / prod (IMPORTANT)
 
 - **`.env.local` pointe sur une base Supabase de DÉVELOPPEMENT** (bac à sable), séparée de la prod, pour ne jamais toucher les vraies données. Le dev se fait sur la branche **`dev`** ; la prod est déployée depuis **`main`** (Vercel). `.env.local` est ignoré par git → à recréer sur chaque machine.
-- **Migrations de schéma sur la base dev** : ne PAS demander à l'utilisateur de copier-coller du SQL. Un fichier **`.dev-db-url.local`** (ignoré par git) contient l'URL de connexion Postgres de la base dev. Lancer les `CREATE TABLE` / `ALTER TABLE` directement :
+- **Migrations de schéma via psql** : ne PAS demander à l'utilisateur de copier-coller du SQL. Deux fichiers ignorés par git contiennent les URLs de connexion Postgres (Session pooler) : **`.dev-db-url.local`** (base dev, ref `xrxmnblhpcxlefjcvczw`) et **`.prod-db-url.local`** (base PROD, ref `fftfrbpcsazkkvahscbg`). Lancer les migrations directement :
   ```bash
   export PATH="/opt/homebrew/opt/libpq/bin:$PATH"   # psql installé via brew (libpq)
   psql "$(cat .dev-db-url.local)" -q -c "alter table ... ;"
   ```
-  ⚠️ Le pooler renvoie le tag de commande (`INSERT 0 1`) sur stdout ; utiliser `-q` et ne pas le capturer dans une variable d'`id`.
-- ⚠️ **Lors d'un passage en prod** : les nouvelles tables (`commandes`, `evenements`) et colonnes doivent être créées dans la **base de prod** aussi (via les fichiers `supabase-*.sql` dans le SQL Editor). La connexion `.dev-db-url.local` ne vise QUE la dev.
+  ⚠️ Le pooler renvoie le tag de commande (`INSERT 0 1`) sur stdout ; utiliser `-q` et ne pas le capturer dans une variable d'`id`. Sur la base PROD, n'exécuter que des opérations **additives** (`create table if not exists`, `add column if not exists`) — jamais de `drop`.
+- **État du déploiement** : les apps Commandes/Agenda + mode sombre + Google Calendar sont **en production** (déployées depuis `main`). Les tables `commandes` et `evenements` existent en dev ET en prod (RLS off, temps réel on). `VITE_GOOGLE_API_KEY` est configurée dans Vercel (env Production). Pour une **future nouvelle table/colonne**, penser à l'appliquer aux **deux** bases (dev via `.dev-db-url.local`, prod via `.prod-db-url.local`).
 
 ## Architecture — points clés
 
