@@ -97,13 +97,21 @@ function PinModal({ onSuccess, onClose }) {
   )
 }
 
-const TABS = [
-  { id: 'suivi',      label: '📦 Suivi livraisons' },
-  { id: 'entrees',    label: '📥 Entrées' },
-  { id: 'achats',     label: '🛒 Achats' },
-  { id: 'reglement',  label: '💳 Plan de règlement' },
-  { id: 'parametres', label: '⚙️ Paramètres' },
-]
+function BackButton({ onHome }) {
+  return (
+    <button
+      onClick={onHome}
+      title="Retour à l'accueil"
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: 34, height: 34, borderRadius: 9, border: '1px solid var(--border)',
+        background: 'var(--surface)', cursor: 'pointer', fontSize: 17, color: 'var(--text-2)', lineHeight: 1,
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--accent)' }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.color = 'var(--text-2)' }}
+    >←</button>
+  )
+}
 
 function SeasonBadge() {
   const { season, setSeason, seasons, addSeason, removeSeason } = useSeason()
@@ -256,9 +264,51 @@ function SeasonBadge() {
   )
 }
 
+// En-tête commun aux pages (bouton retour + titre + sélecteur de saison + onglets éventuels)
+function PageShell({ title, onHome, withSeason = true, tabs = null, children }) {
+  return (
+    <div className="app">
+      <header className="app-header">
+        <div className="header-top" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <BackButton onHome={onHome} />
+            <h1>{title}</h1>
+          </div>
+          {withSeason && <SeasonBadge />}
+        </div>
+        {tabs ? <nav className="tab-nav">{tabs}</nav> : <div style={{ height: 16 }} />}
+      </header>
+      <main className="app-main">{children}</main>
+    </div>
+  )
+}
+
+// Cahier des entrées = Suivi livraisons + Entrées réunis (sous-onglets)
+const CAHIER_TABS = [
+  { id: 'suivi',   label: '📦 Suivi livraisons' },
+  { id: 'entrees', label: '📥 Entrées' },
+]
+
+function CahierEntrees({ onHome }) {
+  const [tab, setTab] = useState('suivi')
+  return (
+    <PageShell
+      title="📥 Cahier des entrées"
+      onHome={onHome}
+      tabs={CAHIER_TABS.map(t => (
+        <button key={t.id} className={`tab-btn${tab === t.id ? ' active' : ''}`} onClick={() => setTab(t.id)}>{t.label}</button>
+      ))}
+    >
+      {tab === 'suivi'   && <SuiviLivraisons />}
+      {tab === 'entrees' && <Entrees />}
+    </PageShell>
+  )
+}
+
 const APPS = [
-  { id: 'suivipro',  icon: '📦',  title: 'Suivi Pro',        desc: 'Suivi des livraisons, achats et règlements', gradient: 'linear-gradient(135deg, var(--accent), #2563eb)' },
-  { id: 'commandes', icon: '🛍️', title: 'Commandes Clients', desc: 'Commandes inter-magasins, B2B et clients',     gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
+  { id: 'cahier',    icon: '📥',  title: 'Cahier des entrées', desc: 'Suivi des livraisons et entrées',          gradient: 'linear-gradient(135deg, var(--accent), #2563eb)' },
+  { id: 'commandes', icon: '🛍️', title: 'Commandes Clients',  desc: 'Commandes inter-magasins, B2B et clients', gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
+  { id: 'achats',    icon: '🛒',  title: 'Achats',             desc: 'Objectifs et réalisé par marque',          gradient: 'linear-gradient(135deg, #10b981, #059669)' },
 ]
 
 function AppCard({ app, onClick }) {
@@ -297,6 +347,16 @@ function HomeScreen({ onOpen }) {
       background: 'var(--bg-grad)',
     }}>
       <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 18 }}>
+          <button onClick={() => onOpen('reglement')} title="Accéder au plan de règlement"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13 }}>
+            💳 Plan de règlement 🔒
+          </button>
+          <button onClick={() => onOpen('parametres')} title="Accéder aux paramètres"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13 }}>
+            ⚙️ Paramètres 🔒
+          </button>
+        </div>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <h1 style={{ fontSize: 36, fontWeight: 800, color: 'var(--text)', letterSpacing: -1 }}>
             Bienvenue
@@ -318,82 +378,36 @@ function HomeScreen({ onOpen }) {
   )
 }
 
-function AppInner({ onHome }) {
-  const [activeTab, setActiveTab] = useState('suivi')
+function Root() {
+  const [view,      setView]      = useState('home')
   const [unlocked,  setUnlocked]  = useState(new Set())
-  const [pinTarget, setPinTarget] = useState(null) // tab en attente de déverrouillage
+  const [pinTarget, setPinTarget] = useState(null) // vue en attente de déverrouillage
 
-  function handleTabClick(id) {
-    if (PROTECTED_TABS.has(id) && !unlocked.has(id)) {
-      setPinTarget(id)
-    } else {
-      setActiveTab(id)
-    }
+  function open(v) {
+    if (PROTECTED_TABS.has(v) && !unlocked.has(v)) setPinTarget(v)
+    else setView(v)
   }
-
   function handlePinSuccess() {
     setUnlocked(prev => new Set([...prev, pinTarget]))
-    setActiveTab(pinTarget)
+    setView(pinTarget)
     setPinTarget(null)
   }
+  const home = () => setView('home')
+
+  let content
+  if (view === 'cahier')          content = <CahierEntrees onHome={home} />
+  else if (view === 'commandes')  content = <Commandes onHome={home} />
+  else if (view === 'achats')     content = <PageShell title="🛒 Achats" onHome={home}><Achats /></PageShell>
+  else if (view === 'reglement')  content = <PageShell title="💳 Plan de règlement" onHome={home}><PlanReglement /></PageShell>
+  else if (view === 'parametres') content = <PageShell title="⚙️ Paramètres" onHome={home}><Parametres /></PageShell>
+  else                            content = <HomeScreen onOpen={open} />
 
   return (
-    <div className="app">
-      {pinTarget && (
-        <PinModal
-          onSuccess={handlePinSuccess}
-          onClose={() => setPinTarget(null)}
-        />
-      )}
-
-      <header className="app-header">
-        <div className="header-top" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button
-              onClick={onHome}
-              title="Retour à l'accueil"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 34, height: 34, borderRadius: 9, border: '1px solid var(--border)',
-                background: 'var(--surface)', cursor: 'pointer', fontSize: 17, color: 'var(--text-2)', lineHeight: 1,
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--accent)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.color = 'var(--text-2)' }}
-            >←</button>
-            <h1>Suivi Pro</h1>
-          </div>
-          <SeasonBadge />
-        </div>
-        <nav className="tab-nav">
-          {TABS.map(t => (
-            <button
-              key={t.id}
-              className={`tab-btn${activeTab === t.id ? ' active' : ''}`}
-              onClick={() => handleTabClick(t.id)}
-            >
-              {t.label}{PROTECTED_TABS.has(t.id) && !unlocked.has(t.id) ? ' 🔒' : ''}
-            </button>
-          ))}
-        </nav>
-      </header>
-
-      <main className="app-main">
-        {activeTab === 'suivi'      && <SuiviLivraisons />}
-        {activeTab === 'entrees'    && <Entrees />}
-        {activeTab === 'achats'     && <Achats />}
-        {activeTab === 'reglement'  && <PlanReglement />}
-        {activeTab === 'parametres' && <Parametres />}
-      </main>
-    </div>
+    <>
+      {content}
+      {pinTarget && <PinModal onSuccess={handlePinSuccess} onClose={() => setPinTarget(null)} />}
+    </>
   )
-}
-
-function Root() {
-  const [view, setView] = useState('home')
-
-  if (view === 'suivipro')  return <AppInner onHome={() => setView('home')} />
-  if (view === 'commandes') return <Commandes onHome={() => setView('home')} />
-  return <HomeScreen onOpen={setView} />
 }
 
 export default function App() {

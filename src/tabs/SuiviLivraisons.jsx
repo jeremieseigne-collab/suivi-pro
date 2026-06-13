@@ -27,7 +27,51 @@ function statusBadge(p) {
   return <Badge color="yellow">{Math.round(p)}%</Badge>
 }
 
-function StoreCard({ store, rows }) {
+// Popup : détail par modèle (mêmes infos que par marque : reçu/attendu, barre, %)
+function DetailModal({ row, onClose }) {
+  const modeles = row.modeles || []
+  const globalPct = row.attendu > 0 ? Math.round(row.recu / row.attendu * 100) : 0
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: 580 }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{row.marque} <span style={{ color: 'var(--text-3)', fontWeight: 500 }}>· {row.magasin}</span></h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{row.recu} / {row.attendu} unités</span>
+            {statusBadge(globalPct)}
+          </div>
+          {modeles.length === 0 ? (
+            <p style={{ color: 'var(--text-4)', fontSize: 14 }}>Aucun modèle renseigné pour cette marque.</p>
+          ) : (
+            <table className="brand-table">
+              <tbody>
+                {modeles.map(m => {
+                  const p = m.attendu > 0 ? (m.recu / m.attendu) * 100 : 0
+                  return (
+                    <tr key={m.nom} className={m.recu === 0 ? 'row-zero' : ''}>
+                      <td className="brand-name">
+                        {m.nom}
+                        {m.numero && <span style={{ color: 'var(--text-4)', fontSize: 11, marginLeft: 6, fontWeight: 400 }}>N° {m.numero}</span>}
+                      </td>
+                      <td className="brand-count">{m.recu} / {m.attendu}</td>
+                      <td className="brand-bar"><GaugeBar percent={p} /></td>
+                      <td>{statusBadge(p)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StoreCard({ store, rows, onOpen }) {
   const totals = rows.reduce((s, r) => ({ recu: s.recu + r.recu, attendu: s.attendu + r.attendu }), { recu: 0, attendu: 0 })
   const globalPct = totals.attendu > 0 ? (totals.recu / totals.attendu) * 100 : 0
 
@@ -47,8 +91,8 @@ function StoreCard({ store, rows }) {
           {rows.map(row => {
             const p = row.attendu > 0 ? (row.recu / row.attendu) * 100 : 0
             return (
-              <tr key={row.suiviId} className={p === 0 ? 'row-zero' : ''}>
-                <td className="brand-name">{row.marque}</td>
+              <tr key={row.suiviId} className={p === 0 ? 'row-zero' : ''} onClick={() => onOpen(row)} style={{ cursor: 'pointer' }} title="Voir le détail par modèle">
+                <td className="brand-name">{row.marque} <span style={{ color: 'var(--text-4)', fontSize: 11 }}>›</span></td>
                 <td className="brand-count">{row.recu} / {row.attendu}</td>
                 <td className="brand-bar"><GaugeBar percent={p} /></td>
                 <td>{statusBadge(p)}</td>
@@ -65,6 +109,7 @@ export default function SuiviLivraisons() {
   const { season } = useSeason()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
+  const [detail, setDetail] = useState(null)
 
   const rows = useLiveQuery(async () => {
     const [params, entrees, magasins, fournisseurs] = await Promise.all([
@@ -77,25 +122,46 @@ export default function SuiviLivraisons() {
     const magasinMap     = Object.fromEntries(magasins.map(m => [m.id, m.nom]))
     const fournisseurMap = Object.fromEntries(fournisseurs.map(f => [f.id, f.nom]))
 
-    // Somme des quantités reçues par fournisseur × magasin
-    const recuByKey = {}
+    // Quantités reçues par fournisseur × magasin (total + détail par modèle + N°)
+    const recuByKey        = {}
+    const recuModelByKey   = {}
+    const numeroModelByKey = {}
     entrees.forEach(e => {
       const k = e.fournisseurId + '_' + e.magasinId
       recuByKey[k] = (recuByKey[k] || 0) + (e.total || 0)
+      const mod = (e.modele || '').trim() || '(sans modèle)'
+      if (!recuModelByKey[k]) recuModelByKey[k] = {}
+      recuModelByKey[k][mod] = (recuModelByKey[k][mod] || 0) + (e.total || 0)
+      if (!numeroModelByKey[k]) numeroModelByKey[k] = {}
+      if (!numeroModelByKey[k][mod]) numeroModelByKey[k][mod] = new Set()
+      if (e.numero) numeroModelByKey[k][mod].add(e.numero)
     })
 
-    // "attendu" = quantite commandée dans les Achats
     return params
       .filter(p => p.fournisseurId && p.magasinId)
-      .map(p => ({
-        suiviId:       p.id,
-        magasin:       magasinMap[p.magasinId]      || '?',
-        marque:        fournisseurMap[p.fournisseurId] || '?',
-        recu:          recuByKey[p.fournisseurId + '_' + p.magasinId] || 0,
-        attendu:       p.quantite || 0,
-        fournisseurId: p.fournisseurId,
-        magasinId:     p.magasinId,
-      }))
+      .map(p => {
+        const key = p.fournisseurId + '_' + p.magasinId
+        const recuModels    = recuModelByKey[key] || {}
+        const attenduModels = p.modeles || {}
+        const numeroModels  = numeroModelByKey[key] || {}
+        const names = [...new Set([...Object.keys(attenduModels), ...Object.keys(recuModels)])]
+        const modeles = names
+          .map(nom => ({
+            nom,
+            recu:    recuModels[nom] || 0,
+            attendu: attenduModels[nom] || 0,
+            numero:  [...(numeroModels[nom] || [])].sort((a, b) => a - b).join(', '),
+          }))
+          .sort((a, b) => (b.attendu - a.attendu) || (b.recu - a.recu) || a.nom.localeCompare(b.nom))
+        return {
+          suiviId:   p.id,
+          magasin:   magasinMap[p.magasinId]      || '?',
+          marque:    fournisseurMap[p.fournisseurId] || '?',
+          recu:      recuByKey[key] || 0,
+          attendu:   p.quantite || 0,
+          modeles,
+        }
+      })
   }, [season])
 
   const allRows = rows ?? []
@@ -122,6 +188,8 @@ export default function SuiviLivraisons() {
 
   return (
     <div>
+      {detail && <DetailModal row={detail} onClose={() => setDetail(null)} />}
+
       <div className="tab-stats">
         {[
           { value: `${globalPct}%`,                         label: 'Taux global' },
@@ -158,7 +226,7 @@ export default function SuiviLivraisons() {
         {allRows.length > 0 && stores.length === 0 && (
           <div className="empty"><p>Aucun résultat pour ce filtre.</p></div>
         )}
-        {stores.map(store => <StoreCard key={store} store={store} rows={grouped[store]} />)}
+        {stores.map(store => <StoreCard key={store} store={store} rows={grouped[store]} onOpen={setDetail} />)}
       </div>
     </div>
   )

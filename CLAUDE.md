@@ -72,16 +72,17 @@ Conséquences importantes :
 ### Notion de « saison » (côté client uniquement)
 La saison active n'est **pas** une table : elle vit dans `localStorage` et dans `SeasonContext` (`src/context/SeasonContext.jsx`). Les lignes `entrees` et `parametres` portent une colonne texte `season` (ex. `ETE_2026`, `HIVER_2026`). Le filtrage par saison se fait dans chaque onglet avec `.where('season').equals(season)`, et la plupart des `useLiveQuery` ont `[season]` en dépendance. Ajouter/supprimer une saison se gère dans le `SeasonBadge` (en-tête de `App.jsx`) — la suppression efface aussi les lignes `parametres`/`entrees` correspondantes.
 
-Les modèles d'une marque sont stockés **par saison** dans `fournisseurs.modeles_by_season` (un objet JSONB `{ [seasonId]: string[] }`).
+**Modèles d'une marque** : noms stockés **par saison** dans `fournisseurs.modeles_by_season` (JSONB `{ [seasonId]: string[] }`). La **quantité attendue par modèle est par magasin** : stockée dans `parametres.modeles` (JSONB `{ [nomModele]: quantité }`, une entrée `parametres` par fournisseur × magasin × saison). Le « reçu » par modèle est calculé à partir de `entrees` (somme des `total` groupée par `modele`).
 
 ### Launcher multi-apps et navigation
-`src/App.jsx` est le routeur, **sans react-router**. Deux niveaux :
-- **`Root`** (state local `view`) bascule entre l'accueil et les apps : `home` → `<HomeScreen>`, `suivipro` → `<AppInner>` (les onglets historiques), `commandes` → `<Commandes>`. Chaque app reçoit une prop `onHome` (bouton retour ← dans son en-tête).
-- **`HomeScreen`** = le menu : un tableau `APPS` (cartes cliquables) + le composant **`<AgendaBoard>`** affiché directement dessous. Pour ajouter une app : ajouter une entrée à `APPS`, un cas dans `Root`, et le composant.
-- **`AppInner`** garde sa propre navigation par onglets (`activeTab`) pour Suivi Pro. Les onglets `reglement` et `parametres` sont protégés par un **code PIN en clair** (`PIN_CODE = '2201'`), déverrouillage en mémoire pour la session.
+`src/App.jsx` est le routeur, **sans react-router**. Il n'y a plus de groupe « Suivi Pro » : les anciens onglets sont devenus des destinations de premier niveau.
+- **`Root`** (state local `view`) gère la navigation + le **code PIN** (`PIN_CODE = '2201'`, `PROTECTED_TABS = {reglement, parametres}`, déverrouillage en mémoire). `view` : `home` → `<HomeScreen>`, `cahier` → `<CahierEntrees>`, `commandes` → `<Commandes>`, `achats`/`reglement`/`parametres` → `<PageShell>` enveloppant le composant. Cliquer une vue protégée passe par `PinModal`.
+- **`PageShell`** = en-tête commun (bouton retour ←, titre, `SeasonBadge`, onglets optionnels) + `<main>`. **`CahierEntrees`** = `PageShell` avec 2 sous-onglets : **Suivi livraisons** + **Entrées**.
+- **`HomeScreen`** = le menu : cartes `APPS` (📥 Cahier des entrées, 🛍️ Commandes Clients, 🛒 Achats) + 2 petits liens 🔒 (💳 Plan de règlement, ⚙️ Paramètres) + `<AgendaBoard>` dessous. Pour ajouter une app : entrée dans `APPS` (ou lien), cas dans `Root`, composant.
 
-`src/tabs/` (onglets Suivi Pro) : `SuiviLivraisons`, `Entrees`, `Achats`, `PlanReglement`, `Parametres`.
+`src/tabs/` : `SuiviLivraisons`, `Entrees` (réunis dans Cahier des entrées), `Achats`, `PlanReglement`, `Parametres`.
 ⚠️ `src/tabs/PlanAchat.jsx` existe mais **n'est pas importé** (composant orphelin).
+Le **sélecteur de saison** (`SeasonBadge`) est affiché dans l'en-tête (`PageShell`) de chaque page liée à la saison (Cahier, Achats, Plan de règlement, Paramètres).
 
 ### App Commandes Clients (`src/commandes/`)
 Commandes magasins / BtoB. Table `commandes`. `constants.js` définit les listes (MAGASINS, SALARIES, PROVENANCES, STATUTS) et les couleurs de badges. Au lancement, **écran de sélection du magasin** (`StoreSelect`) mémorisé dans `localStorage['commandes_magasin']` ; la liste est filtrée sur ce magasin et chaque nouvelle commande y est rattachée. `CommandeModal` = ajout/édition. La colonne legacy `commandes.type` n'est plus utilisée (remplacée par `provenance`).
