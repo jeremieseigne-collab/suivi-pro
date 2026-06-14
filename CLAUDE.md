@@ -59,7 +59,7 @@ Schémas Postgres (à exécuter dans le SQL Editor Supabase) : `supabase-schema.
 ## Architecture — points clés
 
 ### La couche `db` est un shim Dexie → Supabase
-`src/db/index.js` expose un objet `db` dont les tables (`magasins`, `fournisseurs`, `parametres`, `entrees`, `suivi`, `modesReglement`, `commandes`, `evenements`, `salaries`) **imitent l'API Dexie** (`where().equals().toArray()`, `.first()`, `.add()`, `.put()`, `.update()`, `.delete()`, `.orderBy()`, `.filter()`, `.where({...}).filter(fn)`, `.reverse().sortBy()`) mais tapent en réalité Supabase. Le code applicatif est donc écrit « comme du Dexie » alors qu'il parle à Postgres.
+`src/db/index.js` expose un objet `db` dont les tables (`magasins`, `fournisseurs`, `parametres`, `entrees`, `suivi`, `modesReglement`, `commandes`, `evenements`, `salaries`, `defectueux`) **imitent l'API Dexie** (`where().equals().toArray()`, `.first()`, `.add()`, `.put()`, `.update()`, `.delete()`, `.orderBy()`, `.filter()`, `.where({...}).filter(fn)`, `.reverse().sortBy()`) mais tapent en réalité Supabase. Le code applicatif est donc écrit « comme du Dexie » alors qu'il parle à Postgres.
 
 Conséquences importantes :
 - **Mapping camelCase ↔ snake_case** : le code JS utilise `fournisseurId`, `magasinId`, `modelesBySeason`, `typeKey`, `recuN1`, `objectifN`, `reelN`, `modeReglement` ; la base utilise les colonnes snake_case. La conversion se fait **uniquement** dans `db/index.js` via `FIELD_TO_DB`. Si tu ajoutes une colonne dont le nom JS diffère du nom SQL, **ajoute-la à `FIELD_TO_DB`**.
@@ -95,6 +95,14 @@ Commandes magasins / BtoB. Table `commandes`. `constants.js` définit les listes
 Agenda **partagé** (table `evenements`, pas de notion de magasin/saison). `AgendaBoard` = composant principal affiché **directement sur l'accueil** (pas de carte d'app séparée), avec sélecteur de vue **Jour / Semaine / Mois / Année** (façon Apple) ; la semaine va du **lundi au samedi** (6 jours). `AgendaModal` = ajout/édition/suppression. `dates.js` regroupe les helpers de dates **en heure locale** (`isoDate`, `parseLocal`, `mondayOf`, …) — important pour éviter les décalages de fuseau ; les dates sont stockées en texte `AAAA-MM-JJ` et comparées en chaînes.
 
 **Intégration Google Calendar** (`src/agenda/googleCalendars.js`) : affichage **lecture seule** de 3 calendriers Google **publics** (abonnements iCloud des 3 magasins), via la **Google Calendar API v3 + clé API** (`VITE_GOOGLE_API_KEY`). Les IDs des 3 calendriers sont en dur dans `GOOGLE_CALENDARS` (publics, non secrets) ; la clé est dans `.env.local`. `fetchGoogleEvents()` charge les événements de la fenêtre visible (`rangeFor`), fusionnés avec les événements Supabase dans `byDay`. Événements Google = `source:'google'` (couleur par magasin, clic → fiche lecture seule `GoogleDetail`) ; événements de l'app = `source:'app'` (modifiables). `singleEvents=true` déroule les récurrences. Sans clé, l'agenda reste fonctionnel (juste sans Google).
+
+### App Répertoire (`src/tabs/Repertoire.jsx`)
+Carnet d'adresses des fournisseurs (petit lien 📒 sur l'accueil). Les coordonnées sont des colonnes sur `fournisseurs` : `contact`, `telephone`, `contact_sav`/`telephone_fixe`/`email` (bloc SAV), `numero_client`, `btob` (lien espace pro), `adresse`, `notes`. Édition inline (onBlur). Boutons ✉️ (Gmail) et 🔗 (ouvre le BtoB).
+
+### App Gestion des défectueux (`src/defectueux/`)
+Table `defectueux` (liée à une entrée via `entree_id`). Le formulaire choisit magasin (→ société déduite), salarié, marque → modèle → **pointure parmi celles reçues** (lues dans `entrees`) ; le **N°** se pré-remplit depuis le N° du modèle dans les entrées. États : À traiter → Mail envoyé → Avoir reçu → Clôturé / Refusé.
+- **À l'enregistrement** : crée une **entrée « Retour »** dans le Cahier (`total: -1`, `pht` négatif = −prix unitaire, catégorie/typeKey repris du modèle) puis propose d'**envoyer un mail au SAV** (Gmail pré-rempli — `src/defectueux/mail.js`, compte expéditeur selon la société).
+- **Retours** : non comptés dans les stats Entrées (Unités/Valeur) ni dans le « reçu » du Suivi livraison. Dans le **Plan de règlement**, un retour génère un **avoir** (échéance unique à sa date, hors règles/conditions) **seulement** si le défectueux lié est « Avoir reçu » ou « Clôturé ».
 
 ### Domaine métier
 - **`src/data/societes.js`** : mapping magasin → société (B'Shoes / JR Shoes), codé en dur dans `SOCIETE_MAP`. `getSociete(magasin)` est insensible à la casse/espaces.

@@ -66,6 +66,7 @@ const MODE_COLORS = {
   GARANT:      { bg: '#ede9fe', color: '#5b21b6' },
   PRELEVEMENT: { bg: '#fee2e2', color: '#991b1b' },
   GMS:         { bg: '#fce7f3', color: '#9d174d' },
+  AVOIR:       { bg: '#ccfbf1', color: '#0f766e' },
 }
 
 
@@ -77,22 +78,27 @@ export default function PlanReglement() {
   const [marqueFilter,   setMarqueFilter]   = useState('')
 
   const data = useLiveQuery(async () => {
-    const [params, entrees, magasins, fournisseurs, modesReglement] = await Promise.all([
+    const [params, entrees, magasins, fournisseurs, modesReglement, defectueux] = await Promise.all([
       db.parametres.where('season').equals(season).toArray(),
       db.entrees.where('season').equals(season).toArray(),
       db.magasins.toArray(),
       db.fournisseurs.toArray(),
       db.modesReglement.toArray(),
+      db.defectueux.toArray(),
     ])
     const magasinMap     = Object.fromEntries(magasins.map(m => [m.id, m.nom]))
     const fournisseurMap = Object.fromEntries(fournisseurs.map(f => [f.id, f.nom]))
     const regleByKey     = Object.fromEntries(modesReglement.map(m => [`${m.fournisseurId}_${m.magasinId}`, { mode: m.modeReglement || '', cond: m.condition || {} }]))
+    // statut du défectueux par entrée liée (pour ne compter l'avoir qu'une fois confirmé)
+    const defStatutByEntree = {}
+    defectueux.forEach(d => { if (d.entreeId) defStatutByEntree[d.entreeId] = d.statut })
 
     const result = []
 
     // ── 1. CHEQUE : reelN ÷ 4, déclenché à la 1ère réception ──
     const firstReception = {}
     entrees.forEach(e => {
+      if (e.statut === 'Retour') return // les retours n'entrent pas dans les règles de règlement
       const fNom = fournisseurMap[e.fournisseurId]
       const mNom = magasinMap[e.magasinId]
       if (!fNom || !mNom) return
@@ -115,6 +121,7 @@ export default function PlanReglement() {
 
     // ── 2. Autres modes : par livraison individuelle (pht + date) ──
     entrees.forEach(e => {
+      if (e.statut === 'Retour') return // traité séparément comme avoir
       const fNom = fournisseurMap[e.fournisseurId]
       const mNom = magasinMap[e.magasinId]
       if (!fNom || !mNom || !e.pht || !e.date) return
@@ -127,6 +134,23 @@ export default function PlanReglement() {
       const delais = (Array.isArray(regle.cond.delais) && regle.cond.delais.length) ? regle.cond.delais : (DEFAULT_DELAIS[mode] || [])
 
       result.push(...echeancesLivraison(fNom, mNom, e.pht, date, mode, delais))
+    })
+
+    // ── 3. Avoirs (retours/défectueux) : une échéance unique à la date du retour, sans règle.
+    //    Affiché seulement si le défectueux lié est « Avoir reçu » ou « Clôturé ». ──
+    entrees.forEach(e => {
+      if (e.statut !== 'Retour') return
+      if (!['Avoir reçu', 'Clôturé'].includes(defStatutByEntree[e.id])) return
+      const fNom = fournisseurMap[e.fournisseurId]
+      const mNom = magasinMap[e.magasinId]
+      if (!fNom || !mNom || !e.pht || !e.date) return
+      const date = parseDate(e.date)
+      if (!date) return
+      result.push({
+        date, montant: e.pht, info: 'Avoir', mode: 'AVOIR',
+        fournisseur: fNom, magasin: mNom, societe: getSociete(mNom),
+        source: `Retour${e.modele ? ' ' + e.modele : ''}`,
+      })
     })
 
     return {

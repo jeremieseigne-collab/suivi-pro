@@ -5,7 +5,9 @@ import Entrees         from './tabs/Entrees'
 import Achats          from './tabs/Achats'
 import PlanReglement   from './tabs/PlanReglement'
 import Parametres      from './tabs/Parametres'
+import Repertoire       from './tabs/Repertoire'
 import Commandes        from './commandes/Commandes'
+import Defectueux       from './defectueux/Defectueux'
 import AgendaBoard      from './agenda/AgendaBoard'
 import { SeasonProvider, useSeason } from './context/SeasonContext'
 import './App.css'
@@ -309,6 +311,7 @@ const APPS = [
   { id: 'cahier',    icon: '📥',  title: 'Cahier des entrées', desc: 'Suivi des livraisons et entrées',          gradient: 'linear-gradient(135deg, var(--accent), #2563eb)' },
   { id: 'commandes', icon: '🛍️', title: 'Commandes Clients',  desc: 'Commandes inter-magasins, B2B et clients', gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
   { id: 'achats',    icon: '🛒',  title: 'Achats',             desc: 'Objectifs et réalisé par marque',          gradient: 'linear-gradient(135deg, #10b981, #059669)' },
+  { id: 'defectueux',icon: '🛠️', title: 'Gestion des défectueux', desc: 'Suivi des défauts et demandes d’avoir',  gradient: 'linear-gradient(135deg, #f43f5e, #be123c)' },
 ]
 
 function AppCard({ app, onClick }) {
@@ -347,7 +350,11 @@ function HomeScreen({ onOpen }) {
       background: 'var(--bg-grad)',
     }}>
       <div style={{ maxWidth: 1120, margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 18 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 18, flexWrap: 'wrap' }}>
+          <button onClick={() => onOpen('repertoire')} title="Répertoire des fournisseurs"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13 }}>
+            📒 Répertoire
+          </button>
           <button onClick={() => onOpen('reglement')} title="Accéder au plan de règlement"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13 }}>
             💳 Plan de règlement 🔒
@@ -397,7 +404,9 @@ function Root() {
   let content
   if (view === 'cahier')          content = <CahierEntrees onHome={home} />
   else if (view === 'commandes')  content = <Commandes onHome={home} />
+  else if (view === 'defectueux') content = <Defectueux onHome={home} />
   else if (view === 'achats')     content = <PageShell title="🛒 Achats" onHome={home}><Achats /></PageShell>
+  else if (view === 'repertoire') content = <PageShell title="📒 Répertoire fournisseurs" onHome={home} withSeason={false}><Repertoire /></PageShell>
   else if (view === 'reglement')  content = <PageShell title="💳 Plan de règlement" onHome={home}><PlanReglement /></PageShell>
   else if (view === 'parametres') content = <PageShell title="⚙️ Paramètres" onHome={home}><Parametres /></PageShell>
   else                            content = <HomeScreen onOpen={open} />

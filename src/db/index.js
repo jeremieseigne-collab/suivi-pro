@@ -2,13 +2,14 @@ import { supabase } from '../lib/supabase'
 
 // ─── Mapping camelCase JS ↔ snake_case Postgres ───────────────────────────────
 const FIELD_TO_DB = {
-  fournisseurs:    { modelesBySeason: 'modeles_by_season' },
+  fournisseurs:    { modelesBySeason: 'modeles_by_season', contactSav: 'contact_sav', telephoneFixe: 'telephone_fixe', numeroClient: 'numero_client' },
   parametres:      { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id', recuN1: 'recu_n1', objectifN: 'objectif_n', reelN: 'reel_n', prixModeles: 'prix_modeles' },
   entrees:         { magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', typeKey: 'type_key' },
   modes_reglement: { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id', modeReglement: 'mode_reglement' },
   suivi:           { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id' },
   commandes:       { createdAt: 'created_at', clientNom: 'client_nom', clientPrenom: 'client_prenom' },
   evenements:      { createdAt: 'created_at' },
+  defectueux:      { createdAt: 'created_at', magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', entreeId: 'entree_id' },
 }
 
 const FIELD_FROM_DB = {}
@@ -203,4 +204,5 @@ export const db = {
   commandes:      new SupabaseTable('commandes'),
   evenements:     new SupabaseTable('evenements'),
   salaries:       new SupabaseTable('salaries'),
+  defectueux:     new SupabaseTable('defectueux'),
 }

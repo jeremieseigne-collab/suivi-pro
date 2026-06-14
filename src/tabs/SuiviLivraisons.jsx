@@ -127,6 +127,7 @@ export default function SuiviLivraisons() {
     const recuModelByKey   = {}
     const numeroModelByKey = {}
     entrees.forEach(e => {
+      if (e.statut === 'Retour') return // les retours ne sont pas comptabilisés dans le reçu
       const k = e.fournisseurId + '_' + e.magasinId
       recuByKey[k] = (recuByKey[k] || 0) + (e.total || 0)
       const mod = (e.modele || '').trim() || '(sans modèle)'

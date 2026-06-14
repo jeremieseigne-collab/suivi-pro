@@ -26,6 +26,7 @@ export default function Entrees() {
   const [magasin,   setMagasin]   = useState('')
   const [marque,    setMarque]    = useState('')
   const [categorie, setCategorie] = useState('')
+  const [statut,    setStatut]    = useState('')
   const [page,      setPage]      = useState(1)
   const [showForm,   setShowForm]   = useState(false)
 
@@ -34,7 +35,7 @@ export default function Entrees() {
 
   const data = useLiveQuery(async () => {
     const [entries, magasins, fournisseurs] = await Promise.all([
-      db.entrees.where('season').equals(season).reverse().sortBy('date'),
+      db.entrees.where('season').equals(season).reverse().sortBy('id'),
       db.magasins.toArray(),
       db.fournisseurs.toArray(),
     ])
@@ -56,15 +57,17 @@ export default function Entrees() {
     if (magasin   && r.magasin   !== magasin)    return false
     if (marque    && r.marque    !== marque)      return false
     if (categorie && r.categorie !== categorie)  return false
+    if (statut    && r.statut    !== statut)      return false
     if (search) {
       const q = search.toLowerCase()
       if (!r.marque.toLowerCase().includes(q) && !(r.modele || '').toLowerCase().includes(q)) return false
     }
     return true
-  }), [rows, search, societe, magasin, marque, categorie])
+  }), [rows, search, societe, magasin, marque, categorie, statut])
 
-  const totalUnites = filtered.reduce((s, r) => s + (r.total || 0), 0)
-  const totalPHT    = filtered.reduce((s, r) => s + (r.pht   || 0), 0)
+  // Les retours restent affichés mais ne comptent pas dans les unités / la valeur estimée
+  const totalUnites = filtered.reduce((s, r) => s + (r.statut === 'Retour' ? 0 : (r.total || 0)), 0)
+  const totalPHT    = filtered.reduce((s, r) => s + (r.statut === 'Retour' ? 0 : (r.pht   || 0)), 0)
 
   const paginated = filtered.slice((page - 1) * PAGE, page * PAGE)
   const pages     = Math.ceil(filtered.length / PAGE)
@@ -72,6 +75,7 @@ export default function Entrees() {
   const magasinList  = useMemo(() => uniq(rows.map(r => r.magasin)),   [rows])
   const marqueList   = useMemo(() => uniq(rows.map(r => r.marque)),    [rows])
   const categList    = useMemo(() => uniq(rows.map(r => r.categorie)), [rows])
+  const statutList   = useMemo(() => uniq(rows.map(r => r.statut)),    [rows])
 
   function resetPage() { setPage(1) }
 
@@ -121,6 +125,10 @@ export default function Entrees() {
         <select value={categorie} onChange={e => { setCategorie(e.target.value); resetPage() }} className="sel">
           <option value="">Toutes catégories</option>
           {categList.map(c => <option key={c}>{c}</option>)}
+        </select>
+        <select value={statut} onChange={e => { setStatut(e.target.value); resetPage() }} className="sel">
+          <option value="">Tous les statuts</option>
+          {statutList.map(s => <option key={s}>{s}</option>)}
         </select>
         <button className="btn-primary" onClick={() => setShowForm(true)}>+ Nouvelle entrée</button>
       </div>

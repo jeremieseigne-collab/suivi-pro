@@ -16,8 +16,14 @@ const STRAT_COLORS = {
 
 function uniq(arr) { return [...new Set(arr.filter(Boolean))].sort() }
 
+// "ETE_2026" → { type:'ETE', year:2026 } ; "HIVER_2027" → { type:'HIVER', year:2027 }
+function parseSeasonId(id) {
+  const m = /^(.+)_(\d{4})$/.exec(id || '')
+  return m ? { type: m[1], year: parseInt(m[2]) } : null
+}
+
 export default function Achats() {
-  const { season } = useSeason()
+  const { season, seasons } = useSeason()
   const [search,    setSearch]    = useState('')
   const [societe,   setSociete]   = useState('')
   const [magasin,   setMagasin]   = useState('')
@@ -25,6 +31,42 @@ export default function Achats() {
   const [editRow,   setEditRow]   = useState(null)
   const [showAdd,   setShowAdd]   = useState(false)
   const [ghost,     setGhost]     = useState(false)
+  const [importing, setImporting] = useState(false)
+
+  // Saison précédente de MÊME type (Été→Été N-1, Hiver→Hiver N-1)
+  const prevSeason = useMemo(() => {
+    const cur = parseSeasonId(season)
+    if (!cur) return null
+    let best = null
+    for (const s of (seasons || [])) {
+      const p = parseSeasonId(s.id)
+      if (p && p.type === cur.type && p.year < cur.year && (!best || p.year > parseSeasonId(best.id).year)) best = s
+    }
+    return best
+  }, [season, seasons])
+
+  // Marques (fournisseur × magasin) présentes dans la saison précédente
+  const prevCombos = useLiveQuery(async () => {
+    if (!prevSeason) return []
+    const params = await db.parametres.where('season').equals(prevSeason.id).toArray()
+    const seen = new Set(), combos = []
+    for (const p of params) {
+      if (!p.fournisseurId || !p.magasinId) continue
+      const k = p.fournisseurId + '_' + p.magasinId
+      if (!seen.has(k)) { seen.add(k); combos.push({ fournisseurId: p.fournisseurId, magasinId: p.magasinId }) }
+    }
+    return combos
+  }, [prevSeason?.id])
+
+  async function importBrands() {
+    if (!prevSeason || !(prevCombos?.length)) return
+    setImporting(true)
+    try {
+      for (const c of prevCombos) {
+        await db.parametres.add({ fournisseurId: c.fournisseurId, magasinId: c.magasinId, season })
+      }
+    } finally { setImporting(false) }
+  }
 
   const data = useLiveQuery(async () => {
     const [params, magasins, fournisseurs] = await Promise.all([
@@ -95,6 +137,22 @@ export default function Achats() {
           style={{ marginTop: 8, background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, opacity: ghost ? 1 : 0.25, transition: 'opacity .2s', padding: '4px 6px', borderRadius: 6 }}
         >👻</button>
       </div>
+
+      {/* Report des marques depuis la saison précédente (même type) */}
+      {rows.length === 0 && prevSeason && (prevCombos?.length > 0) && (
+        <div className="store-card" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16, background: 'var(--accent-bg)', border: '1px solid var(--accent-border)' }}>
+          <span style={{ fontSize: 22 }}>📋</span>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontWeight: 700, color: 'var(--text)' }}>Reporter les marques de {prevSeason.label} ?</div>
+            <div style={{ fontSize: 13, color: 'var(--text-3)' }}>
+              {prevCombos.length} ligne{prevCombos.length > 1 ? 's' : ''} (fournisseur × magasin) — créées <strong>vides</strong>, à compléter (objectif, réel, quantité…).
+            </div>
+          </div>
+          <button className="btn-primary" onClick={importBrands} disabled={importing}>
+            {importing ? '⏳ Import…' : `Importer ${prevCombos.length} ligne${prevCombos.length > 1 ? 's' : ''}`}
+          </button>
+        </div>
+      )}
 
       {/* Stratégie pills */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
