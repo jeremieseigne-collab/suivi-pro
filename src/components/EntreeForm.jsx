@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams } from '../hooks/useParams'
-import { SIZE_TYPES } from '../data/sizes'
+import { SIZE_TYPES, DEFAULT_GRID_BY_MARQUE } from '../data/sizes'
 import { db } from '../db'
 import { getClipboard, setClipboard } from '../data/clipboard'
 import ComboBox from './ComboBox'
@@ -212,7 +212,11 @@ export default function EntreeForm({ onClose, onSaved }) {
             <div className="form-grid">
               <div className="form-field">
                 <label>Marque *</label>
-                <select value={form.marque} onChange={e => { set('marque', e.target.value); set('modele', '') }} required>
+                <select value={form.marque} onChange={e => {
+                  const v = e.target.value
+                  const grid = DEFAULT_GRID_BY_MARQUE[v.trim().toLowerCase()]
+                  setForm(f => ({ ...f, marque: v, modele: '', ...(grid ? { typeKey: grid } : {}) }))
+                }} required>
                   <option value="">— Choisir —</option>
                   {(params?.fournisseurs ?? []).map(f => <option key={f}>{f}</option>)}
                 </select>

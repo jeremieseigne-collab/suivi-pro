@@ -3,13 +3,17 @@
 //   TU / F / H / E / B → col_9+ (offset 0, structure historique)
 //   ACC → col_10+       (offset 1, car col_9 = TU et les acc commencent à XS = col_10)
 export const SIZE_TYPES = {
-  F:   { label: 'Femme',        code: 'F :',  colOffset: 0, sizes: ['34','35','35.5','36','36.5','37','37.5','38','38.5','39','39.5','40','40.5','41','41.5'] },
-  H:   { label: 'Homme',        code: 'H :',  colOffset: 0, sizes: ['39','40','40.5','41','41.5','42','42.5','43','43.5','44','44.5','45','45.5','46'] },
-  E:   { label: 'Enfant',       code: 'E :',  colOffset: 0, sizes: ['17','18','19','20','21','22','23','24','25','26','27','28','29','30','31','32','33','34','35','36','37','38','39','40'] },
+  F:   { label: 'Femme',        code: 'F :',  colOffset: 0, sizes: ['34','34.5','35','35.5','36','36.5','37','37.5','38','38.5','39','39.5','40','40.5','41','41.5','42','42.5','43'] },
+  H:   { label: 'Homme',        code: 'H :',  colOffset: 0, sizes: ['39','39.5','40','40.5','41','41.5','42','42.5','43','43.5','44','44.5','45','45.5','46','46.5','47','47.5','48','48.5','49','49.5','50'] },
+  E:   { label: 'Enfant',       code: 'E :',  colOffset: 0, sizes: ['17','17.5','18','18.5','19','19.5','20','20.5','21','21.5','22','22.5','23','23.5','24','24.5','25','25.5','26','26.5','27','27.5','28','28.5','29','29.5','30','30.5','31','31.5','32','32.5','33','33.5','34','34.5','35','35.5','36','36.5','37','37.5','38','38.5','39','39.5','40'] },
   B:   { label: 'Bébé',         code: 'B :',  colOffset: 0, sizes: ['17-18','19-20','21-22','23-24','25-26','27'] },
+  DP:  { label: 'Double pointure', code: '',  colOffset: 0, sizes: ['33-34','34-35','35-36','36-37','37-38','38-39','39-40','40-41','41-42','42-43','43-44','44-45','45-46','46-47','47-48','48-49'] },
   TU:  { label: 'Taille Unique', code: '',     colOffset: 0, sizes: ['TU'] },
   ACC: { label: 'Accessoire',    code: '',     colOffset: 1, sizes: ['XS','S','M','L','XL','XXL'] },
 }
+
+// Grille de pointure par défaut pour certaines marques (clé = nom en minuscules)
+export const DEFAULT_GRID_BY_MARQUE = { crocs: 'DP', havaianas: 'DP' }
 
 // Column keys in the Apps Script JSON — in order after the type code column
 export const SIZE_COL_KEYS = [

@@ -8,6 +8,7 @@ import Parametres      from './tabs/Parametres'
 import Repertoire       from './tabs/Repertoire'
 import Commandes        from './commandes/Commandes'
 import Defectueux       from './defectueux/Defectueux'
+import Paie             from './paie/Paie'
 import AgendaBoard      from './agenda/AgendaBoard'
 import { SeasonProvider, useSeason } from './context/SeasonContext'
 import './App.css'
@@ -312,6 +313,7 @@ const APPS = [
   { id: 'commandes', icon: '🛍️', title: 'Commandes Clients',  desc: 'Commandes inter-magasins, B2B et clients', gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
   { id: 'achats',    icon: '🛒',  title: 'Achats',             desc: 'Objectifs et réalisé par marque',          gradient: 'linear-gradient(135deg, #10b981, #059669)' },
   { id: 'defectueux',icon: '🛠️', title: 'Gestion des défectueux', desc: 'Suivi des défauts et demandes d’avoir',  gradient: 'linear-gradient(135deg, #f43f5e, #be123c)' },
+  { id: 'paie',      icon: '🧾',  title: 'Éléments variables de paie', desc: 'Chaque salarié remplit ses éléments du mois', gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
 ]
 
 function AppCard({ app, onClick }) {
@@ -405,6 +407,7 @@ function Root() {
   if (view === 'cahier')          content = <CahierEntrees onHome={home} />
   else if (view === 'commandes')  content = <Commandes onHome={home} />
   else if (view === 'defectueux') content = <Defectueux onHome={home} />
+  else if (view === 'paie')       content = <PageShell title="🧾 Éléments variables de paie" onHome={home} withSeason={false}><Paie /></PageShell>
   else if (view === 'achats')     content = <PageShell title="🛒 Achats" onHome={home}><Achats /></PageShell>
   else if (view === 'repertoire') content = <PageShell title="📒 Répertoire fournisseurs" onHome={home} withSeason={false}><Repertoire /></PageShell>
   else if (view === 'reglement')  content = <PageShell title="💳 Plan de règlement" onHome={home}><PlanReglement /></PageShell>

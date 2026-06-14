@@ -41,9 +41,9 @@ Il n'y a **aucun framework de test** dans ce projet. Pour vérifier un changemen
 
 ## Configuration requise
 
-Crée un `.env.local` (voir `.env.example`) avec `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`. Sans ces variables, `src/lib/supabase.js` remplace tout le `<body>` par un message d'erreur et throw au démarrage. Après modification du `.env.local`, **redémarre** le serveur Vite. `VITE_GOOGLE_API_KEY` (Google Calendar) y vit aussi (voir App Agenda). `.env.local` est ignoré par git → à recréer sur chaque machine.
+Crée un `.env.local` (voir `.env.example`) avec `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`. Sans ces variables, `src/lib/supabase.js` remplace tout le `<body>` par un message d'erreur et throw au démarrage. Après modification du `.env.local`, **redémarre** le serveur Vite. `VITE_GOOGLE_API_KEY` (Google Calendar) y vit aussi (voir App Agenda), ainsi que `VITE_EMAILJS_SERVICE_ID` / `VITE_EMAILJS_TEMPLATE_ID` / `VITE_EMAILJS_PUBLIC_KEY` (envoi auto du récap de l'App Paie). `.env.local` est ignoré par git → à recréer sur chaque machine.
 
-Schémas Postgres (à exécuter dans le SQL Editor Supabase) : `supabase-schema.sql` (Suivi Pro), `supabase-commandes.sql` (table `commandes`), `supabase-agenda.sql` (table `evenements`). RLS est **désactivé** sur toutes les tables (app interne, pas d'auth publique) et le temps réel est activé.
+Schémas Postgres (à exécuter dans le SQL Editor Supabase) : `supabase-schema.sql` (Suivi Pro), `supabase-commandes.sql` (table `commandes`), `supabase-agenda.sql` (table `evenements`). RLS est **désactivé** sur toutes les tables (app interne, pas d'auth publique) et le temps réel est activé. Les tables ajoutées plus récemment (`salaries`, `defectueux`, `reglement_paye`, `paie_variables`, `paie_envois`) ont été créées directement via psql (dev + prod), sans fichier de schéma dédié.
 
 ## Environnement dev / prod (IMPORTANT)
 
@@ -59,7 +59,7 @@ Schémas Postgres (à exécuter dans le SQL Editor Supabase) : `supabase-schema.
 ## Architecture — points clés
 
 ### La couche `db` est un shim Dexie → Supabase
-`src/db/index.js` expose un objet `db` dont les tables (`magasins`, `fournisseurs`, `parametres`, `entrees`, `suivi`, `modesReglement`, `commandes`, `evenements`, `salaries`, `defectueux`) **imitent l'API Dexie** (`where().equals().toArray()`, `.first()`, `.add()`, `.put()`, `.update()`, `.delete()`, `.orderBy()`, `.filter()`, `.where({...}).filter(fn)`, `.reverse().sortBy()`) mais tapent en réalité Supabase. Le code applicatif est donc écrit « comme du Dexie » alors qu'il parle à Postgres.
+`src/db/index.js` expose un objet `db` dont les tables (`magasins`, `fournisseurs`, `parametres`, `entrees`, `suivi`, `modesReglement`, `commandes`, `evenements`, `salaries`, `defectueux`, `reglementPaye`, `paieVariables`, `paieEnvois`) **imitent l'API Dexie** (`where().equals().toArray()`, `.first()`, `.add()`, `.put()`, `.update()`, `.delete()`, `.orderBy()`, `.filter()`, `.where({...}).filter(fn)`, `.reverse().sortBy()`) mais tapent en réalité Supabase. Le code applicatif est donc écrit « comme du Dexie » alors qu'il parle à Postgres.
 
 Conséquences importantes :
 - **Mapping camelCase ↔ snake_case** : le code JS utilise `fournisseurId`, `magasinId`, `modelesBySeason`, `typeKey`, `recuN1`, `objectifN`, `reelN`, `modeReglement` ; la base utilise les colonnes snake_case. La conversion se fait **uniquement** dans `db/index.js` via `FIELD_TO_DB`. Si tu ajoutes une colonne dont le nom JS diffère du nom SQL, **ajoute-la à `FIELD_TO_DB`**.
@@ -82,7 +82,7 @@ La saison active n'est **pas** une table : elle vit dans `localStorage` et dans 
 `src/App.jsx` est le routeur, **sans react-router**. Il n'y a plus de groupe « Suivi Pro » : les anciens onglets sont devenus des destinations de premier niveau.
 - **`Root`** (state local `view`) gère la navigation + le **code PIN** (`PIN_CODE = '2201'`, `PROTECTED_TABS = {reglement, parametres}`, déverrouillage en mémoire). `view` : `home` → `<HomeScreen>`, `cahier` → `<CahierEntrees>`, `commandes` → `<Commandes>`, `achats`/`reglement`/`parametres` → `<PageShell>` enveloppant le composant. Cliquer une vue protégée passe par `PinModal`.
 - **`PageShell`** = en-tête commun (bouton retour ←, titre, `SeasonBadge`, onglets optionnels) + `<main>`. **`CahierEntrees`** = `PageShell` avec 2 sous-onglets : **Suivi livraisons** + **Entrées**.
-- **`HomeScreen`** = le menu : cartes `APPS` (📥 Cahier des entrées, 🛍️ Commandes Clients, 🛒 Achats) + 2 petits liens 🔒 (💳 Plan de règlement, ⚙️ Paramètres) + `<AgendaBoard>` dessous. Pour ajouter une app : entrée dans `APPS` (ou lien), cas dans `Root`, composant.
+- **`HomeScreen`** = le menu : cartes `APPS` (📥 Cahier des entrées, 🛍️ Commandes Clients, 🛒 Achats, 🛠️ Gestion des défectueux, 🧾 Éléments variables de paie) + 2 petits liens 🔒 (💳 Plan de règlement, ⚙️ Paramètres) + lien 📒 Répertoire + `<AgendaBoard>` dessous. Pour ajouter une app : entrée dans `APPS` (ou lien), cas dans `Root`, composant.
 
 `src/tabs/` : `SuiviLivraisons`, `Entrees` (réunis dans Cahier des entrées), `Achats`, `PlanReglement`, `Parametres`.
 ⚠️ `src/tabs/PlanAchat.jsx` existe mais **n'est pas importé** (composant orphelin).
@@ -104,9 +104,15 @@ Table `defectueux` (liée à une entrée via `entree_id`). Le formulaire choisit
 - **À l'enregistrement** : crée une **entrée « Retour »** dans le Cahier (`total: -1`, `pht` négatif = −prix unitaire, catégorie/typeKey repris du modèle) puis propose d'**envoyer un mail au SAV** (Gmail pré-rempli — `src/defectueux/mail.js`, compte expéditeur selon la société).
 - **Retours** : non comptés dans les stats Entrées (Unités/Valeur) ni dans le « reçu » du Suivi livraison. Dans le **Plan de règlement**, un retour génère un **avoir** (échéance unique à sa date, hors règles/conditions) **seulement** si le défectueux lié est « Avoir reçu » ou « Clôturé ».
 
+### App Éléments variables de paie (`src/paie/`)
+Chaque salarié remplit, **par mois**, ses éléments variables pour la comptable. Tables `paie_variables` (une ligne par `periode` `AAAA-MM` × `salarie`, contrainte unique ; les saisies dans `data` JSONB) et `paie_envois` (`periode` unique = récap déjà envoyé, garde-fou anti-doublon). Pas de notion de saison.
+- **`Paie.jsx`** = liste des salariés (`db.salaries`) avec icône ✓ Rempli / ○ À remplir pour la période, sélecteur de mois ◀▶, compteur de complétion. Clic sur un salarié → **`PaieForm`** (société, lignes répétables Heures supp / dimanche / fériés au format `{date, heures}`, Congés / Arrêt maladie au format `{du, au}`, commentaire). Après **Enregistrer**, le document disparaît (confidentiel) + message de prise en compte ; les valeurs ne sont **jamais** affichées dans la liste.
+- **Récap réservé par PIN** (`2201`, modale interne `PinGate`) : `RecapView` montre le récap **groupé par société** + envoi auto EmailJS / ✉️ Ouvrir dans Gmail / 📋 Copier.
+- **Envoi auto** (`src/paie/mail.js`, API REST EmailJS) : dès que **le dernier salarié** valide, le récap part automatiquement à `jeremie.seigne@gmail.com` (constante `RECAP_EMAIL`), **une seule fois** (insertion dans `paie_envois` avant envoi ; rollback si échec). Sans les clés `VITE_EMAILJS_*`, l'envoi auto est désactivé et on utilise le bouton Gmail manuel. Helpers de date/période dans `src/paie/constants.js`.
+
 ### Domaine métier
 - **`src/data/societes.js`** : mapping magasin → société (B'Shoes / JR Shoes), codé en dur dans `SOCIETE_MAP`. `getSociete(magasin)` est insensible à la casse/espaces.
-- **`src/data/sizes.js`** : définitions des grilles de tailles chaussures (`SIZE_TYPES` : Femme/Homme/Enfant/Bébé/TU/Accessoire). `buildEntreeRow()` et `SIZE_COL_KEYS` reproduisent la **structure historique d'un Google Sheet / Apps Script** (lignes de 35 colonnes, `colOffset` pour les accessoires). À respecter scrupuleusement lors d'imports/exports de tailles. Les quantités par taille d'une entrée sont stockées dans la colonne JSONB `entrees.sizes`.
+- **`src/data/sizes.js`** : définitions des grilles de tailles chaussures (`SIZE_TYPES` : Femme/Homme/Enfant/Bébé/**Double pointure (DP)**/TU/Accessoire ; Femme et Homme incluent les demi-pointures, Enfant aussi). `DEFAULT_GRID_BY_MARQUE` (clé = marque en minuscules) force une grille par défaut à la sélection de la marque dans `EntreeForm`/`EntreeEditModal` (ex. Crocs/Havaianas → `DP`). `buildEntreeRow()` et `SIZE_COL_KEYS` reproduisent la **structure historique d'un Google Sheet / Apps Script** (lignes de 35 colonnes) mais ne sont **plus importés ailleurs** (export legacy inactif) — d'où la possibilité d'avoir des grilles > 35 tailles. Les quantités par taille d'une entrée sont stockées dans la colonne JSONB `entrees.sizes`.
 - **`src/data/clipboard.js`** : presse-papier en mémoire (module singleton) partagé entre `EntreeForm` et `EntreeEditModal` pour copier/coller une grille de tailles.
 
 ### Migration historique

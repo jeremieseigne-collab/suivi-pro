@@ -10,6 +10,8 @@ const FIELD_TO_DB = {
   commandes:       { createdAt: 'created_at', clientNom: 'client_nom', clientPrenom: 'client_prenom' },
   evenements:      { createdAt: 'created_at' },
   defectueux:      { createdAt: 'created_at', magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', entreeId: 'entree_id' },
+  paie_variables:  { createdAt: 'created_at' },
+  paie_envois:     { sentAt: 'sent_at' },
 }
 
 const FIELD_FROM_DB = {}
@@ -205,4 +207,7 @@ export const db = {
   evenements:     new SupabaseTable('evenements'),
   salaries:       new SupabaseTable('salaries'),
   defectueux:     new SupabaseTable('defectueux'),
+  reglementPaye:  new SupabaseTable('reglement_paye'),
+  paieVariables:  new SupabaseTable('paie_variables'),
+  paieEnvois:     new SupabaseTable('paie_envois'),
 }

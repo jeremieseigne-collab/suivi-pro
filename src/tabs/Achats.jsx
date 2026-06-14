@@ -31,6 +31,7 @@ export default function Achats() {
   const [editRow,   setEditRow]   = useState(null)
   const [showAdd,   setShowAdd]   = useState(false)
   const [ghost,     setGhost]     = useState(false)
+  const [selected,  setSelected]  = useState('') // fournisseur sélectionné (mode fantôme ciblé)
   const [importing, setImporting] = useState(false)
 
   // Saison précédente de MÊME type (Été→Été N-1, Hiver→Hiver N-1)
@@ -187,12 +188,12 @@ export default function Achats() {
             <thead>
               <tr>
                 <th>Statut</th><th>Magasin</th><th>Fournisseur</th>
-                {!ghost && <th style={{ textAlign: 'right' }}>Reçu N-1</th>}
+                <th style={{ textAlign: 'right' }}>Reçu N-1</th>
                 <th style={{ textAlign: 'right' }}>Objectif N</th>
-                {!ghost && <th style={{ textAlign: 'right' }}>Réel achat N</th>}
-                {!ghost && <th style={{ textAlign: 'right' }}>Quantité</th>}
-                {!ghost && <th style={{ textAlign: 'right' }}>PM</th>}
-                {!ghost && <th>Stratégie</th>}
+                <th style={{ textAlign: 'right' }}>Réel achat N</th>
+                <th style={{ textAlign: 'right' }}>Quantité</th>
+                <th style={{ textAlign: 'right' }}>PM</th>
+                <th>Stratégie</th>
                 <th></th>
               </tr>
             </thead>
@@ -202,51 +203,56 @@ export default function Achats() {
                   {rows.length === 0 ? 'Aucun fournisseur — cliquez sur "+ Nouveau fournisseur".' : 'Aucun résultat.'}
                 </td></tr>
               )}
-              {filtered.map(r => (
-                <tr key={r.id}>
+              {filtered.map(r => {
+                const isSel  = r.fournisseur === selected
+                const masked = ghost && !isSel
+                const blur   = masked ? { filter: 'blur(6px)', userSelect: 'none' } : null
+                return (
+                <tr key={r.id} onClick={() => setSelected(isSel ? '' : r.fournisseur)}
+                  style={{ cursor: 'pointer', background: isSel ? 'var(--accent-bg)' : undefined }}
+                  title={ghost ? (isSel ? 'Fournisseur affiché' : 'Cliquer pour afficher ce fournisseur') : 'Cliquer pour sélectionner'}>
                   <td style={{ textAlign: 'center' }}>{r.statut}</td>
                   <td style={{ fontSize: 13 }}>{r.magasin}</td>
                   <td><strong>{r.fournisseur}</strong></td>
-                  {!ghost && <td style={{ textAlign: 'right', color: '#64748b', fontSize: 13 }}>
+                  <td style={{ textAlign: 'right', color: '#64748b', fontSize: 13, ...blur }}>
                     {r.recuN1 ? r.recuN1.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }) : '—'}
-                  </td>}
-                  <td style={{ textAlign: 'right', color: '#64748b', fontSize: 13 }}>
+                  </td>
+                  <td style={{ textAlign: 'right', color: '#64748b', fontSize: 13, ...blur }}>
                     {r.objectifN ? r.objectifN.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }) : '—'}
                   </td>
-                  {!ghost && <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                  <td style={{ textAlign: 'right', fontWeight: 600, ...blur }}>
                     {r.reelN ? r.reelN.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }) : '—'}
-                  </td>}
-                  {!ghost && <td style={{ textAlign: 'right' }}>{r.quantite || '—'}</td>}
-                  {!ghost && <td style={{ textAlign: 'right', color: '#64748b', fontSize: 13 }}>
+                  </td>
+                  <td style={{ textAlign: 'right', ...blur }}>{r.quantite || '—'}</td>
+                  <td style={{ textAlign: 'right', color: '#64748b', fontSize: 13, ...blur }}>
                     {r.pm ? r.pm.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }) : '—'}
-                  </td>}
-                  {!ghost && <td>
+                  </td>
+                  <td style={blur || undefined}>
                     <span style={{ background: STRAT_COLORS[r.strategie] || '#f1f5f9', padding: '3px 8px', borderRadius: 4, fontSize: 12, whiteSpace: 'nowrap' }}>
                       {r.strategie || '—'}
                     </span>
-                  </td>}
+                  </td>
                   <td>
-                    <button className="edit-btn" onClick={() => setEditRow(r)} title="Modifier">✏️</button>
+                    <button className="edit-btn" onClick={e => { e.stopPropagation(); setEditRow(r) }} title="Modifier">✏️</button>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
             {filtered.length > 0 && (
               <tfoot>
                 <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
                   <td colSpan={3} style={{ padding: '10px 12px' }}>Total ({filtered.length})</td>
-                  {!ghost && <td style={{ textAlign: 'right', padding: '10px 12px' }}>
+                  <td style={{ textAlign: 'right', padding: '10px 12px', ...(ghost ? { filter: 'blur(6px)', userSelect: 'none' } : null) }}>
                     {totalRecuN1.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
-                  </td>}
-                  <td style={{ textAlign: 'right', padding: '10px 12px' }}>
+                  </td>
+                  <td style={{ textAlign: 'right', padding: '10px 12px', ...(ghost ? { filter: 'blur(6px)', userSelect: 'none' } : null) }}>
                     {totalObjectif.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
                   </td>
-                  {!ghost && <td style={{ textAlign: 'right', padding: '10px 12px' }}>
+                  <td style={{ textAlign: 'right', padding: '10px 12px', ...(ghost ? { filter: 'blur(6px)', userSelect: 'none' } : null) }}>
                     {totalReel.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
-                  </td>}
-                  {!ghost && <td style={{ textAlign: 'right', padding: '10px 12px' }}>{totalQte.toLocaleString('fr-FR')}</td>}
-                  {!ghost && <td colSpan={3} />}
-                  {ghost  && <td colSpan={1} />}
+                  </td>
+                  <td style={{ textAlign: 'right', padding: '10px 12px', ...(ghost ? { filter: 'blur(6px)', userSelect: 'none' } : null) }}>{totalQte.toLocaleString('fr-FR')}</td>
+                  <td colSpan={3} />
                 </tr>
               </tfoot>
             )}

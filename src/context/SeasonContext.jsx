@@ -2,10 +2,15 @@ import { createContext, useContext, useState } from 'react'
 
 const COLORS = ['#fbbf24', '#60a5fa', '#34d399', '#f472b6', '#a78bfa', '#fb923c', '#2dd4bf', '#e879f9']
 
+// Libellés de saison sans accents (ex. « Été 2026 » → « Ete 2026 »)
+function stripAccents(s) {
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+}
+
 const DEFAULT_SEASONS = [
-  { id: 'ETE_2026',   label: 'Été 2026',   color: COLORS[0] },
+  { id: 'ETE_2026',   label: 'Ete 2026',   color: COLORS[0] },
   { id: 'HIVER_2026', label: 'Hiver 2026', color: COLORS[1] },
-  { id: 'ETE_2027',   label: 'Été 2027',   color: COLORS[2] },
+  { id: 'ETE_2027',   label: 'Ete 2027',   color: COLORS[2] },
 ]
 
 function makeId(label) {
@@ -18,7 +23,13 @@ function makeId(label) {
 function loadSeasons() {
   try {
     const stored = localStorage.getItem('suivi_seasons')
-    return stored ? JSON.parse(stored) : DEFAULT_SEASONS
+    const seasons = stored ? JSON.parse(stored) : DEFAULT_SEASONS
+    // Migration : enlève les accents des libellés existants (les IDs ne bougent pas)
+    const normalized = seasons.map(s => ({ ...s, label: stripAccents(s.label) }))
+    if (stored && JSON.stringify(normalized) !== stored) {
+      localStorage.setItem('suivi_seasons', JSON.stringify(normalized))
+    }
+    return normalized
   } catch { return DEFAULT_SEASONS }
 }
 
@@ -39,7 +50,7 @@ export function SeasonProvider({ children }) {
     const id = makeId(trimmed)
     if (seasons.find(s => s.id === id)) return id
     const color = COLORS[seasons.length % COLORS.length]
-    const updated = [...seasons, { id, label: trimmed, color }]
+    const updated = [...seasons, { id, label: stripAccents(trimmed), color }]
     setSeasons(updated)
     localStorage.setItem('suivi_seasons', JSON.stringify(updated))
     return id
