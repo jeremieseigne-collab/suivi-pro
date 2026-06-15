@@ -135,11 +135,21 @@ function SectionMagasins() {
 // ─── Section Salariés ────────────────────────────────────────────────────────
 function SectionSalaries() {
   const salaries = useLiveQuery(() => db.salaries.orderBy('nom').toArray(), [])
+  const magasins = useLiveQuery(() => db.magasins.toArray(), [])
+  const [newNom,     setNewNom]     = useState('')
+  const [newMagasin, setNewMagasin] = useState('')
+  const [addErr,     setAddErr]     = useState('')
 
-  async function add(nom) {
-    const existing = await db.salaries.where('nom').equals(nom).first()
-    if (existing) throw new Error(`"${nom}" existe déjà`)
-    await db.salaries.add({ nom })
+  async function add() {
+    const nom = newNom.trim()
+    if (!nom) return
+    setAddErr('')
+    try {
+      const existing = await db.salaries.where('nom').equals(nom).first()
+      if (existing) { setAddErr(`"${nom}" existe déjà`); return }
+      await db.salaries.add({ nom, magasin: newMagasin })
+      setNewNom(''); setNewMagasin('')
+    } catch (e) { setAddErr(e.message) }
   }
 
   async function del(id) {
@@ -147,16 +157,64 @@ function SectionSalaries() {
     await db.salaries.delete(id)
   }
 
+  const magasinOpts = (magasins || []).map(m => m.nom)
+  const selStyle = { padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 13, background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer' }
+
   return (
     <div className="store-card">
       <h3 style={{ marginBottom: 16, fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>👤 Salariés</h3>
-      {(salaries || []).length === 0
-        ? <p style={{ color: 'var(--text-4)', fontSize: 14 }}>Aucun salarié — ajoutez-en un ci-dessous.</p>
-        : <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {(salaries || []).map(s => <TagChip key={s.id} label={s.nom} onDelete={() => del(s.id)} />)}
-          </div>
-      }
-      <AddForm placeholder="Nom du salarié…" onAdd={add} />
+      {(salaries || []).length === 0 ? (
+        <p style={{ color: 'var(--text-4)', fontSize: 14 }}>Aucun salarié — ajoutez-en un ci-dessous.</p>
+      ) : (
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16 }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left', fontSize: 12, color: 'var(--text-3)', fontWeight: 600, padding: '0 8px 8px 0' }}>Nom</th>
+              <th style={{ textAlign: 'left', fontSize: 12, color: 'var(--text-3)', fontWeight: 600, padding: '0 8px 8px' }}>Magasin</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {(salaries || []).map(s => (
+              <tr key={s.id} style={{ borderTop: '1px solid var(--border)' }}>
+                <td style={{ padding: '8px 8px 8px 0', fontSize: 14, color: 'var(--text)', fontWeight: 500 }}>{s.nom}</td>
+                <td style={{ padding: '6px 8px' }}>
+                  <select value={s.magasin || ''} onChange={e => db.salaries.update(s.id, { magasin: e.target.value })} style={selStyle}>
+                    <option value="">— Tous les magasins —</option>
+                    {magasinOpts.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </td>
+                <td style={{ padding: '6px 0', textAlign: 'right' }}>
+                  <button onClick={() => del(s.id)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-4)', fontSize: 18, padding: '0 4px', lineHeight: 1 }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-4)'}>×</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 140 }}>
+          <input value={newNom} onChange={e => { setNewNom(e.target.value); setAddErr('') }}
+            onKeyDown={e => e.key === 'Enter' && add()}
+            placeholder="Nom du salarié…"
+            style={{ width: '100%', padding: '8px 10px', border: `1px solid ${addErr ? '#ef4444' : 'var(--border)'}`, borderRadius: 8, fontSize: 14, background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
+          />
+          {addErr && <div style={{ fontSize: 12, color: '#ef4444', marginTop: 3 }}>{addErr}</div>}
+        </div>
+        <select value={newMagasin} onChange={e => setNewMagasin(e.target.value)}
+          style={{ ...selStyle, padding: '8px 10px', borderRadius: 8, fontSize: 13, color: newMagasin ? 'var(--text)' : 'var(--text-4)' }}>
+          <option value="">— Magasin —</option>
+          {magasinOpts.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+        <button onClick={add} disabled={!newNom.trim()}
+          style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: newNom.trim() ? 'var(--accent)' : 'var(--border)', color: newNom.trim() ? '#fff' : 'var(--text-4)', cursor: newNom.trim() ? 'pointer' : 'default', fontSize: 14, fontWeight: 600 }}>
+          Ajouter
+        </button>
+      </div>
     </div>
   )
 }

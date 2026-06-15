@@ -9,6 +9,7 @@ import Repertoire       from './tabs/Repertoire'
 import Commandes        from './commandes/Commandes'
 import Defectueux       from './defectueux/Defectueux'
 import Paie             from './paie/Paie'
+import Planning         from './planning/Planning'
 import AgendaBoard      from './agenda/AgendaBoard'
 import { SeasonProvider, useSeason } from './context/SeasonContext'
 import './App.css'
@@ -314,6 +315,7 @@ const APPS = [
   { id: 'achats',    icon: '🛒',  title: 'Achats',             desc: 'Objectifs et réalisé par marque',          gradient: 'linear-gradient(135deg, #10b981, #059669)' },
   { id: 'defectueux',icon: '🛠️', title: 'Gestion des défectueux', desc: 'Suivi des défauts et demandes d’avoir',  gradient: 'linear-gradient(135deg, #f43f5e, #be123c)' },
   { id: 'paie',      icon: '🧾',  title: 'Éléments variables de paie', desc: 'Chaque salarié remplit ses éléments du mois', warning: '⚠️ À remplir avant le 25 de chaque mois !', gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+  { id: 'planning',  icon: '📅',  title: 'Planning',                   desc: 'Planning hebdomadaire de l\'équipe',             gradient: 'linear-gradient(135deg, #0ea5e9, #0284c7)' },
 ]
 
 function AppCard({ app, onClick }) {
@@ -424,6 +426,7 @@ function Root() {
   else if (view === 'repertoire') content = <PageShell title="📒 Répertoire fournisseurs" onHome={home} withSeason={false}><Repertoire /></PageShell>
   else if (view === 'reglement')  content = <PageShell title="💳 Plan de règlement" onHome={home}><PlanReglement /></PageShell>
   else if (view === 'parametres') content = <PageShell title="⚙️ Paramètres" onHome={home}><Parametres /></PageShell>
+  else if (view === 'planning')   content = <Planning onHome={home} />
   else                            content = <HomeScreen onOpen={open} />
 
   return (

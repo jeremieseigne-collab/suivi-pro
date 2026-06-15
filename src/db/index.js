@@ -12,6 +12,7 @@ const FIELD_TO_DB = {
   defectueux:      { createdAt: 'created_at', magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', entreeId: 'entree_id' },
   paie_variables:  { createdAt: 'created_at' },
   paie_envois:     { sentAt: 'sent_at' },
+  planning:        { heureDebut: 'heure_debut', heureFin: 'heure_fin', createdAt: 'created_at' },
 }
 
 const FIELD_FROM_DB = {}
@@ -210,4 +211,5 @@ export const db = {
   reglementPaye:  new SupabaseTable('reglement_paye'),
   paieVariables:  new SupabaseTable('paie_variables'),
   paieEnvois:     new SupabaseTable('paie_envois'),
+  planning:       new SupabaseTable('planning'),
 }
