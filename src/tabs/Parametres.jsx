@@ -3,8 +3,40 @@ import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { useSeason } from '../context/SeasonContext'
 import { DEFAULT_DELAIS, DEFAULT_NB_CHEQUE } from '../data/reglement'
+import { SIZE_TYPES, DEFAULT_GRID_BY_MARQUE } from '../data/sizes'
+import { getSociete } from '../data/societes'
 
 const MODES_REGLEMENT = ['', 'PRELEVEMENT', 'CHEQUE', 'GARANT', 'VIREMENT', 'GMS', 'LCR']
+
+// Enlève les accents et met en minuscules (pour comparer Famille, etc.)
+const stripLow = s => (s || '').normalize('NFD').split('').filter(c => { const n = c.charCodeAt(0); return n < 0x300 || n > 0x36f }).join('').trim().toLowerCase()
+
+// Normalise une taille CSV : "37,5" -> "37.5", espaces autour du tiret retirés ("35 - 36" -> "35-36")
+function normTaille(t) {
+  return String(t || '').trim().replace(',', '.').replace(/\s*-\s*/g, '-').replace(/\s*\/\s*/g, '-')
+}
+
+// Choisit la grille de pointure (clé SIZE_TYPES) selon marque, famille et taille
+function detectGrid(marque, famille, taille) {
+  const t = normTaille(taille)
+  const fam = stripLow(famille)
+  // 1) Taille en intervalle "XX-YY" -> Double pointure (>=33) ou Bébé (<33)
+  const range = t.match(/^(\d+)-(\d+)$/)
+  if (range) return parseInt(range[1], 10) >= 33 ? 'DP' : 'B'
+  // 2) Override par marque (Crocs/Havaianas -> DP)
+  const byMarque = DEFAULT_GRID_BY_MARQUE[stripLow(marque)]
+  if (byMarque) return byMarque
+  // 3) Taille alphabétique -> Taille unique / Accessoire
+  if (/^[a-z]/i.test(t)) {
+    if (/^(tu|u|uni|t\.?u\.?)$/i.test(t)) return 'TU'
+    return 'ACC'
+  }
+  // 4) Taille numérique -> selon la famille
+  if (fam.includes('homme')) return 'H'
+  if (fam.includes('femme')) return 'F'
+  if (fam.includes('garc') || fam.includes('fille') || fam.includes('enfant') || fam.includes('bebe') || fam.includes('junior') || fam.includes('cadet')) return 'E'
+  return 'F' // repli par défaut
+}
 
 function SubNav({ tabs, active, onChange }) {
   return (
@@ -168,33 +200,62 @@ function ImportCSVPanel({ magasinId, magasinNom, season }) {
   const [importing, setImporting] = useState(false)
   const [done,      setDone]      = useState(null)
 
-  function parseCSV(text) {
-    const out = []
+  // Parse le CSV (entête nommée, séparateur ; ou ,), filtre par société, agrège par modèle (Code + Couleur)
+  function parseCSV(text, societe) {
     const lines = text.split(/\r?\n/).filter(l => l.trim())
-    // séparateur : ';' s'il domine sur la 1ère ligne, sinon ','
-    const head = lines[0] || ''
-    const sep = (head.match(/;/g) || []).length > (head.match(/,/g) || []).length ? ';' : ','
-    lines.forEach((line, i) => {
-      const cols = parseCsvLine(line, sep)
-      const marque = (cols[0] || '').trim()
-      if (!marque) return
-      if (i === 0 && /^marques?$/i.test(marque)) return // entête (Marque/Marques)
-      const modele = (cols[1] || '').trim()
-      if (!modele) return
-      // cols 0..3 = Marque, Modèle, Qté, PA HT ; les colonnes suivantes sont ignorées
-      out.push({
-        marque, modele,
-        qte:  parseInt(String(cols[2] || '').replace(/[^\d-]/g, '')) || 0,
-        prix: parseNum(cols[3]),
-      })
-    })
-    return out
+    if (!lines.length) return { models: [], skippedSociete: 0 }
+    const sep = (lines[0].match(/;/g) || []).length > (lines[0].match(/,/g) || []).length ? ';' : ','
+    const header = parseCsvLine(lines[0], sep).map(stripLow)
+    const idx = (...names) => header.findIndex(h => names.some(n => h === n || h.includes(n)))
+    const col = {
+      marque:  idx('marque'),
+      code:    idx('code modele', 'modele'),
+      couleur: idx('couleur'),
+      taille:  idx('taille'),
+      famille: idx('famille'),
+      prix:    idx("prix d'achat", 'prix d achat', 'pa ht', 'prix achat'),
+      qte:     idx('quantite commande', 'qte', 'quantite'),
+      magasin: idx('magasin'),
+    }
+    const get = (cols, i) => (i >= 0 ? (cols[i] || '').trim() : '')
+    const agg = {}
+    let skippedSociete = 0
+    for (let r = 1; r < lines.length; r++) {
+      const cols = parseCsvLine(lines[r], sep)
+      const marque = get(cols, col.marque)
+      const code   = get(cols, col.code)
+      if (!marque || !code) continue
+      // filtre société (colonne Magasin = société) si présente
+      if (col.magasin >= 0 && societe) {
+        const rowSoc = get(cols, col.magasin)
+        if (rowSoc && stripLow(rowSoc) !== stripLow(societe)) { skippedSociete++; continue }
+      }
+      const couleur = get(cols, col.couleur)
+      const taille  = normTaille(get(cols, col.taille))
+      const famille = get(cols, col.famille)
+      const prix    = parseNum(get(cols, col.prix))
+      let qte       = parseInt(String(get(cols, col.qte)).replace(/[^\d-]/g, '')) || 0
+      if (!qte) { // repli : l'export se termine toujours par la quantité → dernière cellule non vide
+        for (let j = cols.length - 1; j >= 0; j--) {
+          const v = String(cols[j] || '').trim()
+          if (v) { qte = parseInt(v.replace(/[^\d-]/g, '')) || 0; break }
+        }
+      }
+      const modele  = couleur ? `${code}, ${couleur}` : code
+      const key = marque + '|' + modele
+      if (!agg[key]) agg[key] = { marque, modele, famille, typeKey: detectGrid(marque, famille, taille), sizes: {}, total: 0, prixTotal: 0 }
+      const m = agg[key]
+      if (taille) m.sizes[taille] = (m.sizes[taille] || 0) + qte
+      m.total += qte
+      m.prixTotal += prix * qte
+    }
+    return { models: Object.values(agg), skippedSociete }
   }
 
   async function handleFile(e) {
     const file = e.target.files[0]; if (!file) return
     e.target.value = ''
-    setPreview(parseCSV(await file.text())); setDone(null)
+    setPreview(parseCSV(await file.text(), getSociete(magasinNom))); setDone(null)
   }
 
   async function handleImport() {
@@ -202,7 +263,7 @@ function ImportCSVPanel({ magasinId, magasinNom, season }) {
     setImporting(true)
     try {
       const byMarque = {}
-      for (const r of preview) { (byMarque[r.marque] ||= []).push(r) }
+      for (const m of preview.models) { (byMarque[m.marque] ||= []).push(m) }
       let nbModeles = 0
       for (const [marque, items] of Object.entries(byMarque)) {
         let f = await db.fournisseurs.where('nom').equals(marque).first()
@@ -214,16 +275,23 @@ function ImportCSVPanel({ magasinId, magasinNom, season }) {
         const current = f.modelesBySeason?.[season] ?? f.modeles ?? []
         const names = [...new Set([...current, ...items.map(i => i.modele)])].sort()
         await db.fournisseurs.update(f.id, { modelesBySeason: { ...(f.modelesBySeason || {}), [season]: names } })
-        // quantités + prix HT total pour le magasin sélectionné
+        // quantités totales + prix HT total + quantités par taille + grille, pour le magasin sélectionné
         const existing = await db.parametres.where({ fournisseurId: f.id, magasinId }).filter(p => p.season === season).first()
-        const modeles     = { ...(existing?.modeles || {}) }
-        const prixModeles = { ...(existing?.prixModeles || {}) }
-        items.forEach(i => { modeles[i.modele] = i.qte; if (i.prix) prixModeles[i.modele] = i.prix })
-        if (existing) await db.parametres.update(existing.id, { modeles, prixModeles })
-        else          await db.parametres.add({ fournisseurId: f.id, magasinId, season, modeles, prixModeles })
+        const modeles      = { ...(existing?.modeles || {}) }
+        const prixModeles  = { ...(existing?.prixModeles || {}) }
+        const modelesSizes = { ...(existing?.modelesSizes || {}) }
+        const modelesTypes = { ...(existing?.modelesTypes || {}) }
+        items.forEach(i => {
+          modeles[i.modele]      = i.total
+          if (i.prixTotal) prixModeles[i.modele] = i.prixTotal
+          modelesSizes[i.modele] = i.sizes
+          modelesTypes[i.modele] = i.typeKey
+        })
+        if (existing) await db.parametres.update(existing.id, { modeles, prixModeles, modelesSizes, modelesTypes })
+        else          await db.parametres.add({ fournisseurId: f.id, magasinId, season, modeles, prixModeles, modelesSizes, modelesTypes })
         nbModeles += items.length
       }
-      setDone({ modeles: nbModeles, marques: Object.keys(byMarque).length })
+      setDone({ modeles: nbModeles, marques: Object.keys(byMarque).length, skipped: preview.skippedSociete })
       setPreview(null)
     } finally {
       setImporting(false)
@@ -236,7 +304,7 @@ function ImportCSVPanel({ magasinId, magasinNom, season }) {
         <div style={{ flex: 1 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)' }}>📂 Import CSV</span>
           <span style={{ fontSize: 12, color: 'var(--text-4)', marginLeft: 8 }}>
-Colonnes lues : <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>Marque, Modèle, Qté, PA HT</code> (les colonnes suivantes sont ignorées) — pour <strong>{magasinNom || '—'}</strong>
+Colonnes lues : <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>Marque ; Code Modèle ; Couleur ; Taille ; Famille ; Prix d'achat ; Quantité commandé</code>. Modèle = <em>Code, Couleur</em> ; quantités agrégées par pointure ; grille auto ; lignes filtrées sur la société de <strong>{magasinNom || '—'}</strong>.
           </span>
         </div>
         <input ref={fileRef} type="file" accept=".csv,.txt" style={{ display: 'none' }} onChange={handleFile} />
@@ -251,27 +319,40 @@ Colonnes lues : <code style={{ background: 'var(--surface-3)', padding: '1px 5px
       {done && (
         <div style={{ marginTop: 10, padding: '8px 12px', background: '#d1fae5', borderRadius: 8, fontSize: 13, color: '#059669' }}>
           ✅ {done.modeles} modèle{done.modeles !== 1 ? 's' : ''} importé{done.modeles !== 1 ? 's' : ''} ({done.marques} marque{done.marques !== 1 ? 's' : ''}) pour {magasinNom}.
+          {done.skipped > 0 && <span style={{ color: 'var(--text-3)' }}> — {done.skipped} ligne{done.skipped !== 1 ? 's' : ''} ignorée{done.skipped !== 1 ? 's' : ''} (autre société).</span>}
         </div>
       )}
 
       {preview && (
         <div style={{ marginTop: 12 }}>
           <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--text-2)' }}>
-            <strong>{preview.length}</strong> ligne{preview.length !== 1 ? 's' : ''} — quantités pour <strong>{magasinNom}</strong>
+            <strong>{preview.models.length}</strong> modèle{preview.models.length !== 1 ? 's' : ''} — quantités pour <strong>{magasinNom}</strong>
+            {preview.skippedSociete > 0 && <span style={{ color: 'var(--text-4)', marginLeft: 6 }}>({preview.skippedSociete} ligne{preview.skippedSociete !== 1 ? 's' : ''} autre société ignorée{preview.skippedSociete !== 1 ? 's' : ''})</span>}
           </p>
-          <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)' }}>
-            {preview.map((row, i) => (
-              <div key={i} style={{ padding: '6px 12px', borderBottom: '1px solid var(--surface-3)', fontSize: 13, display: 'flex', gap: 10, alignItems: 'baseline' }}>
-                <span style={{ fontWeight: 700, minWidth: 140 }}>{row.marque}</span>
-                <span style={{ flex: 1, color: 'var(--text-3)' }}>{row.modele}</span>
-                <span style={{ color: 'var(--text-3)', minWidth: 50, textAlign: 'right' }}>{row.qte} u.</span>
-                <span style={{ fontWeight: 700, color: 'var(--text-2)', minWidth: 70, textAlign: 'right' }}>{row.prix ? row.prix.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }) : '—'}</span>
-              </div>
-            ))}
+          {preview.models.length === 0 && (
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#f59e0b' }}>⚠️ Aucun modèle pour la société de ce magasin — vérifie le magasin sélectionné ou le fichier.</p>
+          )}
+          <div style={{ maxHeight: 240, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)' }}>
+            {preview.models.map((row, i) => {
+              const grid = SIZE_TYPES[row.typeKey]?.label || row.typeKey
+              const sizesStr = Object.entries(row.sizes).map(([t, q]) => `${t}:${q}`).join('  ')
+              return (
+                <div key={i} style={{ padding: '6px 12px', borderBottom: '1px solid var(--surface-3)', fontSize: 13 }}>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'baseline' }}>
+                    <span style={{ fontWeight: 700, minWidth: 120 }}>{row.marque}</span>
+                    <span style={{ flex: 1, color: 'var(--text-3)' }}>{row.modele}</span>
+                    <span style={{ fontSize: 11, color: 'var(--accent)', background: 'var(--accent-bg)', padding: '1px 6px', borderRadius: 4 }}>{grid}</span>
+                    <span style={{ color: 'var(--text-3)', minWidth: 44, textAlign: 'right' }}>{row.total} u.</span>
+                    <span style={{ fontWeight: 700, color: 'var(--text-2)', minWidth: 70, textAlign: 'right' }}>{row.prixTotal ? row.prixTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }) : '—'}</span>
+                  </div>
+                  {sizesStr && <div style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 2, fontFamily: 'ui-monospace, monospace' }}>{sizesStr}</div>}
+                </div>
+              )
+            })}
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-            <button type="button" onClick={handleImport} disabled={importing}
-              style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--accent-2)', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
+            <button type="button" onClick={handleImport} disabled={importing || preview.models.length === 0}
+              style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--accent-2)', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13, opacity: preview.models.length === 0 ? 0.5 : 1 }}>
               {importing ? '⏳ Importation…' : `✅ Importer (${magasinNom})`}
             </button>
             <button type="button" onClick={() => setPreview(null)}

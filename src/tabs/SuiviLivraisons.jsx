@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, Fragment } from 'react'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { GaugeBar } from '../components/shared'
 import { useSeason } from '../context/SeasonContext'
+import { SIZE_TYPES } from '../data/sizes'
 
 function Badge({ color, children }) {
   const map = {
@@ -27,10 +28,50 @@ function statusBadge(p) {
   return <Badge color="yellow">{Math.round(p)}%</Badge>
 }
 
-// Popup : détail par modèle (mêmes infos que par marque : reçu/attendu, barre, %)
+// Détail des quantités par pointure (attendu vs reçu) pour un modèle
+function SizeBreakdown({ m }) {
+  const grid = SIZE_TYPES[m.typeKey]?.sizes || []
+  const all = new Set([...Object.keys(m.sizesAttendu || {}), ...Object.keys(m.sizesRecu || {})])
+  const ordered = [...grid.filter(s => all.has(s)), ...[...all].filter(s => !grid.includes(s)).sort()]
+  if (!ordered.length) return <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-4)' }}>Aucun détail de pointure (à importer via le CSV).</div>
+  return (
+    <div style={{ padding: '6px 12px 10px' }}>
+      {m.typeKey && <div style={{ fontSize: 11, color: 'var(--text-4)', marginBottom: 4 }}>Grille : {SIZE_TYPES[m.typeKey]?.label || m.typeKey}</div>}
+      <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ color: 'var(--text-4)' }}>
+            <th style={{ textAlign: 'left', padding: '2px 6px' }}>Pointure</th>
+            <th style={{ textAlign: 'right', padding: '2px 6px' }}>Reçu</th>
+            <th style={{ textAlign: 'right', padding: '2px 6px' }}>Attendu</th>
+            <th style={{ width: 24 }}></th>
+          </tr>
+        </thead>
+        <tbody>
+          {ordered.map(s => {
+            const a = Number(m.sizesAttendu?.[s]) || 0
+            const r = Number(m.sizesRecu?.[s]) || 0
+            const icon = a > 0 ? (r >= a ? '✅' : (r > 0 ? '🔵' : '⬜')) : ''
+            return (
+              <tr key={s} style={{ borderTop: '1px solid var(--surface-3)' }}>
+                <td style={{ padding: '2px 6px', fontWeight: 600 }}>{s}</td>
+                <td style={{ padding: '2px 6px', textAlign: 'right', color: r ? 'var(--text)' : 'var(--text-4)' }}>{r}</td>
+                <td style={{ padding: '2px 6px', textAlign: 'right', color: 'var(--text-3)' }}>{a || '—'}</td>
+                <td style={{ textAlign: 'center' }}>{icon}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// Popup : détail par modèle (reçu/attendu, barre, %) + détail par pointure (dépliable)
 function DetailModal({ row, onClose }) {
   const modeles = row.modeles || []
   const globalPct = row.attendu > 0 ? Math.round(row.recu / row.attendu * 100) : 0
+  const [open, setOpen] = useState(null) // nom du modèle déplié
+  const hasSizes = m => Object.keys(m.sizesAttendu || {}).length > 0 || Object.keys(m.sizesRecu || {}).length > 0
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{ maxWidth: 580 }} onClick={e => e.stopPropagation()}>
@@ -50,16 +91,31 @@ function DetailModal({ row, onClose }) {
               <tbody>
                 {modeles.map(m => {
                   const p = m.attendu > 0 ? (m.recu / m.attendu) * 100 : 0
+                  const can = hasSizes(m)
+                  const isOpen = open === m.nom
                   return (
-                    <tr key={m.nom} className={m.recu === 0 ? 'row-zero' : ''}>
-                      <td className="brand-name">
-                        {m.nom}
-                        {m.numero && <span style={{ color: 'var(--text-4)', fontSize: 11, marginLeft: 6, fontWeight: 400 }}>N° {m.numero}</span>}
-                      </td>
-                      <td className="brand-count">{m.recu} / {m.attendu}</td>
-                      <td className="brand-bar"><GaugeBar percent={p} /></td>
-                      <td>{statusBadge(p)}</td>
-                    </tr>
+                    <Fragment key={m.nom}>
+                      <tr className={m.recu === 0 ? 'row-zero' : ''}
+                        onClick={can ? () => setOpen(isOpen ? null : m.nom) : undefined}
+                        style={{ cursor: can ? 'pointer' : 'default' }}
+                        title={can ? 'Voir le détail par pointure' : undefined}>
+                        <td className="brand-name">
+                          {can && <span style={{ color: 'var(--text-4)', fontSize: 10, marginRight: 5 }}>{isOpen ? '▾' : '▸'}</span>}
+                          {m.nom}
+                          {m.numero && <span style={{ color: 'var(--text-4)', fontSize: 11, marginLeft: 6, fontWeight: 400 }}>N° {m.numero}</span>}
+                        </td>
+                        <td className="brand-count">{m.recu} / {m.attendu}</td>
+                        <td className="brand-bar"><GaugeBar percent={p} /></td>
+                        <td>{statusBadge(p)}</td>
+                      </tr>
+                      {isOpen && (
+                        <tr>
+                          <td colSpan={4} style={{ background: 'var(--surface-2)', padding: 0 }}>
+                            <SizeBreakdown m={m} />
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   )
                 })}
               </tbody>
@@ -122,10 +178,11 @@ export default function SuiviLivraisons() {
     const magasinMap     = Object.fromEntries(magasins.map(m => [m.id, m.nom]))
     const fournisseurMap = Object.fromEntries(fournisseurs.map(f => [f.id, f.nom]))
 
-    // Quantités reçues par fournisseur × magasin (total + détail par modèle + N°)
+    // Quantités reçues par fournisseur × magasin (total + détail par modèle + N° + par pointure)
     const recuByKey        = {}
     const recuModelByKey   = {}
     const numeroModelByKey = {}
+    const recuSizesByKey   = {}
     entrees.forEach(e => {
       if (e.statut === 'Retour') return // les retours ne sont pas comptabilisés dans le reçu
       const k = e.fournisseurId + '_' + e.magasinId
@@ -136,6 +193,13 @@ export default function SuiviLivraisons() {
       if (!numeroModelByKey[k]) numeroModelByKey[k] = {}
       if (!numeroModelByKey[k][mod]) numeroModelByKey[k][mod] = new Set()
       if (e.numero) numeroModelByKey[k][mod].add(e.numero)
+      // détail par pointure (reçu)
+      if (!recuSizesByKey[k]) recuSizesByKey[k] = {}
+      if (!recuSizesByKey[k][mod]) recuSizesByKey[k][mod] = {}
+      for (const [t, q] of Object.entries(e.sizes || {})) {
+        const n = Number(q) || 0
+        if (n) recuSizesByKey[k][mod][t] = (recuSizesByKey[k][mod][t] || 0) + n
+      }
     })
 
     return params
@@ -146,12 +210,18 @@ export default function SuiviLivraisons() {
         const attenduModels = p.modeles || {}
         const numeroModels  = numeroModelByKey[key] || {}
         const names = [...new Set([...Object.keys(attenduModels), ...Object.keys(recuModels)])]
+        const attenduSizesAll = p.modelesSizes || {}
+        const typesAll        = p.modelesTypes || {}
+        const recuSizesAll    = recuSizesByKey[key] || {}
         const modeles = names
           .map(nom => ({
             nom,
             recu:    recuModels[nom] || 0,
             attendu: attenduModels[nom] || 0,
             numero:  [...(numeroModels[nom] || [])].sort((a, b) => a - b).join(', '),
+            sizesAttendu: attenduSizesAll[nom] || {},
+            sizesRecu:    recuSizesAll[nom] || {},
+            typeKey:      typesAll[nom] || null,
           }))
           .sort((a, b) => (b.attendu - a.attendu) || (b.recu - a.recu) || a.nom.localeCompare(b.nom))
         return {

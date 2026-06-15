@@ -67,6 +67,12 @@ export default function EntreeForm({ onClose, onSaved }) {
     return () => { cancelled = true }
   }, [form.magasin, form.marque, season])
 
+  // Secours : si le modèle est déjà choisi et que la grille est vide quand la ligne Achats arrive, pré-remplir
+  useEffect(() => {
+    if (form.modele && quantities.length && quantities.every(q => !q)) prefillExpected(form.modele)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramRow])
+
   // Prix unitaire HT = prix HT total du modèle ÷ quantité commandée (sinon PM de secours)
   const unitPrice = useMemo(() => {
     if (!paramRow) return 0
@@ -78,6 +84,45 @@ export default function EntreeForm({ onClose, onSaved }) {
 
   function set(field, val) { setForm(f => ({ ...f, [field]: val })) }
   function setQty(i, val)  { setQuantities(q => { const n = [...q]; n[i] = val; return n }) }
+
+  // À la sélection d'un modèle : pré-remplit la grille avec le RESTE à recevoir
+  // = quantités attendues (import) − déjà reçu pour ce modèle (magasin × marque × saison)
+  async function prefillExpected(modele) {
+    const expected = paramRow?.modelesSizes?.[modele]
+    if (!expected || !Object.keys(expected).length) return
+    const gridKey = paramRow?.modelesTypes?.[modele] || form.typeKey
+    const sizes   = SIZE_TYPES[gridKey]?.sizes ?? []
+    // déjà reçu (hors retours) + N° / catégorie déjà saisis pour ce modèle
+    const recu = {}
+    let lastNumero = '', lastCat = ''
+    try {
+      const mag  = await db.magasins.where('nom').equals(form.magasin).first()
+      const four = await db.fournisseurs.where('nom').equals(form.marque).first()
+      if (mag && four) {
+        const rows = await db.entrees.where('fournisseurId').equals(four.id)
+          .and(e => e.magasinId === mag.id && e.season === season && e.modele === modele && e.statut !== 'Retour').toArray()
+        rows.sort((a, b) => (a.id || 0) - (b.id || 0)) // chronologique → on garde le dernier N°/catégorie
+        rows.forEach(e => {
+          for (const [s, q] of Object.entries(e.sizes || {})) recu[s] = (recu[s] || 0) + (Number(q) || 0)
+          if (e.numero)    lastNumero = e.numero
+          if (e.categorie) lastCat    = e.categorie
+        })
+      }
+    } catch { /* on garde l'attendu brut si la lecture échoue */ }
+    const qty = sizes.map(s => {
+      const rem = (Number(expected[s]) || 0) - (recu[s] || 0)
+      return rem > 0 ? String(rem) : ''
+    })
+    const changeGrid = gridKey !== form.typeKey
+    setForm(f => ({
+      ...f,
+      numero:    lastNumero || f.numero,
+      categorie: lastCat    || f.categorie,
+      ...(changeGrid ? { typeKey: gridKey } : {}),
+    }))
+    if (changeGrid) setTimeout(() => setQuantities(qty), 50) // après l'effet qui réinitialise la grille
+    else            setQuantities(qty)
+  }
 
   const total = quantities.reduce((s, v) => s + (parseInt(v) || 0), 0)
 
@@ -225,7 +270,7 @@ export default function EntreeForm({ onClose, onSaved }) {
                 <label>Modèle et critères</label>
                 <ComboBox
                   value={form.modele}
-                  onChange={v => set('modele', v)}
+                  onChange={v => { set('modele', v); prefillExpected(v) }}
                   options={modelesSuggestions}
                   placeholder="ex: FIJI, Mushroom"
                 />
