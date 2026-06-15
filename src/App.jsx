@@ -313,7 +313,7 @@ const APPS = [
   { id: 'commandes', icon: '🛍️', title: 'Commandes Clients',  desc: 'Commandes inter-magasins, B2B et clients', gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
   { id: 'achats',    icon: '🛒',  title: 'Achats',             desc: 'Objectifs et réalisé par marque',          gradient: 'linear-gradient(135deg, #10b981, #059669)' },
   { id: 'defectueux',icon: '🛠️', title: 'Gestion des défectueux', desc: 'Suivi des défauts et demandes d’avoir',  gradient: 'linear-gradient(135deg, #f43f5e, #be123c)' },
-  { id: 'paie',      icon: '🧾',  title: 'Éléments variables de paie', desc: 'Chaque salarié remplit ses éléments du mois', gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+  { id: 'paie',      icon: '🧾',  title: 'Éléments variables de paie', desc: 'Chaque salarié remplit ses éléments du mois', warning: '⚠️ À remplir avant le 25 de chaque mois !', gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
 ]
 
 function AppCard({ app, onClick }) {
@@ -324,6 +324,7 @@ function AppCard({ app, onClick }) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
+        position: 'relative',
         display: 'flex', alignItems: 'center', gap: 20,
         background: 'var(--surface)', border: '2px solid', borderColor: hover ? 'var(--accent)' : 'var(--border)',
         borderRadius: 20, padding: '26px 34px', cursor: 'pointer',
@@ -332,6 +333,17 @@ function AppCard({ app, onClick }) {
         transition: 'all 0.2s ease', textAlign: 'left', width: 360, maxWidth: '100%',
       }}
     >
+      {app.warning && hover && (
+        <div style={{
+          position: 'absolute', left: '50%', bottom: '100%', zIndex: 20,
+          transform: 'translate(-50%, -8px) rotate(-3deg)', pointerEvents: 'none',
+          background: '#fde047', color: '#7c2d12', fontSize: 13, fontWeight: 700,
+          padding: '10px 14px', borderRadius: 4, maxWidth: 240, lineHeight: 1.35,
+          boxShadow: '0 8px 20px rgba(0,0,0,0.28)',
+        }}>
+          {app.warning}
+        </div>
+      )}
       <div style={{
         width: 64, height: 64, borderRadius: 16, flexShrink: 0, background: app.gradient,
         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32,

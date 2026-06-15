@@ -2,12 +2,84 @@ import { useState, useMemo } from 'react'
 import { db } from '../db'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { LoadingState } from '../components/shared'
-import { currentPeriode, periodeLabel, shiftPeriode } from './constants'
-import { sendPaieRecap, buildRecapText, emailjsConfigured } from './mail'
+import { currentPeriode, periodeLabel, shiftPeriode, isGerant } from './constants'
+import { sendPaieRecap, buildRecapText, sendModificationRequest, modificationGmailUrl } from './mail'
 import PaieForm from './PaieForm'
 
-const RECAP_EMAIL = 'jeremie.seigne@gmail.com'
+const RECAP_EMAIL = 'marion.fouquereau@lecussan.fr'   // récap mensuel → comptable
+const ADMIN_EMAIL = 'jeremie.seigne@gmail.com'        // demandes de modification → direction
 const PIN_CODE = '2201'
+
+// ─── Document déjà validé : verrouillé + demande de modification ──────────────
+function LockedView({ salarie, periode, onBack }) {
+  const [message, setMessage] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [sent, setSent] = useState(false)
+
+  async function envoyer() {
+    if (!message.trim()) { alert('Merci de décrire la modification souhaitée.'); return }
+    setBusy(true)
+    try {
+      await sendModificationRequest({ salarie, periode, message, toEmail: ADMIN_EMAIL })
+    } catch {
+      // Envoi auto indisponible → ouverture de Gmail pré-rempli
+      window.open(modificationGmailUrl({ salarie, periode, message, toEmail: ADMIN_EMAIL }), '_blank')
+    } finally {
+      setBusy(false); setSent(true)
+    }
+  }
+
+  if (sent) {
+    return (
+      <div style={{ maxWidth: 520, margin: '40px auto 0', textAlign: 'center',
+        background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '40px 28px', boxShadow: '0 4px 16px var(--shadow)' }}>
+        <div style={{ fontSize: 48, marginBottom: 10 }}>📨</div>
+        <h2 style={{ margin: '0 0 10px', fontSize: 22, fontWeight: 800, color: 'var(--text)' }}>Demande envoyée</h2>
+        <p style={{ margin: '0 0 24px', fontSize: 15, color: 'var(--text-3)', lineHeight: 1.5 }}>
+          Ta demande de modification a bien été transmise à la direction. Tu seras recontacté(e) si besoin.
+        </p>
+        <button onClick={onBack}
+          style={{ padding: '12px 26px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, #fff)', cursor: 'pointer', fontWeight: 700, fontSize: 15 }}>
+          Retour à la liste
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ maxWidth: 560, margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <button onClick={onBack} style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', fontSize: 16, color: 'var(--text-2)' }}>←</button>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>{salarie}</h2>
+      </div>
+
+      <div style={{ background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 12, padding: '16px 18px', marginBottom: 16 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: '#92400e', marginBottom: 6 }}>🔒 Document déjà validé</div>
+        <p style={{ margin: 0, fontSize: 14, color: '#92400e', lineHeight: 1.5 }}>
+          Ce document a été enregistré et <strong>ne peut plus être modifié</strong>, pour garantir la confidentialité des informations transmises à la comptabilité.
+          Si une information est erronée ou doit être complétée, décris ta demande ci-dessous : elle sera <strong>transmise directement à la direction</strong> qui effectuera la correction.
+        </p>
+      </div>
+
+      <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Demande de modification</label>
+      <textarea value={message} onChange={e => setMessage(e.target.value)} rows={5}
+        placeholder="Décris précisément ce qui doit être corrigé (ex. : ajouter 2 h supplémentaires le 12/06)…"
+        style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14,
+          outline: 'none', background: 'var(--surface)', color: 'var(--text)', resize: 'vertical', fontFamily: 'inherit' }} />
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
+        <button onClick={onBack} disabled={busy}
+          style={{ padding: '12px 20px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 15 }}>
+          Annuler
+        </button>
+        <button onClick={envoyer} disabled={busy}
+          style={{ padding: '12px 28px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, #fff)', cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
+          {busy ? 'Envoi…' : '📨 Envoyer la demande'}
+        </button>
+      </div>
+    </div>
+  )
+}
 
 // ─── Petite modale code PIN (récap réservé) ──────────────────────────────────
 function PinGate({ onSuccess, onClose }) {
@@ -41,7 +113,7 @@ function PinGate({ onSuccess, onClose }) {
 }
 
 // ─── Vue récap (admin) ───────────────────────────────────────────────────────
-function RecapView({ periode, rows, envoi, onBack }) {
+function RecapView({ periode, rows, envoi, onBack, onEdit }) {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(null)
   const recapText = buildRecapText(periode, rows)
@@ -93,12 +165,21 @@ function RecapView({ periode, rows, envoi, onBack }) {
         </button>
       </div>
 
-      {!emailjsConfigured && (
-        <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--text-4)' }}>
-          ⓘ Envoi 100 % automatique non configuré (clés EmailJS manquantes) — utilise « Ouvrir dans Gmail » en attendant.
-        </p>
+      {msg &&<p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 600, color: msg.ok ? '#059669' : '#dc2626' }}>{msg.text}</p>}
+
+      {onEdit && rows.length > 0 && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Corriger une saisie (réservé direction) :</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {rows.slice().sort((a, b) => a.salarie.localeCompare(b.salarie)).map(r => (
+              <button key={r.id} onClick={() => onEdit(r)}
+                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer', fontSize: 13 }}>
+                ✏️ {r.salarie}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
-      {msg && <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 600, color: msg.ok ? '#059669' : '#dc2626' }}>{msg.text}</p>}
 
       <pre style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 12, padding: 16,
         fontSize: 13, color: 'var(--text)', whiteSpace: 'pre-wrap', fontFamily: 'ui-monospace, monospace', lineHeight: 1.5 }}>
@@ -112,12 +193,13 @@ function RecapView({ periode, rows, envoi, onBack }) {
 export default function Paie() {
   const [periode, setPeriode] = useState(currentPeriode())
   const [editing, setEditing] = useState(null)   // { salarie, existing }
+  const [locked, setLocked] = useState(null)     // nom du salarié dont le doc est verrouillé
   const [justSaved, setJustSaved] = useState(false)
   const [recapOpen, setRecapOpen] = useState(false)
   const [pinOpen, setPinOpen] = useState(false)
 
-  const salaries = useLiveQuery(() => db.salaries.orderBy('nom').toArray(), [])
-  const rows     = useLiveQuery(() => db.paieVariables.where('periode').equals(periode).toArray(), [periode])
+  const salaries = useLiveQuery(async () => (await db.salaries.orderBy('nom').toArray()).filter(s => !isGerant(s.nom)), [])
+  const rows     = useLiveQuery(async () => (await db.paieVariables.where('periode').equals(periode).toArray()).filter(r => !isGerant(r.salarie)), [periode])
   const envoi    = useLiveQuery(() => db.paieEnvois.where('periode').equals(periode).first(), [periode])
 
   const byName = useMemo(() => {
@@ -133,19 +215,20 @@ export default function Paie() {
 
   function openSalarie(nom) {
     const existing = byName.get(nom)
-    if (existing && !window.confirm(`${nom} : document déjà rempli pour ${periodeLabel(periode)}. Modifier la saisie ?`)) return
-    setEditing({ salarie: nom, existing: existing || null })
+    if (existing) { setLocked(nom); return }   // déjà validé → verrouillé (demande de modif)
+    setEditing({ salarie: nom, existing: null })
   }
 
   // Après enregistrement : confirmation + tentative d'envoi auto si tout le monde a rempli
   async function handleSaved() {
+    const fromRecap = recapOpen
     setEditing(null)
-    setJustSaved(true)
+    if (!fromRecap) setJustSaved(true)   // confirmation salarié uniquement ; depuis le récap on y retourne
     try {
-      const fresh = await db.paieVariables.where('periode').equals(periode).toArray()
+      const fresh = (await db.paieVariables.where('periode').equals(periode).toArray()).filter(r => !isGerant(r.salarie))
       const names = new Set(fresh.map(r => r.salarie))
       const complete = salaries.length > 0 && salaries.every(s => names.has(s.nom))
-      if (!complete || !emailjsConfigured) return
+      if (!complete) return
       const already = await db.paieEnvois.where('periode').equals(periode).first()
       if (already) return
       let envoiId
@@ -163,13 +246,18 @@ export default function Paie() {
 
   function changePeriode(delta) {
     setPeriode(p => shiftPeriode(p, delta))
-    setJustSaved(false); setEditing(null); setRecapOpen(false)
+    setJustSaved(false); setEditing(null); setRecapOpen(false); setLocked(null)
   }
 
   // ── Formulaire de saisie ──
   if (editing) {
     return <PaieForm salarie={editing.salarie} periode={periode} existing={editing.existing}
       onSaved={handleSaved} onCancel={() => setEditing(null)} />
+  }
+
+  // ── Document verrouillé (demande de modification) ──
+  if (locked) {
+    return <LockedView salarie={locked} periode={periode} onBack={() => setLocked(null)} />
   }
 
   // ── Confirmation après enregistrement ──
@@ -192,7 +280,8 @@ export default function Paie() {
 
   // ── Récap admin ──
   if (recapOpen) {
-    return <RecapView periode={periode} rows={rows} envoi={envoi} onBack={() => setRecapOpen(false)} />
+    return <RecapView periode={periode} rows={rows} envoi={envoi} onBack={() => setRecapOpen(false)}
+      onEdit={row => setEditing({ salarie: row.salarie, existing: row })} />
   }
 
   // ── Liste des salariés ──

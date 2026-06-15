@@ -1,11 +1,21 @@
 import { HOUR_SECTIONS, RANGE_SECTIONS, periodeLabel } from './constants'
 
-// Clés EmailJS (voir .env.local) — sans elles, l'envoi auto est désactivé
-const SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID
-const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
-const PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
-
-export const emailjsConfigured = !!(SERVICE_ID && TEMPLATE_ID && PUBLIC_KEY)
+// Appel de la fonction serveur d'envoi (Vercel api/send-mail.js, ou middleware Vite en dev)
+async function postMail({ to, subject, text }) {
+  let res
+  try {
+    res = await fetch('/api/send-mail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, subject, text }),
+    })
+  } catch {
+    throw new Error('Service d’envoi injoignable')
+  }
+  let data
+  try { data = await res.json() } catch { throw new Error('Service d’envoi indisponible (réservé à la version en ligne)') }
+  if (!res.ok || !data.ok) throw new Error(data?.error || `Erreur ${res.status}`)
+}
 
 function fmtDate(d) {
   if (!d) return '?'
@@ -43,34 +53,69 @@ export function buildRecapText(periode, rows) {
     const s = r.societe || 'Sans société'
     ;(bySoc[s] ||= []).push(r)
   }
-  const parts = [`Éléments variables de paie — ${periodeLabel(periode)}`, '']
+  const parts = [
+    'Bonjour Marion,',
+    'J’espère que vous allez bien.',
+    `Veuillez trouver ci-dessous les informations nécessaires pour les bulletins de paie de ${periodeLabel(periode)} :`,
+    '',
+  ]
   for (const soc of Object.keys(bySoc).sort()) {
     parts.push(`═══ ${soc} ═══`, '')
     bySoc[soc].sort((a, b) => a.salarie.localeCompare(b.salarie)).forEach(r => {
       parts.push(salarieBlock(r), '')
     })
   }
+  parts.push(...SIGNATURE)
   return parts.join('\n')
 }
 
-// Envoi du récap via l'API REST EmailJS (lève une erreur si non configuré ou échec)
-export async function sendPaieRecap({ periode, rows, toEmail }) {
-  if (!emailjsConfigured) throw new Error('EmailJS non configuré')
-  const recap = buildRecapText(periode, rows)
-  const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      service_id: SERVICE_ID,
-      template_id: TEMPLATE_ID,
-      user_id: PUBLIC_KEY,
-      template_params: {
-        to_email: toEmail,
-        periode: periodeLabel(periode),
-        recap,
-      },
-    }),
+// Signature ajoutée à la fin du récap
+const SIGNATURE = [
+  'Bien cordialement,',
+  '',
+  'Jérémie Seigné',
+  '______________________',
+  '',
+  "B'Shoes & JR Shoes",
+  'T / 06.85.78.69.40',
+  'M / bshoes.albi@gmail.com',
+]
+
+// ─── Demande de modification (envoyée à la direction) ────────────────────────
+function modificationBody({ salarie, periode, message }) {
+  return `Bonjour,
+
+Une demande de modification des éléments variables de paie a été déposée.
+
+Salarié : ${salarie}
+Période : ${periodeLabel(periode)}
+
+Détail de la demande :
+${(message || '').trim() || '(aucun détail fourni)'}`
+}
+
+export function modificationGmailUrl({ salarie, periode, message, toEmail }) {
+  const su = `Demande de modification paie — ${salarie} — ${periodeLabel(periode)}`
+  const body = modificationBody({ salarie, periode, message })
+  return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(toEmail)}&su=${encodeURIComponent(su)}&body=${encodeURIComponent(body)}`
+}
+
+// Envoi de la demande de modification à la direction
+export async function sendModificationRequest({ salarie, periode, message, toEmail }) {
+  await postMail({
+    to: toEmail,
+    subject: `Demande de modification paie — ${salarie} — ${periodeLabel(periode)}`,
+    text: modificationBody({ salarie, periode, message }),
   })
-  if (!res.ok) throw new Error(`EmailJS ${res.status}: ${await res.text()}`)
+}
+
+// Envoi du récap mensuel à la comptable
+export async function sendPaieRecap({ periode, rows, toEmail }) {
+  const recap = buildRecapText(periode, rows)
+  await postMail({
+    to: toEmail,
+    subject: `Éléments variables de paie — ${periodeLabel(periode)}`,
+    text: recap,
+  })
   return recap
 }

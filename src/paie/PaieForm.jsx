@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { db } from '../db'
-import { SOCIETES, HOUR_SECTIONS, RANGE_SECTIONS } from './constants'
+import { SOCIETES, SOCIETE_MAGASINS, HOUR_SECTIONS, RANGE_SECTIONS } from './constants'
 
 const inputStyle = {
   padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 8,
@@ -89,7 +89,9 @@ export default function PaieForm({ salarie, periode, existing, onSaved, onCancel
         <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Société *</label>
         <select value={societe} onChange={e => setSociete(e.target.value)} style={{ ...inputStyle, width: '100%' }}>
           <option value="">— Choisir —</option>
-          {SOCIETES.map(s => <option key={s}>{s}</option>)}
+          {SOCIETES.map(s => (
+            <option key={s} value={s}>{s}{SOCIETE_MAGASINS[s] ? ` (${SOCIETE_MAGASINS[s]})` : ''}</option>
+          ))}
         </select>
       </div>
 

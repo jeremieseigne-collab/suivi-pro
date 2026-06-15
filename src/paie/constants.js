@@ -2,6 +2,17 @@ import { SOCIETES } from '../data/societes'
 
 export { SOCIETES }
 
+// Magasins concernés par chaque société (affichés dans le sélecteur de l'App Paie)
+export const SOCIETE_MAGASINS = {
+  "B'Shoes":  'Bailly Albi & Les 2 Zèbres',
+  'JR Shoes': 'Bailly Rouffiac',
+}
+
+// Gérants exclus de l'App Paie (ils restent dans la table salaries pour les autres apps)
+const norm = s => (s || '').normalize('NFD').split('').filter(c => { const n = c.charCodeAt(0); return n < 0x300 || n > 0x36f }).join('').trim().toLowerCase()
+const GERANTS = ['Jérémie', 'Raphaël'].map(norm)
+export const isGerant = nom => GERANTS.includes(norm(nom))
+
 const MOIS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
 // Période courante au format 'AAAA-MM'
