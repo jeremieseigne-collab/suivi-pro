@@ -484,11 +484,68 @@ function SectionFournisseurs() {
   )
 }
 
+// ─── Modale : plan chèque personnalisé (dates + montants) par saison ─────────
+function ChequePlanModal({ fournisseur, magasin, seasonLabel, initial, onSave, onClose }) {
+  const [rows, setRows] = useState(initial.length ? initial.map(c => ({ date: c.date || '', montant: c.montant ?? '' })) : [{ date: '', montant: '' }])
+  const set = (i, field, val) => setRows(rs => rs.map((r, j) => j === i ? { ...r, [field]: val } : r))
+  const add = () => setRows(rs => [...rs, { date: '', montant: '' }])
+  const del = i => setRows(rs => rs.filter((_, j) => j !== i))
+  const total = rows.reduce((s, r) => s + (Number(r.montant) || 0), 0)
+
+  function save() {
+    const clean = rows.filter(r => r.date && Number(r.montant)).map(r => ({ date: r.date, montant: Number(r.montant) }))
+    onSave(clean)
+  }
+
+  const inp = { padding: '7px 9px', border: '1px solid var(--border)', borderRadius: 7, fontSize: 13, outline: 'none', background: 'var(--surface)', color: 'var(--text)' }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
+      <div style={{ background: 'var(--surface)', borderRadius: 14, padding: 24, width: 440, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px var(--shadow-lg)' }} onClick={e => e.stopPropagation()}>
+        <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>🗓 Plan chèque</h2>
+        <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-3)' }}>
+          {fournisseur} × {magasin} — <strong>{seasonLabel}</strong><br />
+          Saisis chaque chèque (date d'encaissement + montant). Remplace le calcul automatique.
+        </p>
+
+        {rows.map((r, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-4)', width: 18 }}>{i + 1}</span>
+            <input type="date" value={r.date} onChange={e => set(i, 'date', e.target.value)} style={{ ...inp, flex: 1 }} />
+            <input type="number" min="0" step="0.01" placeholder="montant" value={r.montant} onChange={e => set(i, 'montant', e.target.value)} style={{ ...inp, width: 110 }} />
+            <span style={{ fontSize: 13, color: 'var(--text-3)' }}>€</span>
+            <button onClick={() => del(i)} title="Supprimer" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#cbd5e1', fontSize: 15 }}
+              onMouseEnter={e => e.currentTarget.style.color = '#ef4444'} onMouseLeave={e => e.currentTarget.style.color = '#cbd5e1'}>🗑</button>
+          </div>
+        ))}
+
+        <button onClick={add} style={{ marginTop: 2, padding: '6px 12px', borderRadius: 8, border: '1px dashed var(--border)', background: 'var(--surface)', color: 'var(--accent)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+          ＋ Ajouter un chèque
+        </button>
+
+        <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)', fontSize: 14, color: 'var(--text-2)' }}>
+          Total : <strong>{total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}</strong>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>
+          <button onClick={onClose} style={{ padding: '10px 18px', borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 14 }}>Annuler</button>
+          <button onClick={save} style={{ padding: '10px 22px', borderRadius: 9, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, #fff)', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>Enregistrer</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Section Modes de règlement ─────────────────────────────────────────────
 function SectionModes() {
+  const { season, seasons } = useSeason()
+  const seasonLabel    = (seasons.find(s => s.id === season) || {}).label || season
   const magasins       = useLiveQuery(() => db.magasins.orderBy('nom').toArray(), [])
   const fournisseurs   = useLiveQuery(() => db.fournisseurs.orderBy('nom').toArray(), [])
   const modesReglement = useLiveQuery(() => db.modesReglement.toArray(), [])
+  const params         = useLiveQuery(() => db.parametres.where('season').equals(season).toArray(), [season])
+
+  const [chequeModal, setChequeModal] = useState(null) // { fId, mId, fNom, mNom }
 
   const modeMap = {}
   const idMap   = {}
@@ -499,6 +556,17 @@ function SectionModes() {
     idMap[k]   = m.id
     condMap[k] = m.condition || {}
   })
+
+  // Plan chèque par saison (stocké dans parametres.cheques)
+  const chequesMap = {}
+  ;(params || []).forEach(p => { chequesMap[p.fournisseurId + '_' + p.magasinId] = Array.isArray(p.cheques) ? p.cheques : [] })
+
+  async function setCheques(fId, mId, cheques) {
+    // recherche en base (et pas seulement dans le snapshot) pour ne jamais créer de doublon de ligne parametres
+    const existing = await db.parametres.where({ fournisseurId: fId, magasinId: mId }).filter(p => p.season === season).first()
+    if (existing) await db.parametres.update(existing.id, { cheques })
+    else          await db.parametres.add({ fournisseurId: fId, magasinId: mId, season, cheques })
+  }
 
   async function setMode(fId, mId, mode) {
     const k = fId + '_' + mId
@@ -522,11 +590,12 @@ function SectionModes() {
   if (!magasins || !fournisseurs) return null
 
   return (
+    <>
     <div className="store-card" style={{ padding: 0, overflow: 'hidden' }}>
       <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
         <p style={{ fontSize: 13, color: 'var(--text-3)', margin: 0 }}>
           Mode de règlement <strong>et conditions</strong> par marque × magasin (utilisé dans le plan de règlement).
-          <br /><strong>CHEQUE</strong> : nombre de chèques (montant ÷ N sur N fins de mois). <strong>Autres</strong> : délais en jours, séparés par des virgules — ex. <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>0</code> (jour de livraison), <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>30, 60</code> (2 échéances). Vide = valeur par défaut.
+          <br /><strong>CHEQUE</strong> : nombre de chèques (montant ÷ N sur N fins de mois) <em>ou</em> bouton 🗓 pour saisir un <strong>plan chèque personnalisé</strong> (dates + montants), <strong>par saison</strong> (saison active : <strong>{seasonLabel}</strong>) — le plan perso remplace le calcul auto. <strong>Autres</strong> : délais en jours, séparés par des virgules — ex. <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>0</code> (jour de livraison), <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>30, 60</code> (2 échéances). Vide = valeur par défaut.
         </p>
       </div>
       <div style={{ overflowX: 'auto' }}>
@@ -558,15 +627,31 @@ function SectionModes() {
                       >
                         {MODES_REGLEMENT.map(mo => <option key={mo} value={mo}>{mo || '—'}</option>)}
                       </select>
-                      {cur === 'CHEQUE' && (
-                        <div style={{ marginTop: 5 }}>
-                          <input key={k + '-ch'} type="number" min="1" defaultValue={cond.nb ?? ''}
-                            onBlur={e => setCondition(f.id, m.id, { nb: parseInt(e.target.value) || null })}
-                            placeholder={String(DEFAULT_NB_CHEQUE)} title="Nombre de chèques"
-                            style={{ ...inputStyle, width: 64 }} />
-                          <span style={{ fontSize: 11, color: 'var(--text-4)', marginLeft: 4 }}>chèq.</span>
-                        </div>
-                      )}
+                      {cur === 'CHEQUE' && (() => {
+                        const plan = chequesMap[k] || []
+                        return (
+                          <div style={{ marginTop: 5, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                            <div>
+                              <input key={k + '-ch'} type="number" min="1" defaultValue={cond.nb ?? ''}
+                                onBlur={e => setCondition(f.id, m.id, { nb: parseInt(e.target.value) || null })}
+                                placeholder={String(DEFAULT_NB_CHEQUE)} title="Nombre de chèques (calcul auto)"
+                                disabled={plan.length > 0}
+                                style={{ ...inputStyle, width: 64, opacity: plan.length > 0 ? 0.45 : 1 }} />
+                              <span style={{ fontSize: 11, color: 'var(--text-4)', marginLeft: 4 }}>chèq.</span>
+                            </div>
+                            <button onClick={() => setChequeModal({ fId: f.id, mId: m.id, fNom: f.nom, mNom: m.nom })}
+                              title="Plan chèque personnalisé (dates + montants), par saison"
+                              style={{
+                                padding: '3px 8px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
+                                border: '1px solid', borderColor: plan.length ? 'var(--accent)' : 'var(--border)',
+                                background: plan.length ? 'var(--accent-bg)' : 'var(--surface)',
+                                color: plan.length ? 'var(--accent)' : 'var(--text-3)', fontWeight: plan.length ? 700 : 400,
+                              }}>
+                              🗓 {plan.length ? `${plan.length} date(s)` : 'Dates perso'}
+                            </button>
+                          </div>
+                        )
+                      })()}
                       {cur && cur !== 'CHEQUE' && (
                         <div style={{ marginTop: 5 }}>
                           <input key={k + '-de'} type="text" defaultValue={(cond.delais || []).join(', ')}
@@ -590,6 +675,15 @@ function SectionModes() {
         </table>
       </div>
     </div>
+    {chequeModal && (
+      <ChequePlanModal
+        fournisseur={chequeModal.fNom} magasin={chequeModal.mNom} seasonLabel={seasonLabel}
+        initial={chequesMap[chequeModal.fId + '_' + chequeModal.mId] || []}
+        onSave={async (cheques) => { await setCheques(chequeModal.fId, chequeModal.mId, cheques); setChequeModal(null) }}
+        onClose={() => setChequeModal(null)}
+      />
+    )}
+    </>
   )
 }
 

@@ -47,6 +47,23 @@ function echeancesCheque(fournisseur, magasin, reelTotal, firstDate, nb, keyBase
   }))
 }
 
+// CHEQUE personnalisé : liste de chèques { date, montant } saisie par saison (Paramètres → Modes de règlement)
+function echeancesChequeCustom(fournisseur, magasin, cheques, keyBase) {
+  return cheques.map((c, i) => {
+    const date = parseDate(c.date)
+    const montant = Number(c.montant)
+    if (!date || !montant) return null
+    return {
+      date, montant,
+      info: `Chèque ${i + 1}/${cheques.length}`,
+      fournisseur, magasin, mode: 'CHEQUE',
+      societe: getSociete(magasin),
+      source: 'Plan chèque personnalisé',
+      key: `${keyBase}|${i}`,
+    }
+  }).filter(Boolean)
+}
+
 // Autres modes : montant réparti à parts égales sur la liste de délais (jours après livraison)
 function echeancesLivraison(fournisseur, magasin, montant, livraisonDate, mode, delais, keyBase) {
   if (!livraisonDate || !montant || montant <= 0 || !delais || !delais.length) return []
@@ -137,10 +154,16 @@ export default function PlanReglement() {
       if (!regle || regle.mode !== 'CHEQUE') return
       const fNom = fournisseurMap[p.fournisseurId]
       const mNom = magasinMap[p.magasinId]
-      if (!fNom || !mNom || !p.reelN) return
-      const firstDate = firstReception[fNom + mNom]
-      const nb = parseInt(regle.cond.nb) || DEFAULT_NB_CHEQUE
-      result.push(...echeancesCheque(fNom, mNom, p.reelN, firstDate, nb, `cheque|${p.fournisseurId}|${p.magasinId}|${season}`))
+      if (!fNom || !mNom) return
+      const keyBase = `cheque|${p.fournisseurId}|${p.magasinId}|${season}`
+      // Plan chèque personnalisé (dates + montants saisis) prioritaire sur le calcul auto ÷ N
+      if (Array.isArray(p.cheques) && p.cheques.length) {
+        result.push(...echeancesChequeCustom(fNom, mNom, p.cheques, keyBase))
+      } else if (p.reelN) {
+        const firstDate = firstReception[fNom + mNom]
+        const nb = parseInt(regle.cond.nb) || DEFAULT_NB_CHEQUE
+        result.push(...echeancesCheque(fNom, mNom, p.reelN, firstDate, nb, keyBase))
+      }
     })
 
     // ── 2. Autres modes : par livraison individuelle (pht + date) ──

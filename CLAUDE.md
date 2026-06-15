@@ -79,6 +79,8 @@ La saison active n'est **pas** une table : elle vit dans `localStorage` et dans 
 
 **Conditions de règlement** : `modes_reglement.condition` (JSONB) porte, selon le mode, `{ nb }` (nombre de chèques) ou `{ delais: number[] }` (jours après livraison ; montant réparti à parts égales). Les défauts (`src/data/reglement.js` : `DEFAULT_NB_CHEQUE`, `DEFAULT_DELAIS`) reproduisent l'ancien comportement figé. `PlanReglement` calcule les échéances à partir de ces conditions.
 
+**Plan chèque personnalisé (par saison)** : pour un mode CHEQUE, on peut saisir un échéancier manuel `parametres.cheques` (JSONB `[{ date, montant }]`, **par fournisseur × magasin × saison**) via le bouton 🗓 dans Paramètres → Modes de règlement (`ChequePlanModal`). S'il existe, il **remplace** le calcul auto `reçu ÷ N` dans `PlanReglement` (`echeancesChequeCustom`) — figé, non recalculé depuis les entrées. Sinon, repli sur le calcul auto. Le mode (CHEQUE) reste global dans `modes_reglement` ; seul l'échéancier est par saison.
+
 ### Launcher multi-apps et navigation
 `src/App.jsx` est le routeur, **sans react-router**. Il n'y a plus de groupe « Suivi Pro » : les anciens onglets sont devenus des destinations de premier niveau.
 - **`Root`** (state local `view`) gère la navigation + le **code PIN** (`PIN_CODE = '2201'`, `PROTECTED_TABS = {reglement, parametres}`, déverrouillage en mémoire). `view` : `home` → `<HomeScreen>`, `cahier` → `<CahierEntrees>`, `commandes` → `<Commandes>`, `achats`/`reglement`/`parametres` → `<PageShell>` enveloppant le composant. Cliquer une vue protégée passe par `PinModal`.
