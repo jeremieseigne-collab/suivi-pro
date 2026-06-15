@@ -15,10 +15,11 @@ L'utilisateur travaille sur **2 ordinateurs différents** et synchronise via git
 Quand l'utilisateur signale qu'il **termine sa session de travail** — par une phrase du type « c'est fini pour aujourd'hui », « j'arrête de travailler », « j'ai terminé », « on s'arrête là », « à demain », « bonne nuit », ou équivalent — exécuter **systématiquement et sans attendre de confirmation** les étapes suivantes dans l'ordre :
 
 1. **Mettre à jour ce `CLAUDE.md`** : ajouter/modifier les sections qui décrivent les nouvelles fonctionnalités, tables, composants ou conventions introduits pendant la session. Ne pas demander de permission pour cette étape.
-2. **Sauvegarder et synchroniser avec git** : `git add` des fichiers modifiés → `git commit` (message décrivant le travail de la session) → `git push`.
-3. **Informer l'utilisateur** que tout est sauvegardé et poussé.
+2. **Sauvegarder et synchroniser `dev`** : `git add` des fichiers modifiés → `git commit` (message décrivant le travail de la session) → `git push`.
+3. **Déployer en production** : `git checkout main` → `git merge dev` → `git push` → `git checkout dev`. Cela déclenche le déploiement Vercel automatiquement.
+4. **Informer l'utilisateur** que tout est sauvegardé, poussé et déployé.
 
-Ce rituel garantit que l'autre ordinateur récupère bien le travail au prochain `git pull`, et que le CLAUDE.md reste toujours à jour.
+Ce rituel garantit que l'autre ordinateur récupère bien le travail au prochain `git pull`, que le CLAUDE.md reste toujours à jour, et que la version en ligne est à jour.
 
 ## Présentation
 
