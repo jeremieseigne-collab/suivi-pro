@@ -12,12 +12,13 @@ Si, malgré tout, l'utilisateur demande explicitement de récupérer les changem
 
 L'utilisateur travaille sur **2 ordinateurs différents** et synchronise via git (voir `MEMO.md`).
 
-Quand l'utilisateur signale qu'il **termine sa session de travail** — par une phrase du type « c'est fini pour aujourd'hui », « j'arrête de travailler », « j'ai terminé », « on s'arrête là », « à demain », ou équivalent — proposer **systématiquement** de :
+Quand l'utilisateur signale qu'il **termine sa session de travail** — par une phrase du type « c'est fini pour aujourd'hui », « j'arrête de travailler », « j'ai terminé », « on s'arrête là », « à demain », « bonne nuit », ou équivalent — exécuter **systématiquement et sans attendre de confirmation** les étapes suivantes dans l'ordre :
 
-1. **Mettre à jour ce `CLAUDE.md`** si l'architecture, les conventions ou des points importants ont changé pendant la session (sinon, le mentionner et passer).
-2. **Sauvegarder et synchroniser avec git** : `git add` → `git commit` (avec un message décrivant le travail de la session) → `git push`.
+1. **Mettre à jour ce `CLAUDE.md`** : ajouter/modifier les sections qui décrivent les nouvelles fonctionnalités, tables, composants ou conventions introduits pendant la session. Ne pas demander de permission pour cette étape.
+2. **Sauvegarder et synchroniser avec git** : `git add` des fichiers modifiés → `git commit` (message décrivant le travail de la session) → `git push`.
+3. **Informer l'utilisateur** que tout est sauvegardé et poussé.
 
-Attendre la confirmation de l'utilisateur avant de pousser. Ce rituel garantit que l'autre ordinateur récupère bien le travail au prochain `git pull`.
+Ce rituel garantit que l'autre ordinateur récupère bien le travail au prochain `git pull`, et que le CLAUDE.md reste toujours à jour.
 
 ## Présentation
 
@@ -27,6 +28,7 @@ C'est devenu une **suite de plusieurs apps** accessibles depuis un écran d'accu
 - **Suivi Pro** — suivi livraisons / achats / règlements (les onglets historiques)
 - **Commandes Clients** (`src/commandes/`) — commandes magasins & BtoB
 - **Agenda** (`src/agenda/`) — agenda partagé multi-vues, affiché directement sur l'accueil
+- **Planning** (`src/planning/`) — planning hebdomadaire du personnel par magasin
 
 ## Commandes
 
@@ -43,7 +45,7 @@ Il n'y a **aucun framework de test** dans ce projet. Pour vérifier un changemen
 
 Crée un `.env.local` (voir `.env.example`) avec `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`. Sans ces variables, `src/lib/supabase.js` remplace tout le `<body>` par un message d'erreur et throw au démarrage. Après modification du `.env.local`, **redémarre** le serveur Vite. `VITE_GOOGLE_API_KEY` (Google Calendar) y vit aussi (voir App Agenda). L'App Paie envoie ses mails via une **fonction serveur** (voir plus bas) qui lit `GMAIL_USER` / `GMAIL_APP_PASSWORD` — **sans préfixe `VITE_`** (variables côté serveur, jamais exposées au navigateur ; à définir aussi dans **Vercel** pour la prod). `.env.local` est ignoré par git → à recréer sur chaque machine.
 
-Schémas Postgres (à exécuter dans le SQL Editor Supabase) : `supabase-schema.sql` (Suivi Pro), `supabase-commandes.sql` (table `commandes`), `supabase-agenda.sql` (table `evenements`). RLS est **désactivé** sur toutes les tables (app interne, pas d'auth publique) et le temps réel est activé. Les tables ajoutées plus récemment (`salaries`, `defectueux`, `reglement_paye`, `paie_variables`, `paie_envois`) ont été créées directement via psql (dev + prod), sans fichier de schéma dédié.
+Schémas Postgres (à exécuter dans le SQL Editor Supabase) : `supabase-schema.sql` (Suivi Pro), `supabase-commandes.sql` (table `commandes`), `supabase-agenda.sql` (table `evenements`). RLS est **désactivé** sur toutes les tables (app interne, pas d'auth publique) et le temps réel est activé. Les tables ajoutées plus récemment (`salaries`, `defectueux`, `reglement_paye`, `paie_variables`, `paie_envois`, `planning`) ont été créées directement via psql (dev + prod), sans fichier de schéma dédié.
 
 ## Environnement dev / prod (IMPORTANT)
 
@@ -60,7 +62,7 @@ Schémas Postgres (à exécuter dans le SQL Editor Supabase) : `supabase-schema.
 ## Architecture — points clés
 
 ### La couche `db` est un shim Dexie → Supabase
-`src/db/index.js` expose un objet `db` dont les tables (`magasins`, `fournisseurs`, `parametres`, `entrees`, `suivi`, `modesReglement`, `commandes`, `evenements`, `salaries`, `defectueux`, `reglementPaye`, `paieVariables`, `paieEnvois`) **imitent l'API Dexie** (`where().equals().toArray()`, `.first()`, `.add()`, `.put()`, `.update()`, `.delete()`, `.orderBy()`, `.filter()`, `.where({...}).filter(fn)`, `.reverse().sortBy()`) mais tapent en réalité Supabase. Le code applicatif est donc écrit « comme du Dexie » alors qu'il parle à Postgres.
+`src/db/index.js` expose un objet `db` dont les tables (`magasins`, `fournisseurs`, `parametres`, `entrees`, `suivi`, `modesReglement`, `commandes`, `evenements`, `salaries`, `defectueux`, `reglementPaye`, `paieVariables`, `paieEnvois`, `planning`) **imitent l'API Dexie** (`where().equals().toArray()`, `.first()`, `.add()`, `.put()`, `.update()`, `.delete()`, `.orderBy()`, `.filter()`, `.where({...}).filter(fn)`, `.reverse().sortBy()`) mais tapent en réalité Supabase. Le code applicatif est donc écrit « comme du Dexie » alors qu'il parle à Postgres.
 
 Conséquences importantes :
 - **Mapping camelCase ↔ snake_case** : le code JS utilise `fournisseurId`, `magasinId`, `modelesBySeason`, `typeKey`, `recuN1`, `objectifN`, `reelN`, `modeReglement` ; la base utilise les colonnes snake_case. La conversion se fait **uniquement** dans `db/index.js` via `FIELD_TO_DB`. Si tu ajoutes une colonne dont le nom JS diffère du nom SQL, **ajoute-la à `FIELD_TO_DB`**.
@@ -89,7 +91,7 @@ La saison active n'est **pas** une table : elle vit dans `localStorage` et dans 
 `src/App.jsx` est le routeur, **sans react-router**. Il n'y a plus de groupe « Suivi Pro » : les anciens onglets sont devenus des destinations de premier niveau.
 - **`Root`** (state local `view`) gère la navigation + le **code PIN** (`PIN_CODE = '2201'`, `PROTECTED_TABS = {reglement, parametres}`, déverrouillage en mémoire). `view` : `home` → `<HomeScreen>`, `cahier` → `<CahierEntrees>`, `commandes` → `<Commandes>`, `achats`/`reglement`/`parametres` → `<PageShell>` enveloppant le composant. Cliquer une vue protégée passe par `PinModal`.
 - **`PageShell`** = en-tête commun (bouton retour ←, titre, `SeasonBadge`, onglets optionnels) + `<main>`. **`CahierEntrees`** = `PageShell` avec 2 sous-onglets : **Suivi livraisons** + **Entrées**.
-- **`HomeScreen`** = le menu : cartes `APPS` (📥 Cahier des entrées, 🛍️ Commandes Clients, 🛒 Achats, 🛠️ Gestion des défectueux, 🧾 Éléments variables de paie) + 2 petits liens 🔒 (💳 Plan de règlement, ⚙️ Paramètres) + lien 📒 Répertoire + `<AgendaBoard>` dessous. Pour ajouter une app : entrée dans `APPS` (ou lien), cas dans `Root`, composant.
+- **`HomeScreen`** = le menu : cartes `APPS` (📥 Cahier des entrées, 🛍️ Commandes Clients, 🛒 Achats, 🛠️ Gestion des défectueux, 🧾 Éléments variables de paie, 📅 Planning) + 2 petits liens 🔒 (💳 Plan de règlement, ⚙️ Paramètres) + lien 📒 Répertoire + `<AgendaBoard>` dessous. Pour ajouter une app : entrée dans `APPS` (ou lien), cas dans `Root`, composant.
 
 `src/tabs/` : `SuiviLivraisons`, `Entrees` (réunis dans Cahier des entrées), `Achats`, `PlanReglement`, `Parametres`.
 ⚠️ `src/tabs/PlanAchat.jsx` existe mais **n'est pas importé** (composant orphelin).
@@ -102,6 +104,17 @@ Commandes magasins / BtoB. Table `commandes`. `constants.js` définit les listes
 Agenda **partagé** (table `evenements`, pas de notion de magasin/saison). `AgendaBoard` = composant principal affiché **directement sur l'accueil** (pas de carte d'app séparée), avec sélecteur de vue **Jour / Semaine / Mois / Année** (façon Apple) ; la semaine va du **lundi au samedi** (6 jours). `AgendaModal` = ajout/édition/suppression. `dates.js` regroupe les helpers de dates **en heure locale** (`isoDate`, `parseLocal`, `mondayOf`, …) — important pour éviter les décalages de fuseau ; les dates sont stockées en texte `AAAA-MM-JJ` et comparées en chaînes.
 
 **Intégration Google Calendar** (`src/agenda/googleCalendars.js`) : affichage **lecture seule** de 3 calendriers Google **publics** (abonnements iCloud des 3 magasins), via la **Google Calendar API v3 + clé API** (`VITE_GOOGLE_API_KEY`). Les IDs des 3 calendriers sont en dur dans `GOOGLE_CALENDARS` (publics, non secrets) ; la clé est dans `.env.local`. `fetchGoogleEvents()` charge les événements de la fenêtre visible (`rangeFor`), fusionnés avec les événements Supabase dans `byDay`. Événements Google = `source:'google'` (couleur par magasin, clic → fiche lecture seule `GoogleDetail`) ; événements de l'app = `source:'app'` (modifiables). `singleEvents=true` déroule les récurrences. Sans clé, l'agenda reste fonctionnel (juste sans Google).
+
+### App Planning (`src/planning/`)
+Planning hebdomadaire du personnel, filtré par magasin. Table `planning` (colonnes : `semaine` ISO lundi, `magasin`, `salarie`, `jour` 0–6, `heure_debut`, `heure_fin`, `note`). Mapping dans `FIELD_TO_DB` : `heureDebut`→`heure_debut`, `heureFin`→`heure_fin`.
+- **Grille** : lignes = salariés (non gérants, filtrés sur `salaries.magasin`), colonnes = Lundi→Dimanche. Lignes fantômes jusqu'à `MIN_ROWS = 4`. Remplaçants ajoutables en bas (état local `extraRows` + détectés depuis les shifts en base).
+- **Popover** de saisie : `<input type="time">` pour début/fin, navigation → entre champs, Entrée valide, Échap ferme.
+- **Copier/coller** : bouton 📋 au hover sur un shift → stocke dans `clipboard` (state), option "Coller" dans le popover si clipboard actif.
+- **Ctrl+Z** : pile d'historique (`undoStack`, max 20), utilise des refs pour éviter les closures stales.
+- **Impression** : `handlePrint()` ouvre une fenêtre séparée (`window.open`) avec un HTML autonome (styles inline, pas de CSS variables), `@page { margin: 0 }` pour supprimer l'URL navigateur. Titre "Planning [MAGASIN]", semaine du lundi au dimanche.
+- **Impression groupée** : `pendingWeeks` (tableau, max 2 éléments) persisté dans `localStorage['planning_pending_weeks']`. Au clic Imprimer : si 0 en attente → modale "attendre ?" ; si 1 en attente → modale "attendre encore pour 3 semaines ?" ; si 2 en attente → imprime les 3 directement. Les semaines en attente sont récupérées en base (`.where('semaine').equals(w)`) au moment de l'impression.
+- **Constantes** : `src/planning/constants.js` — `JOURS` (Lun→Dim), `MIN_ROWS`, `EMPLOYEE_COLORS`.
+- **`salaries.magasin`** : colonne ajoutée via migration psql, éditée dans Paramètres → onglet Salariés.
 
 ### App Répertoire (`src/tabs/Repertoire.jsx`)
 Carnet d'adresses des fournisseurs (petit lien 📒 sur l'accueil). Les coordonnées sont des colonnes sur `fournisseurs` : `contact`, `telephone`, `contact_sav`/`telephone_fixe`/`email` (bloc SAV), `numero_client`, `btob` (lien espace pro), `adresse`, `notes`. Édition inline (onBlur). Boutons ✉️ (Gmail) et 🔗 (ouvre le BtoB).
