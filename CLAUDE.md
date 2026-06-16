@@ -4,9 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## ⚠️ Rituel de début de session (IMPORTANT)
 
-Le `git pull` de début de session est **automatique** : un hook `SessionStart` (dans `.claude/settings.json`) lance `git pull --ff-only` à chaque démarrage de session dans ce dépôt, pour récupérer le travail fait depuis l'autre ordinateur. Aucune action manuelle requise.
+Un hook `SessionStart` (dans `.claude/settings.json`) lance `git pull --ff-only` au démarrage. **Mais il peut rater des commits poussés depuis l'autre ordinateur après l'ouverture de session.** Donc, **au tout premier tour de chaque session, sans qu'on le demande**, Claude doit :
 
-Si, malgré tout, l'utilisateur demande explicitement de récupérer les changements (« fais le pull », « récupère le dernier travail »), lancer `git pull` directement.
+1. **Se mettre à jour lui-même** : `git fetch origin -q` puis, si la branche locale est en retard, `git pull --ff-only`. (Si une divergence empêche le fast-forward, le signaler au lieu de forcer.)
+2. **Faire un court récap des dernières modifications** : résumer en français les commits ramenés (ou `git log --oneline -5`), pour qu'on soit sûrs d'être synchronisés.
+
+Cette routine est **automatique** : ne pas attendre que l'utilisateur la réclame. S'il la demande explicitement (« fais le pull », « récupère le dernier travail »), l'exécuter de la même façon.
 
 ## ⚠️ Rituel de fin de session (IMPORTANT)
 
