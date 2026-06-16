@@ -31,8 +31,9 @@ export default function DefectueuxModal({ defect, onClose, onSaved }) {
   const [srcCategorie, setSrcCategorie] = useState('')
   const [saving,     setSaving]     = useState(false)
   const [error,      setError]      = useState('')
-  const [step,       setStep]       = useState('form') // 'form' | 'email'
+  const [step,       setStep]       = useState('form') // 'form' | 'email' | 'save-contact'
   const [savedCtx,   setSavedCtx]   = useState(null)
+  const [manualEmail, setManualEmail] = useState('')
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
@@ -123,7 +124,8 @@ export default function DefectueuxModal({ defect, onClose, onSaved }) {
   function buildMailUrl() {
     return buildDefectueuxMailUrl({
       modele: form.modele, pointure: form.pointure, note: form.note, salarie: form.salarie,
-      societe: savedCtx?.societe || '', email: savedCtx?.fournisseur?.email, numeroClient: savedCtx?.fournisseur?.numeroClient,
+      societe: savedCtx?.societe || '', email: savedCtx?.fournisseur?.email || manualEmail.trim(),
+      numeroClient: savedCtx?.fournisseur?.numeroClient,
     })
   }
 
@@ -132,9 +134,18 @@ export default function DefectueuxModal({ defect, onClose, onSaved }) {
     if (savedCtx?.defId && form.statut === 'À traiter') {
       try { await db.defectueux.update(savedCtx.defId, { statut: 'Mail envoyé' }) } catch { /* ignore */ }
     }
-    onSaved?.(); onClose?.()
+    if (!savedCtx?.fournisseur?.email && manualEmail.trim()) {
+      setStep('save-contact')
+    } else {
+      onSaved?.(); onClose?.()
+    }
   }
   function skipMail() { onSaved?.(); onClose?.() }
+
+  async function saveContactEmail() {
+    try { await db.fournisseurs.update(savedCtx?.fournisseur?.id, { email: manualEmail.trim() }) } catch { /* ignore */ }
+    onSaved?.(); onClose?.()
+  }
 
   // Options de pointure (inclut la valeur enregistrée même si absente des entrées)
   const sizeOptions = useMemo(() => {
@@ -147,11 +158,24 @@ export default function DefectueuxModal({ defect, onClose, onSaved }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{step === 'email' ? '✅ Défectueux enregistré' : (editing ? 'Modifier le défectueux' : '🛠️ Nouveau défectueux')}</h2>
+          <h2>{step === 'save-contact' ? '📋 Enregistrer le contact' : step === 'email' ? '✅ Défectueux enregistré' : (editing ? 'Modifier le défectueux' : '🛠️ Nouveau défectueux')}</h2>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
-        {step === 'email' ? (
+        {step === 'save-contact' ? (
+          <div className="modal-body">
+            <p style={{ fontSize: 15, color: 'var(--text)' }}>
+              Le mail a été envoyé à <strong>{manualEmail}</strong>.
+            </p>
+            <p style={{ fontSize: 14, color: 'var(--text-2)' }}>
+              Souhaitez-vous enregistrer cet email dans la fiche SAV de <strong>{savedCtx?.fournisseur?.nom}</strong> ?
+            </p>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => { onSaved?.(); onClose?.() }}>Non, terminer</button>
+              <button className="btn-primary" onClick={saveContactEmail}>📋 Enregistrer dans le répertoire</button>
+            </div>
+          </div>
+        ) : step === 'email' ? (
           <div className="modal-body">
             <p style={{ fontSize: 15, color: 'var(--text)' }}>
               Le défectueux est enregistré et l'entrée « Retour » a été créée dans le Cahier des entrées.
@@ -160,11 +184,21 @@ export default function DefectueuxModal({ defect, onClose, onSaved }) {
               Envoyer un mail au <strong>SAV de {savedCtx?.fournisseur?.nom}</strong> ?
               {savedCtx?.fournisseur?.email
                 ? <> <br /><span style={{ fontSize: 13, color: 'var(--text-3)' }}>→ {savedCtx.fournisseur.email}</span></>
-                : <> <br /><span style={{ fontSize: 13, color: '#f59e0b' }}>⚠️ Aucun email SAV dans le répertoire — Gmail s'ouvrira sans destinataire.</span></>}
+                : <>
+                    <br />
+                    <span style={{ fontSize: 13, color: '#f59e0b' }}>⚠️ Aucun email SAV dans le répertoire.</span>
+                    <input
+                      type="email"
+                      value={manualEmail}
+                      onChange={e => setManualEmail(e.target.value)}
+                      placeholder="Saisir l'email SAV manuellement"
+                      style={{ marginTop: 10, padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, width: '100%', background: 'var(--surface)', color: 'var(--text)', outline: 'none', fontFamily: 'inherit' }}
+                    />
+                  </>}
             </p>
             <div className="modal-actions">
               <button className="btn-secondary" onClick={skipMail}>Non, terminer</button>
-              <button className="btn-primary" onClick={sendMail}>✉️ Envoyer le mail</button>
+              <button className="btn-primary" onClick={sendMail} disabled={!savedCtx?.fournisseur?.email && !manualEmail.trim()}>✉️ Envoyer le mail</button>
             </div>
           </div>
         ) : (
