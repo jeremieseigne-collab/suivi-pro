@@ -62,6 +62,11 @@ Schémas Postgres (à exécuter dans le SQL Editor Supabase) : `supabase-schema.
   ⚠️ Le pooler renvoie le tag de commande (`INSERT 0 1`) sur stdout ; utiliser `-q` et ne pas le capturer dans une variable d'`id`. Sur la base PROD, n'exécuter que des opérations **additives** (`create table if not exists`, `add column if not exists`) — jamais de `drop`.
 - **État du déploiement** : les apps Commandes/Agenda + mode sombre + Google Calendar sont **en production** (déployées depuis `main`). Les tables `commandes` et `evenements` existent en dev ET en prod (RLS off, temps réel on). `VITE_GOOGLE_API_KEY` est configurée dans Vercel (env Production). Pour une **future nouvelle table/colonne**, penser à l'appliquer aux **deux** bases (dev via `.dev-db-url.local`, prod via `.prod-db-url.local`).
 - **Variables Vercel pour l'envoi de mails (App Paie)** : `GMAIL_USER` et `GMAIL_APP_PASSWORD` doivent être ajoutées dans **Vercel → Settings → Environment Variables** (env Production, **sans** préfixe `VITE_`), sinon la fonction `api/send-mail` échoue en prod. Dépendance `nodemailer` requise (déjà dans `package.json`).
+- **Vercel API** : le token est dans `.vercel-token.local` (ignoré par git). Projet : `prj_3lji4jmtjXfvqgS0wNeTX2K9Ifdb`, team : `team_hu9ukeB669vdDdC4XR2f0chi`. URL prod unique : **`https://suivi-pro-app.vercel.app`** (déployé depuis `main`). Le dev se teste en local sur `http://localhost:5173`. Pour lister les déploiements récents :
+  ```bash
+  TOKEN=$(cat .vercel-token.local)
+  curl -s -H "Authorization: Bearer $TOKEN" "https://api.vercel.com/v6/deployments?projectId=prj_3lji4jmtjXfvqgS0wNeTX2K9Ifdb&teamId=team_hu9ukeB669vdDdC4XR2f0chi&limit=5"
+  ```
 
 ## Architecture — points clés
 
@@ -125,7 +130,7 @@ Carnet d'adresses des fournisseurs (petit lien 📒 sur l'accueil). Les coordonn
 
 ### App Gestion des défectueux (`src/defectueux/`)
 Table `defectueux` (liée à une entrée via `entree_id`). Le formulaire choisit magasin (→ société déduite), salarié, marque → modèle → **pointure parmi celles reçues** (lues dans `entrees`) ; le **N°** se pré-remplit depuis le N° du modèle dans les entrées. États : À traiter → Mail envoyé → Avoir reçu → Clôturé / Refusé.
-- **À l'enregistrement** : crée une **entrée « Retour »** dans le Cahier (`total: -1`, `pht` négatif = −prix unitaire, catégorie/typeKey repris du modèle) puis propose d'**envoyer un mail au SAV** (Gmail pré-rempli — `src/defectueux/mail.js`, compte expéditeur selon la société).
+- **À l'enregistrement** : crée une **entrée « Retour »** dans le Cahier (`total: -1`, `pht` négatif = −prix unitaire, catégorie/typeKey repris du modèle) puis propose d'**envoyer un mail au SAV** (Gmail pré-rempli — `src/defectueux/mail.js`, compte expéditeur selon la société). Si la marque n'a pas d'email SAV enregistré, un **champ de saisie manuelle** apparaît ; après envoi, une étape `'save-contact'` propose d'enregistrer l'email dans la fiche fournisseur (`db.fournisseurs.update(id, { email })`). Flow : `'form'` → `'email'` → `'save-contact'` (si email manuel utilisé).
 - **Retours** : non comptés dans les stats Entrées (Unités/Valeur) ni dans le « reçu » du Suivi livraison. Dans le **Plan de règlement**, un retour génère un **avoir** (échéance unique à sa date, hors règles/conditions) **seulement** si le défectueux lié est « Avoir reçu » ou « Clôturé ».
 
 ### App Éléments variables de paie (`src/paie/`)
