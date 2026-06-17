@@ -211,12 +211,20 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
 
       if (editing) {
         const prevStatut = sav.statut
+        let enCoursAt = sav.enCoursAt ?? null
+        if (type === 'forme') {
+          if (form.statut === 'En cours' && prevStatut !== 'En cours') enCoursAt = new Date().toISOString()
+          else if (form.statut !== 'En cours') enCoursAt = null
+        } else {
+          enCoursAt = null
+        }
         await db.sav.update(sav.id, {
           magasinId, salarie: form.salarie, clientNom: form.clientNom, clientTel: form.clientTel,
           fournisseurId, modele: form.modele, pointure: form.pointure, marque: form.marque,
           probleme: form.probleme, note: form.note, statut: form.statut, decision: form.decision,
           facturation: type === 'reparation' ? facturation : null,
           prixReparation: (type === 'reparation' && facturation === 'payant') ? parseFloat(prixReparation.replace(',', '.')) || null : null,
+          enCoursAt,
         })
         // Sync défectueux statut si passage à "Mail marque envoyé"
         if (type === 'retour' && sav.defectueuxId && prevStatut !== 'Mail marque envoyé' && form.statut === 'Mail marque envoyé') {

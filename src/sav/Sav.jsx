@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { STATUTS_RETOUR, STATUTS_FORME, STATUT_COLORS } from './constants'
@@ -34,6 +34,47 @@ function StatusStepper({ type, statut }) {
         }}>{statut}</span>
         <span style={{ fontSize: 11, color: 'var(--text-4)' }}>{idx + 1}/{statuts.length}</span>
       </div>
+    </div>
+  )
+}
+
+function FormeTimer({ enCoursAt, savId }) {
+  const MAX = 48 * 3600
+  const [secs, setSecs] = useState(() =>
+    enCoursAt ? Math.floor((Date.now() - new Date(enCoursAt).getTime()) / 1000) : 0
+  )
+
+  useEffect(() => {
+    if (!enCoursAt) return
+    const start = new Date(enCoursAt).getTime()
+    function tick() {
+      const elapsed = Math.floor((Date.now() - start) / 1000)
+      setSecs(elapsed)
+      if (elapsed >= MAX) {
+        db.sav.update(savId, { statut: 'Prêt à récupérer', enCoursAt: null }).catch(() => {})
+      }
+    }
+    tick()
+    const id = setInterval(tick, 30000)
+    return () => clearInterval(id)
+  }, [enCoursAt, savId])
+
+  if (secs >= MAX) return null
+
+  const h = Math.floor(secs / 3600)
+  const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0')
+  const pct = Math.min(secs / MAX * 100, 100)
+  const color = pct >= 90 ? '#ef4444' : pct >= 60 ? '#f59e0b' : '#3b82f6'
+
+  return (
+    <div style={{ margin: '10px 0 4px', textAlign: 'center' }}>
+      <div style={{ fontSize: 22, fontWeight: 800, color, letterSpacing: -1, lineHeight: 1 }}>
+        {'⏱'} {h}h{m}
+      </div>
+      <div style={{ margin: '6px 0 2px', height: 5, borderRadius: 3, background: 'var(--border)', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 3, transition: 'width 30s linear' }} />
+      </div>
+      <div style={{ fontSize: 10, color: 'var(--text-4)' }}>{Math.round(pct)}% des 48h</div>
     </div>
   )
 }
@@ -91,6 +132,9 @@ function SavCard({ row, onClick }) {
         </div>
         <span style={{ fontSize: 18, color: hover ? 'var(--accent)' : 'var(--text-5)', flexShrink: 0 }}>›</span>
       </div>
+      {row.type === 'forme' && row.statut === 'En cours' && row.enCoursAt && (
+        <FormeTimer enCoursAt={row.enCoursAt} savId={row.id} />
+      )}
       <StatusStepper type={row.type} statut={row.statut} />
     </div>
   )
