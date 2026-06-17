@@ -305,7 +305,8 @@ function CahierEntrees({ onHome }) {
   function selectMagasin(m) { localStorage.setItem('cahier_magasin', m.nom); setMagasin(m.nom) }
   function changeMagasin() { localStorage.removeItem('cahier_magasin'); setMagasin('') }
 
-  if (!magasin) return <StoreSelect onSelect={selectMagasin} onHome={onHome} />
+  if (!magasin) return <StoreSelect onSelect={selectMagasin} onHome={onHome}
+    theme={{ accent: '#1d4ed8', border: '#93c5fd', shadow: 'rgba(29,78,216,0.18)', gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', icon: '📥' }} />
 
   return (
     <PageShell

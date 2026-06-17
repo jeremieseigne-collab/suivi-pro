@@ -77,7 +77,8 @@ export default function Defectueux({ onHome }) {
     if (r.statut === 'À traiter') db.defectueux.update(r.id, { statut: 'Mail envoyé' }).catch(() => {})
   }
 
-  if (!magasin) return <StoreSelect onSelect={selectMagasin} onHome={onHome} />
+  if (!magasin) return <StoreSelect onSelect={selectMagasin} onHome={onHome}
+    theme={{ accent: '#be123c', border: '#fda4af', shadow: 'rgba(190,18,60,0.18)', gradient: 'linear-gradient(135deg, #f43f5e, #be123c)', icon: '🛠️' }} />
 
   return (
     <div className="app">

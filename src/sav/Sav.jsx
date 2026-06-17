@@ -126,7 +126,8 @@ export default function Sav({ onHome }) {
 
   function refresh() { setShowModal(false); setEditSav(null) }
 
-  if (!magasin) return <StoreSelect onSelect={selectMagasin} onHome={onHome} />
+  if (!magasin) return <StoreSelect onSelect={selectMagasin} onHome={onHome}
+    theme={{ accent: '#0891b2', border: '#67e8f9', shadow: 'rgba(8,145,178,0.18)', gradient: 'linear-gradient(135deg, #0891b2, #0e7490)', icon: '🔧' }} />
 
   return (
     <div className="app">
