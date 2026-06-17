@@ -4,6 +4,7 @@ import { db } from '../db'
 import { LoadingState } from '../components/shared'
 import { getSociete } from '../data/societes'
 import DefectueuxModal from './DefectueuxModal'
+import StoreSelect from '../components/StoreSelect'
 import { STATUTS, STATUT_COLOR } from './constants'
 import { buildDefectueuxMailUrl } from './mail'
 
@@ -19,6 +20,12 @@ export default function Defectueux({ onHome }) {
   const [showForm,   setShowForm]   = useState(false)
   const [editDef,    setEditDef]    = useState(null)
   const [confirmDel, setConfirmDel] = useState(null)
+  const [magasin, setMagasin] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('defectueux_magasin') || 'null') } catch { return null }
+  })
+
+  function selectMagasin(m) { localStorage.setItem('defectueux_magasin', JSON.stringify(m)); setMagasin(m) }
+  function changeMagasin() { localStorage.removeItem('defectueux_magasin'); setMagasin(null) }
 
   const data = useLiveQuery(async () => {
     const [defs, magasins, fournisseurs] = await Promise.all([
@@ -27,18 +34,22 @@ export default function Defectueux({ onHome }) {
     const magMap   = Object.fromEntries(magasins.map(m => [m.id, m.nom]))
     const fourById = Object.fromEntries(fournisseurs.map(f => [f.id, f]))
     defs.sort((a, b) => b.id - a.id)
-    return defs.map(d => ({
-      ...d,
-      magasin:       magMap[d.magasinId] || '—',
-      marque:        fourById[d.fournisseurId]?.nom || '—',
-      societe:       getSociete(magMap[d.magasinId] || ''),
-      fournisseurObj: fourById[d.fournisseurId] || null,
-    }))
+    return {
+      rows: defs.map(d => ({
+        ...d,
+        magasin:       magMap[d.magasinId] || '—',
+        marque:        fourById[d.fournisseurId]?.nom || '—',
+        societe:       getSociete(magMap[d.magasinId] || ''),
+        fournisseurObj: fourById[d.fournisseurId] || null,
+      })),
+      magasins,
+    }
   }, [])
 
-  const rows = data ?? []
+  const rows = data?.rows ?? []
 
   const filtered = useMemo(() => rows.filter(r => {
+    if (magasin && r.magasinId !== magasin.id) return false
     if (fStatut && r.statut !== fStatut) return false
     if (search) {
       const q = search.toLowerCase()
@@ -46,9 +57,9 @@ export default function Defectueux({ onHome }) {
       if (!hay.includes(q)) return false
     }
     return true
-  }), [rows, search, fStatut])
+  }), [rows, magasin, search, fStatut])
 
-  const enCours = rows.filter(r => !['Clôturé', 'Refusé'].includes(r.statut)).length
+  const enCours = rows.filter(r => (!magasin || r.magasinId === magasin.id) && r.statut !== 'Refusé' && r.statut !== 'Clôturé').length
 
   async function changeStatut(id, statut) {
     try { await db.defectueux.update(id, { statut }) } catch (e) { alert('Erreur : ' + (e.message || e)) }
@@ -66,21 +77,29 @@ export default function Defectueux({ onHome }) {
     if (r.statut === 'À traiter') db.defectueux.update(r.id, { statut: 'Mail envoyé' }).catch(() => {})
   }
 
+  if (!magasin) return <StoreSelect onSelect={selectMagasin} onHome={onHome} />
+
   return (
     <div className="app">
-      {showForm && <DefectueuxModal onClose={() => setShowForm(false)} onSaved={() => setShowForm(false)} />}
-      {editDef  && <DefectueuxModal defect={editDef} onClose={() => setEditDef(null)} onSaved={() => setEditDef(null)} />}
+      {showForm && <DefectueuxModal onClose={() => setShowForm(false)} onSaved={() => setShowForm(false)} defaultMagasinId={magasin?.id} currentMagasin={magasin?.nom} />}
+      {editDef  && <DefectueuxModal defect={editDef} onClose={() => setEditDef(null)} onSaved={() => setEditDef(null)} defaultMagasinId={magasin?.id} currentMagasin={magasin?.nom} />}
 
       <header className="app-header">
         <div className="header-top" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button onClick={onHome} title="Retour à l'accueil"
+            <button onClick={onHome} title="Retour a l'accueil"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', fontSize: 17, color: 'var(--text-2)', lineHeight: 1 }}
               onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--accent)' }}
               onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.color = 'var(--text-2)' }}>←</button>
-            <h1>🛠️ Gestion des défectueux</h1>
+            <h1>Gestion des d&eacute;fectueux</h1>
           </div>
-          <button className="btn-primary" onClick={() => setShowForm(true)}>+ Nouveau défectueux</button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button onClick={changeMagasin}
+              style={{ padding: '6px 12px', borderRadius: 20, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 13 }}>
+              {magasin.nom} &#9662;
+            </button>
+            <button className="btn-primary" onClick={() => setShowForm(true)}>+ Nouveau d&eacute;fectueux</button>
+          </div>
         </div>
         <div style={{ height: 16 }} />
       </header>

@@ -19,11 +19,11 @@ function numeroColor(n) {
   return { background: '#d1fae5', color: '#059669', fontWeight: 700, borderRadius: 4, padding: '2px 6px' }
 }
 
-export default function Entrees() {
+export default function Entrees({ defaultMagasin = '' }) {
   const { season } = useSeason()
   const [search,    setSearch]    = useState('')
   const [societe,   setSociete]   = useState('')
-  const [magasin,   setMagasin]   = useState('')
+  const [magasin,   setMagasin]   = useState(defaultMagasin)
   const [marque,    setMarque]    = useState('')
   const [categorie, setCategorie] = useState('')
   const [statut,    setStatut]    = useState('')
@@ -83,7 +83,7 @@ export default function Entrees() {
 
   return (
     <div>
-      {showForm   && <EntreeForm onClose={() => setShowForm(false)} onSaved={() => setShowForm(false)} />}
+      {showForm   && <EntreeForm onClose={() => setShowForm(false)} onSaved={() => setShowForm(false)} defaultMagasin={defaultMagasin} />}
 
       {editEntry  && <EntreeEditModal entry={editEntry} onClose={() => setEditEntry(null)} onSaved={() => setEditEntry(null)} />}
 

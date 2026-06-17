@@ -9,15 +9,42 @@ import { buildDefectueuxMailUrl } from './mail'
 const todayFr = () => { const d = new Date(); const p = n => String(n).padStart(2, '0'); return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}` }
 const textareaStyle = { padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', resize: 'vertical', outline: 'none', width: '100%', background: 'var(--surface)', color: 'var(--text)' }
 
-export default function DefectueuxModal({ defect, onClose, onSaved }) {
+function SalarieInput({ value, onChange, salaries }) {
+  const [manual, setManual] = useState(false)
+  const btnStyle = { padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', background: 'var(--surface)', color: 'var(--text-3)', fontSize: 14, fontFamily: 'inherit' }
+  if (manual) return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      <input value={value} onChange={e => onChange(e.target.value)} placeholder="Nom et prenom" autoFocus
+        style={{ flex: 1, padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', outline: 'none', background: 'var(--surface)', color: 'var(--text)' }} />
+      <button type="button" onClick={() => { onChange(''); setManual(false) }} style={btnStyle}>x</button>
+    </div>
+  )
+  return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      <select value={value} onChange={e => onChange(e.target.value)} style={{ flex: 1 }}>
+        <option value="">Choisir</option>
+        {salaries.map(s => <option key={s.id}>{s.nom}</option>)}
+      </select>
+      <button type="button" onClick={() => setManual(true)} title="Saisir manuellement"
+        style={{ ...btnStyle, fontWeight: 700, fontSize: 18, lineHeight: 1, padding: '4px 11px' }}>+</button>
+    </div>
+  )
+}
+
+export default function DefectueuxModal({ defect, onClose, onSaved, defaultMagasinId, currentMagasin }) {
   const editing = !!defect?.id
   const { season } = useSeason()
   const magasins     = useLiveQuery(() => db.magasins.orderBy('nom').toArray(), [])
   const salaries     = useLiveQuery(() => db.salaries.orderBy('nom').toArray(), [])
   const fournisseurs = useLiveQuery(() => db.fournisseurs.orderBy('nom').toArray(), [])
 
+  const filteredSalaries = useMemo(() => {
+    if (!currentMagasin) return salaries || []
+    return (salaries || []).filter(s => !s.magasin || s.magasin === currentMagasin)
+  }, [salaries, currentMagasin])
+
   const [form, setForm] = useState({
-    magasinId:     defect?.magasinId     ?? '',
+    magasinId:     defect?.magasinId     ?? defaultMagasinId ?? '',
     salarie:       defect?.salarie       ?? '',
     fournisseurId: defect?.fournisseurId ?? '',
     modele:        defect?.modele        ?? '',
@@ -213,10 +240,7 @@ export default function DefectueuxModal({ defect, onClose, onSaved }) {
               </div>
               <div className="form-field">
                 <label>Salarié</label>
-                <select value={form.salarie} onChange={e => set('salarie', e.target.value)}>
-                  <option value="">— Choisir —</option>
-                  {(salaries || []).map(s => <option key={s.id}>{s.nom}</option>)}
-                </select>
+                <SalarieInput value={form.salarie} onChange={v => set('salarie', v)} salaries={filteredSalaries} />
               </div>
               <div className="form-field">
                 <label>État</label>

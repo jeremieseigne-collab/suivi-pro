@@ -28,15 +28,15 @@ function numeroColor(n) {
 const todayIso = new Date().toISOString().slice(0, 10)
 const todayFr  = toFrDate(todayIso)
 
-const INITIAL = {
-  statut: '', magasin: '', date: todayFr, dateIso: todayIso,
-  marque: '', modele: '', numero: '', categorie: '', typeKey: 'F',
+function makeInitial(mag) {
+  return { statut: '', magasin: mag || '', date: todayFr, dateIso: todayIso, marque: '', modele: '', numero: '', categorie: '', typeKey: 'F' }
 }
+const INITIAL = makeInitial('')
 
-export default function EntreeForm({ onClose, onSaved }) {
+export default function EntreeForm({ onClose, onSaved, defaultMagasin = '' }) {
   const { season } = useSeason()
   const { params, loading: paramsLoading } = useParams()
-  const [form,       setForm]       = useState(INITIAL)
+  const [form,       setForm]       = useState(() => makeInitial(defaultMagasin))
   const [quantities, setQuantities] = useState([])
   const [saving,     setSaving]     = useState(false)
   const [saved,      setSaved]      = useState(false)

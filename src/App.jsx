@@ -10,6 +10,8 @@ import Commandes        from './commandes/Commandes'
 import Defectueux       from './defectueux/Defectueux'
 import Paie             from './paie/Paie'
 import Planning         from './planning/Planning'
+import Sav             from './sav/Sav'
+import StoreSelect      from './components/StoreSelect'
 import AgendaBoard      from './agenda/AgendaBoard'
 import { SeasonProvider, useSeason } from './context/SeasonContext'
 import './App.css'
@@ -269,7 +271,7 @@ function SeasonBadge() {
 }
 
 // En-tête commun aux pages (bouton retour + titre + sélecteur de saison + onglets éventuels)
-function PageShell({ title, onHome, withSeason = true, tabs = null, children }) {
+function PageShell({ title, onHome, withSeason = true, tabs = null, rightExtra = null, children }) {
   return (
     <div className="app">
       <header className="app-header">
@@ -278,7 +280,10 @@ function PageShell({ title, onHome, withSeason = true, tabs = null, children }) 
             <BackButton onHome={onHome} />
             <h1>{title}</h1>
           </div>
-          {withSeason && <SeasonBadge />}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {rightExtra}
+            {withSeason && <SeasonBadge />}
+          </div>
         </div>
         {tabs ? <nav className="tab-nav">{tabs}</nav> : <div style={{ height: 16 }} />}
       </header>
@@ -289,22 +294,35 @@ function PageShell({ title, onHome, withSeason = true, tabs = null, children }) 
 
 // Cahier des entrées = Suivi livraisons + Entrées réunis (sous-onglets)
 const CAHIER_TABS = [
-  { id: 'suivi',   label: '📦 Suivi livraisons' },
-  { id: 'entrees', label: '📥 Entrées' },
+  { id: 'suivi',   label: 'Suivi livraisons' },
+  { id: 'entrees', label: 'Entrees' },
 ]
 
 function CahierEntrees({ onHome }) {
   const [tab, setTab] = useState('suivi')
+  const [magasin, setMagasin] = useState(() => localStorage.getItem('cahier_magasin') || '')
+
+  function selectMagasin(m) { localStorage.setItem('cahier_magasin', m.nom); setMagasin(m.nom) }
+  function changeMagasin() { localStorage.removeItem('cahier_magasin'); setMagasin('') }
+
+  if (!magasin) return <StoreSelect onSelect={selectMagasin} onHome={onHome} />
+
   return (
     <PageShell
-      title="📥 Cahier des entrées"
+      title="Cahier des entrees"
       onHome={onHome}
+      rightExtra={
+        <button onClick={changeMagasin}
+          style={{ padding: '6px 12px', borderRadius: 20, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 13 }}>
+          {magasin} &#9662;
+        </button>
+      }
       tabs={CAHIER_TABS.map(t => (
         <button key={t.id} className={`tab-btn${tab === t.id ? ' active' : ''}`} onClick={() => setTab(t.id)}>{t.label}</button>
       ))}
     >
       {tab === 'suivi'   && <SuiviLivraisons />}
-      {tab === 'entrees' && <Entrees />}
+      {tab === 'entrees' && <Entrees defaultMagasin={magasin} />}
     </PageShell>
   )
 }
@@ -312,8 +330,8 @@ function CahierEntrees({ onHome }) {
 const APPS = [
   { id: 'cahier',    icon: '📥',  title: 'Cahier des entrées', desc: 'Suivi des livraisons et entrées',          gradient: 'linear-gradient(135deg, var(--accent), #2563eb)' },
   { id: 'commandes', icon: '🛍️', title: 'Commandes Clients',  desc: 'Commandes inter-magasins, B2B et clients', gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
-  { id: 'achats',    icon: '🛒',  title: 'Achats',             desc: 'Objectifs et réalisé par marque',          gradient: 'linear-gradient(135deg, #10b981, #059669)' },
-  { id: 'defectueux',icon: '🛠️', title: 'Gestion des défectueux', desc: 'Suivi des défauts et demandes d’avoir',  gradient: 'linear-gradient(135deg, #f43f5e, #be123c)' },
+  { id: 'sav',       icon: '🔧',  title: 'SAV',                    desc: "Retours clients et mises à la forme",       gradient: 'linear-gradient(135deg, #0891b2, #0e7490)' },
+  { id: 'defectueux',icon: '🛠️', title: 'Gestion des défectueux', desc: "Suivi des défauts et demandes d'avoir",     gradient: 'linear-gradient(135deg, #f43f5e, #be123c)' },
   { id: 'paie',      icon: '🧾',  title: 'Éléments variables de paie', desc: 'Chaque salarié remplit ses éléments du mois', warning: '⚠️ À remplir avant le 25 de chaque mois !', gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
   { id: 'planning',  icon: '📅',  title: 'Planning',                   desc: 'Planning hebdomadaire de l\'équipe',             gradient: 'linear-gradient(135deg, #0ea5e9, #0284c7)' },
 ]
@@ -371,6 +389,10 @@ function HomeScreen({ onOpen }) {
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13 }}>
             📒 Répertoire
           </button>
+          <button onClick={() => onOpen('achats')} title="Achats par marque"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13 }}>
+            🛒 Achats
+          </button>
           <button onClick={() => onOpen('reglement')} title="Accéder au plan de règlement"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13 }}>
             💳 Plan de règlement 🔒
@@ -427,6 +449,7 @@ function Root() {
   else if (view === 'reglement')  content = <PageShell title="💳 Plan de règlement" onHome={home}><PlanReglement /></PageShell>
   else if (view === 'parametres') content = <PageShell title="⚙️ Paramètres" onHome={home}><Parametres /></PageShell>
   else if (view === 'planning')   content = <Planning onHome={home} />
+  else if (view === 'sav')        content = <Sav onHome={home} />
   else                            content = <HomeScreen onOpen={open} />
 
   return (
