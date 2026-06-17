@@ -130,16 +130,21 @@ Carnet d'adresses des fournisseurs (petit lien 📒 sur l'accueil). Les coordonn
 
 ### App Gestion des défectueux (`src/defectueux/`)
 Table `defectueux` (liée à une entrée via `entree_id`). **Sélecteur de magasin** (`StoreSelect`) au démarrage, mémorisé dans `localStorage['defectueux_magasin']` (objet `{id, nom}`) ; bouton ▾ dans le header pour changer. La liste est filtrée sur le magasin. Le formulaire choisit salarié (filtré sur `salaries.magasin === currentMagasin`, bouton + pour saisie manuelle), marque → modèle → **pointure parmi celles reçues** ; le **N°** se pré-remplit. États : À traiter → Mail envoyé → Avoir reçu → Clôturé / Refusé.
-- **`DefectueuxModal`** props : `defect` (édition), `defaultMagasinId` (pré-remplit le select magasin), `currentMagasin` (nom, pour filtrer les salariés). Composant local `SalarieInput` : select filtré + bouton + pour saisie libre.
+- **`DefectueuxModal`** props : `defect` (édition), `defaultMagasinId` (pré-remplit le select magasin), `currentMagasin` (nom, pour filtrer les salariés). Composants module-level : `SalarieInput` (select + bouton + saisie libre), `FournisseurInput` (select fournisseurs + bouton + pour créer une nouvelle marque à la volée), `ModeleInput` (select modèles de la marque + bouton + pour ajouter un modèle). Pattern commun : mode normal = select + bouton `+`, mode ajout = input texte + `OK` + `x`.
+- **Ajout marque à la volée** : `db.fournisseurs.add({ nom, modelesBySeason: {} })` → retourne l'id → `setForm(..., fournisseurId: String(id))`. **Ajout modèle à la volée** : `db.fournisseurs.update(fId, { modelesBySeason: { ...existing, [season]: [...arr, nom] } })`. `key={form.fournisseurId}` sur `ModeleInput` pour reset à chaque changement de marque.
+- **Prix manuel** : champ optionnel `prixManuel` à la création pour forcer le PHT de l'entrée Retour (sinon calculé depuis `parametres`).
 - **À l'enregistrement** : crée une **entrée « Retour »** dans le Cahier puis propose d'**envoyer un mail au SAV** (Gmail pré-rempli). Si pas d'email : saisie manuelle + étape `'save-contact'`. Flow : `'form'` → `'email'` → `'save-contact'`.
 - **Plan de règlement** : le retour génère un avoir seulement si le défectueux lié est « Avoir reçu » ou « Clôturé ».
 
 ### App SAV (`src/sav/`)
-Gestion du service après-vente. Table `sav`. **Sélecteur de magasin** (`StoreSelect`) au démarrage, mémorisé dans `localStorage['sav_magasin']`. Deux types de dossiers :
+Gestion du service après-vente. Table `sav`. **Sélecteur de magasin** (`StoreSelect`) au démarrage, mémorisé dans `localStorage['sav_magasin']`. Trois types de dossiers :
 - **Retour client** (`type: 'retour'`) : statuts Reçu → Mail marque envoyé → Réponse reçue → Clôturé. À la création : auto-crée une entrée « Retour » + un défectueux liés, puis propose d'envoyer un mail au SAV (même flow 3 étapes que DefectueuxModal). Décision finale : Remboursement / Échange / Avoir.
-- **Mise à la forme** (`type: 'forme'`) : statuts Déposé → En cours → Prêt à récupérer → Récupéré.
-- **`SavModal`** props : `sav` (édition), `defaultMagasinId`, `currentMagasin`. Composant local `SalarieInput` (même pattern que DefectueuxModal).
-- **`Sav.jsx`** : liste filtrée par magasin sélectionné + filtre type, barre de progression par statut (`StatusStepper`), stats, bouton supprimer.
+- **Mise à la forme** (`type: 'forme'`) : statuts Déposé → En cours → Prêt à récupérer → Récupéré. Quand le statut passe à « En cours », le timestamp `en_cours_at` est enregistré → un **timer 48h** s'affiche sur la carte (composant `FormeTimer` dans `Sav.jsx`) avec barre de progression bleu→orange→rouge. À 48h exactement, le statut passe automatiquement à « Prêt à récupérer » (via `db.sav.update`, déclenché au chargement si l'app était fermée). Colonne `en_cours_at timestamptz` + mapping `enCoursAt: 'en_cours_at'` dans `FIELD_TO_DB`.
+- **Réparation** (`type: 'reparation'`) : statuts identiques à Mise à la forme. Toggle **Offert / Payant** (`facturation`) ; si Payant, champ `prixReparation` (colonne `prix_reparation numeric`). À la création : même auto-création entrée Retour + défectueux + mail fournisseur que Retour client.
+- **`SavModal`** props : `sav` (édition), `defaultMagasinId`, `currentMagasin`. Composants module-level : `SalarieInput`, `FournisseurInput`, `ModeleInput` (même pattern que DefectueuxModal), `PointureInput` (toggle select ↔ input texte via bouton `+`).
+- Retour et Réparation utilisent `fournisseurId` (marque) + `modele` + `pointure` via les composants `+`. Mise à la forme utilise des champs libres `marque` / `modele` / `pointure`.
+- **Colonnes sav** ajoutées : `prix_reparation numeric`, `en_cours_at timestamptz`, `facturation text`. FIELD_TO_DB : `prixReparation`, `enCoursAt`.
+- **`Sav.jsx`** : liste filtrée par magasin sélectionné + filtre type (Tous / Retours / Forme / Réparation), barre de progression par statut (`StatusStepper`), timer `FormeTimer` affiché sur les cartes Forme « En cours », stats, bouton supprimer.
 - **Constantes** : `src/sav/constants.js` — `STATUTS_RETOUR`, `STATUTS_FORME`, `DECISIONS`, `STATUT_COLORS`. Mail SAV : `src/sav/mail.js` (`buildSavRetourMailUrl`).
 
 ### Composant partagé `StoreSelect` (`src/components/StoreSelect.jsx`)
