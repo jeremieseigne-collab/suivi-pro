@@ -4,6 +4,28 @@ import { PROVENANCES, STATUTS } from './constants'
 
 const todayStr = () => new Date().toISOString().slice(0, 10)
 
+function SalarieInput({ value, onChange, salaries }) {
+  const [manual, setManual] = useState(false)
+  const btnStyle = { padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', background: 'var(--surface)', color: 'var(--text-3)', fontSize: 14, fontFamily: 'inherit' }
+  if (manual) return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      <input value={value} onChange={e => onChange(e.target.value)} placeholder="Nom et prenom" autoFocus
+        style={{ flex: 1, padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', outline: 'none', background: 'var(--surface)', color: 'var(--text)' }} />
+      <button type="button" onClick={() => { onChange(''); setManual(false) }} style={btnStyle}>x</button>
+    </div>
+  )
+  return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      <select value={value} onChange={e => onChange(e.target.value)} style={{ flex: 1 }}>
+        <option value="">Choisir</option>
+        {salaries.map(s => <option key={s}>{s}</option>)}
+      </select>
+      <button type="button" onClick={() => setManual(true)} title="Saisir manuellement"
+        style={{ ...btnStyle, fontWeight: 700, fontSize: 18, lineHeight: 1, padding: '4px 11px' }}>+</button>
+    </div>
+  )
+}
+
 export default function CommandeModal({ commande, defaultMagasin, salaries = [], onClose, onSaved }) {
   const editing = !!commande?.id
   const [form, setForm] = useState({
@@ -60,11 +82,8 @@ export default function CommandeModal({ commande, defaultMagasin, salaries = [],
               <input type="date" value={form.date} onChange={e => set('date', e.target.value)} />
             </div>
             <div className="form-field">
-              <label>Salarié *</label>
-              <select value={form.salarie} onChange={e => set('salarie', e.target.value)}>
-                <option value="">— Choisir —</option>
-                {salaries.map(s => <option key={s}>{s}</option>)}
-              </select>
+              <label>Salari&eacute; *</label>
+              <SalarieInput value={form.salarie} onChange={v => set('salarie', v)} salaries={salaries} />
             </div>
           </div>
 

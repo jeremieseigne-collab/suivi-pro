@@ -118,7 +118,10 @@ export default function Commandes({ onHome }) {
   }, [])
 
   const salaries = useLiveQuery(() => db.salaries.orderBy('nom').toArray(), [])
-  const salarieNames = (salaries || []).map(s => s.nom)
+  const salarieNames = useMemo(() =>
+    (salaries || []).filter(s => !s.magasin || s.magasin === magasin).map(s => s.nom),
+    [salaries, magasin]
+  )
 
   const rows = useMemo(() => (data ?? []).filter(r => r.magasin === magasin), [data, magasin])
 

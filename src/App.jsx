@@ -294,8 +294,8 @@ function PageShell({ title, onHome, withSeason = true, tabs = null, rightExtra =
 
 // Cahier des entrées = Suivi livraisons + Entrées réunis (sous-onglets)
 const CAHIER_TABS = [
-  { id: 'suivi',   label: 'Suivi livraisons' },
-  { id: 'entrees', label: 'Entrees' },
+  { id: 'suivi',   label: '📦 Suivi livraisons' },
+  { id: 'entrees', label: '📥 Entrées' },
 ]
 
 function CahierEntrees({ onHome }) {
@@ -309,12 +309,12 @@ function CahierEntrees({ onHome }) {
 
   return (
     <PageShell
-      title="Cahier des entrees"
+      title="📥 Cahier des entrées"
       onHome={onHome}
       rightExtra={
         <button onClick={changeMagasin}
-          style={{ padding: '6px 12px', borderRadius: 20, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 13 }}>
-          {magasin} &#9662;
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, border: '2px solid #93c5fd', background: '#eff6ff', color: '#1d4ed8', fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+          🏪 {magasin} &#9662;
         </button>
       }
       tabs={CAHIER_TABS.map(t => (

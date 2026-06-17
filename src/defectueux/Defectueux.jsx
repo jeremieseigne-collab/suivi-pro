@@ -91,12 +91,12 @@ export default function Defectueux({ onHome }) {
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', fontSize: 17, color: 'var(--text-2)', lineHeight: 1 }}
               onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--accent)' }}
               onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.color = 'var(--text-2)' }}>←</button>
-            <h1>Gestion des d&eacute;fectueux</h1>
+            <h1>🛠️ Gestion des d&eacute;fectueux</h1>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button onClick={changeMagasin}
-              style={{ padding: '6px 12px', borderRadius: 20, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 13 }}>
-              {magasin.nom} &#9662;
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, border: '2px solid #fda4af', background: '#fff1f2', color: '#be123c', fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              🏪 {magasin.nom} &#9662;
             </button>
             <button className="btn-primary" onClick={() => setShowForm(true)}>+ Nouveau d&eacute;fectueux</button>
           </div>
