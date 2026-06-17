@@ -67,7 +67,7 @@ function SavCard({ row, onClick }) {
                 background: row.facturation === 'offert' ? '#ecfdf5' : '#fffbeb',
                 color: row.facturation === 'offert' ? '#065f46' : '#92400e',
               }}>
-                {row.facturation === 'offert' ? '🎁 Offert' : '💰 Payant'}
+                {row.facturation === 'offert' ? '🎁 Offert' : (row.prixReparation ? `💰 ${Number(row.prixReparation).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}` : '💰 Payant')}
               </span>
             )}
             <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{row.clientNom || '—'}</span>

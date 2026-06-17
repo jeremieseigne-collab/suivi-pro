@@ -13,7 +13,7 @@ const FIELD_TO_DB = {
   paie_variables:  { createdAt: 'created_at' },
   paie_envois:     { sentAt: 'sent_at' },
   planning:        { heureDebut: 'heure_debut', heureFin: 'heure_fin', createdAt: 'created_at' },
-  sav:             { magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', clientNom: 'client_nom', clientTel: 'client_tel', defectueuxId: 'defectueux_id', createdAt: 'created_at' },
+  sav:             { magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', clientNom: 'client_nom', clientTel: 'client_tel', defectueuxId: 'defectueux_id', createdAt: 'created_at', prixReparation: 'prix_reparation' },
 }
 
 const FIELD_FROM_DB = {}

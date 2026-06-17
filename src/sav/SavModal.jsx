@@ -156,6 +156,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
   const [manualEmail, setManualEmail] = useState('')
   const [prixManuel, setPrixManuel] = useState('')
   const [facturation, setFacturation] = useState(sav?.facturation ?? 'offert')
+  const [prixReparation, setPrixReparation] = useState(sav?.prixReparation ? String(sav.prixReparation) : '')
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
@@ -200,13 +201,13 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
   async function handleSave() {
     if (!form.magasinId)              { setError('Magasin obligatoire'); return }
     if (!form.clientNom.trim())       { setError('Nom du client obligatoire'); return }
-    if (type === 'retour' && !form.fournisseurId) { setError('Marque obligatoire'); return }
-    if (type === 'retour' && !form.modele)        { setError('Modèle obligatoire'); return }
+    if ((type === 'retour' || type === 'reparation') && !form.fournisseurId) { setError('Marque obligatoire'); return }
+    if ((type === 'retour' || type === 'reparation') && !form.modele)        { setError('Modèle obligatoire'); return }
 
     setSaving(true); setError('')
     try {
       const magasinId = Number(form.magasinId)
-      const fournisseurId = type === 'retour' ? Number(form.fournisseurId) : null
+      const fournisseurId = (type === 'retour' || type === 'reparation') ? Number(form.fournisseurId) : null
 
       if (editing) {
         const prevStatut = sav.statut
@@ -215,6 +216,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
           fournisseurId, modele: form.modele, pointure: form.pointure, marque: form.marque,
           probleme: form.probleme, note: form.note, statut: form.statut, decision: form.decision,
           facturation: type === 'reparation' ? facturation : null,
+          prixReparation: (type === 'reparation' && facturation === 'payant') ? parseFloat(prixReparation.replace(',', '.')) || null : null,
         })
         // Sync défectueux statut si passage à "Mail marque envoyé"
         if (type === 'retour' && sav.defectueuxId && prevStatut !== 'Mail marque envoyé' && form.statut === 'Mail marque envoyé') {
@@ -224,10 +226,9 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
         return
       }
 
-      // Création : auto-créer l'entrée défectueux + entree Retour si retour client
+      // Création : auto-créer défectueux + entree Retour pour retour et réparation
       let defectueuxId = null
-      if (type === 'retour') {
-        // Prix unitaire HT (même logique que DefectueuxModal)
+      if (type === 'retour' || type === 'reparation') {
         let unit = prixManuel ? parseFloat(prixManuel.replace(',', '.')) || 0 : 0
         if (!unit) {
           const param = await db.parametres.where({ fournisseurId, magasinId }).filter(p => p.season === season).first()
@@ -246,11 +247,14 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
           sizes: form.pointure ? { [form.pointure]: -1 } : {}, season,
         })
 
+        const noteDefect = type === 'retour'
+          ? `Retour client — ${form.clientNom}${form.clientTel ? ` (${form.clientTel})` : ''} : ${form.probleme}`
+          : `Réparation — ${form.clientNom}${form.clientTel ? ` (${form.clientTel})` : ''} : ${form.probleme}`
+
         defectueuxId = await db.defectueux.add({
           magasinId, fournisseurId, salarie: form.salarie,
           modele: form.modele, numero: '', pointure: form.pointure,
-          note: `Retour client — ${form.clientNom}${form.clientTel ? ` (${form.clientTel})` : ''} : ${form.probleme}`,
-          statut: 'À traiter', season, entreeId,
+          note: noteDefect, statut: 'À traiter', season, entreeId,
         })
       }
 
@@ -262,9 +266,10 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
         statut: type === 'retour' ? 'Reçu' : 'Déposé',
         decision: '', defectueuxId, season,
         facturation: type === 'reparation' ? facturation : null,
+        prixReparation: (type === 'reparation' && facturation === 'payant') ? parseFloat(prixReparation.replace(',', '.')) || null : null,
       })
 
-      if (type === 'retour') {
+      if (type === 'retour' || type === 'reparation') {
         setSavedCtx({ savId, defectueuxId, fournisseur, societe })
         setSaving(false)
         setStep('email')
@@ -489,22 +494,64 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
                     </button>
                   ))}
                 </div>
+                {facturation === 'payant' && (
+                  <div className="form-field" style={{ marginBottom: 12 }}>
+                    <label>Prix de la réparation (€)</label>
+                    <input type="number" value={prixReparation} onChange={e => setPrixReparation(e.target.value)}
+                      placeholder="Ex: 25.00" min="0" step="0.01" style={inputStyle} />
+                  </div>
+                )}
+                {magasin && (
+                  <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 10 }}>
+                    Société : <strong style={{ color: 'var(--text)' }}>{societe || '—'}</strong>
+                  </div>
+                )}
                 <div className="form-grid">
                   <div className="form-field">
-                    <label>Marque</label>
-                    <input value={form.marque} onChange={e => set('marque', e.target.value)} placeholder="Ex: Clarks" style={inputStyle} />
+                    <label>Marque *</label>
+                    <FournisseurInput
+                      value={form.fournisseurId}
+                      onChange={v => setForm(f => ({ ...f, fournisseurId: v, modele: '', pointure: '' }))}
+                      fournisseurs={fournisseurs || []}
+                      onAdd={async (nom) => {
+                        const id = await db.fournisseurs.add({ nom, modelesBySeason: {} })
+                        setForm(f => ({ ...f, fournisseurId: String(id), modele: '', pointure: '' }))
+                      }}
+                    />
                   </div>
                   <div className="form-field">
-                    <label>Modèle</label>
-                    <input value={form.modele} onChange={e => set('modele', e.target.value)} placeholder="Nom du modele" style={inputStyle} />
+                    <label>Modèle *</label>
+                    <ModeleInput
+                      key={form.fournisseurId}
+                      value={form.modele}
+                      onChange={v => setForm(f => ({ ...f, modele: v, pointure: '' }))}
+                      models={models}
+                      disabled={!form.fournisseurId}
+                      canAdd={!!form.fournisseurId}
+                      onAdd={async (nom) => {
+                        const fId = Number(form.fournisseurId)
+                        const existing = fournisseur?.modelesBySeason || {}
+                        const arr = existing[season] || []
+                        if (!arr.includes(nom)) {
+                          await db.fournisseurs.update(fId, { modelesBySeason: { ...existing, [season]: [...arr, nom] } })
+                        }
+                        setForm(f => ({ ...f, modele: nom, pointure: '' }))
+                      }}
+                    />
                   </div>
                   <div className="form-field">
                     <label>Pointure</label>
-                    <input value={form.pointure} onChange={e => set('pointure', e.target.value)} placeholder="Ex: 42" style={inputStyle} />
+                    <PointureInput
+                      key={form.modele}
+                      value={form.pointure}
+                      onChange={v => set('pointure', v)}
+                      sizes={sizeOptions}
+                      disabled={!form.modele}
+                    />
                   </div>
                 </div>
                 <div className="form-field">
-                  <label>Travaux à effectuer</label>
+                  <label>Note / problème</label>
                   <textarea value={form.probleme} onChange={e => set('probleme', e.target.value)}
                     rows={3} style={textareaStyle} placeholder="Décris les réparations à faire…" />
                 </div>
