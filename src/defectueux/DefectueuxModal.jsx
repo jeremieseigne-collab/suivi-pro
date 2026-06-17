@@ -31,6 +31,72 @@ function SalarieInput({ value, onChange, salaries }) {
   )
 }
 
+function FournisseurInput({ value, onChange, fournisseurs, onAdd }) {
+  const [adding, setAdding] = useState(false)
+  const [nom, setNom] = useState('')
+  const [saving, setSaving] = useState(false)
+  const btnStyle = { padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', background: 'var(--surface)', color: 'var(--text-3)', fontSize: 14, fontFamily: 'inherit' }
+  async function confirm() {
+    if (!nom.trim()) return
+    setSaving(true)
+    try { await onAdd(nom.trim()) } catch { /* ignore */ } finally { setSaving(false); setAdding(false); setNom('') }
+  }
+  if (adding) return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      <input value={nom} onChange={e => setNom(e.target.value)} placeholder="Nom de la marque" autoFocus
+        onKeyDown={e => { if (e.key === 'Enter') confirm(); if (e.key === 'Escape') { setAdding(false); setNom('') } }}
+        style={{ flex: 1, padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', outline: 'none', background: 'var(--surface)', color: 'var(--text)' }} />
+      <button type="button" onClick={confirm} disabled={!nom.trim() || saving}
+        style={{ ...btnStyle, background: nom.trim() ? '#2563eb' : 'var(--border)', color: nom.trim() ? '#fff' : 'var(--text-4)', border: 'none', fontWeight: 600 }}>OK</button>
+      <button type="button" onClick={() => { setAdding(false); setNom('') }} style={btnStyle}>x</button>
+    </div>
+  )
+  return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      <select value={value} onChange={e => onChange(e.target.value)} style={{ flex: 1 }}>
+        <option value="">Choisir</option>
+        {fournisseurs.map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
+      </select>
+      <button type="button" onClick={() => setAdding(true)} title="Ajouter une marque"
+        style={{ ...btnStyle, fontWeight: 700, fontSize: 18, lineHeight: 1, padding: '4px 11px' }}>+</button>
+    </div>
+  )
+}
+
+function ModeleInput({ value, onChange, models, disabled, canAdd, onAdd }) {
+  const [adding, setAdding] = useState(false)
+  const [nom, setNom] = useState('')
+  const [saving, setSaving] = useState(false)
+  const btnStyle = { padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', background: 'var(--surface)', color: 'var(--text-3)', fontSize: 14, fontFamily: 'inherit' }
+  async function confirm() {
+    if (!nom.trim()) return
+    setSaving(true)
+    try { await onAdd(nom.trim()) } catch { /* ignore */ } finally { setSaving(false); setAdding(false); setNom('') }
+  }
+  if (adding) return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      <input value={nom} onChange={e => setNom(e.target.value)} placeholder="Nom du modele" autoFocus
+        onKeyDown={e => { if (e.key === 'Enter') confirm(); if (e.key === 'Escape') { setAdding(false); setNom('') } }}
+        style={{ flex: 1, padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', outline: 'none', background: 'var(--surface)', color: 'var(--text)' }} />
+      <button type="button" onClick={confirm} disabled={!nom.trim() || saving}
+        style={{ ...btnStyle, background: nom.trim() ? '#2563eb' : 'var(--border)', color: nom.trim() ? '#fff' : 'var(--text-4)', border: 'none', fontWeight: 600 }}>OK</button>
+      <button type="button" onClick={() => { setAdding(false); setNom('') }} style={btnStyle}>x</button>
+    </div>
+  )
+  return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      <select value={value} onChange={e => onChange(e.target.value)} disabled={disabled} style={{ flex: 1 }}>
+        <option value="">{disabled ? 'Choisir une marque' : 'Choisir'}</option>
+        {models.map(m => <option key={m}>{m}</option>)}
+      </select>
+      {canAdd && (
+        <button type="button" onClick={() => setAdding(true)} title="Ajouter un modele"
+          style={{ ...btnStyle, fontWeight: 700, fontSize: 18, lineHeight: 1, padding: '4px 11px' }}>+</button>
+      )}
+    </div>
+  )
+}
+
 export default function DefectueuxModal({ defect, onClose, onSaved, defaultMagasinId, currentMagasin }) {
   const editing = !!defect?.id
   const { season } = useSeason()
@@ -61,6 +127,7 @@ export default function DefectueuxModal({ defect, onClose, onSaved, defaultMagas
   const [step,       setStep]       = useState('form') // 'form' | 'email' | 'save-contact'
   const [savedCtx,   setSavedCtx]   = useState(null)
   const [manualEmail, setManualEmail] = useState('')
+  const [prixManuel, setPrixManuel] = useState('')
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
@@ -120,12 +187,14 @@ export default function DefectueuxModal({ defect, onClose, onSaved, defaultMagas
       }
 
       // Prix unitaire HT du modèle (magasin/saison) → PHT négatif (c'est un retour)
-      let unit = 0
-      const param = await db.parametres.where({ fournisseurId, magasinId }).filter(p => p.season === season).first()
-      if (param) {
-        const q = param.modeles?.[form.modele], px = param.prixModeles?.[form.modele]
-        if (q > 0 && px > 0) unit = px / q
-        else if (param.pm) unit = param.pm
+      let unit = prixManuel ? parseFloat(prixManuel.replace(',', '.')) || 0 : 0
+      if (!unit) {
+        const param = await db.parametres.where({ fournisseurId, magasinId }).filter(p => p.season === season).first()
+        if (param) {
+          const q = param.modeles?.[form.modele], px = param.prixModeles?.[form.modele]
+          if (q > 0 && px > 0) unit = px / q
+          else if (param.pm) unit = param.pm
+        }
       }
       const pht = unit > 0 ? -Math.round(unit * 100) / 100 : 0
 
@@ -257,17 +326,35 @@ export default function DefectueuxModal({ defect, onClose, onSaved, defaultMagas
             <div className="form-grid">
               <div className="form-field">
                 <label>Marque *</label>
-                <select value={form.fournisseurId} onChange={e => setForm(f => ({ ...f, fournisseurId: e.target.value, modele: '', pointure: '' }))}>
-                  <option value="">— Choisir —</option>
-                  {(fournisseurs || []).map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
-                </select>
+                <FournisseurInput
+                  value={form.fournisseurId}
+                  onChange={v => setForm(f => ({ ...f, fournisseurId: v, modele: '', pointure: '' }))}
+                  fournisseurs={fournisseurs || []}
+                  onAdd={async (nom) => {
+                    const id = await db.fournisseurs.add({ nom, modelesBySeason: {} })
+                    setForm(f => ({ ...f, fournisseurId: String(id), modele: '', pointure: '' }))
+                  }}
+                />
               </div>
               <div className="form-field">
                 <label>Modèle *</label>
-                <select value={form.modele} onChange={e => setForm(f => ({ ...f, modele: e.target.value, pointure: '' }))} disabled={!form.fournisseurId}>
-                  <option value="">{form.fournisseurId ? '— Choisir —' : 'Choisis une marque'}</option>
-                  {models.map(m => <option key={m}>{m}</option>)}
-                </select>
+                <ModeleInput
+                  key={form.fournisseurId}
+                  value={form.modele}
+                  onChange={v => setForm(f => ({ ...f, modele: v, pointure: '' }))}
+                  models={models}
+                  disabled={!form.fournisseurId}
+                  canAdd={!!form.fournisseurId}
+                  onAdd={async (nom) => {
+                    const fId = Number(form.fournisseurId)
+                    const existing = fournisseur?.modelesBySeason || {}
+                    const arr = existing[season] || []
+                    if (!arr.includes(nom)) {
+                      await db.fournisseurs.update(fId, { modelesBySeason: { ...existing, [season]: [...arr, nom] } })
+                    }
+                    setForm(f => ({ ...f, modele: nom, pointure: '' }))
+                  }}
+                />
               </div>
               <div className="form-field">
                 <label>N°</label>
@@ -289,6 +376,15 @@ export default function DefectueuxModal({ defect, onClose, onSaved, defaultMagas
               <label>Note / problème</label>
               <textarea value={form.note} onChange={e => set('note', e.target.value)} rows={3} style={textareaStyle} placeholder="Décris le défaut…" />
             </div>
+
+            {!editing && (
+              <div className="form-field">
+                <label>Prix unitaire HT (€, optionnel)</label>
+                <input type="number" value={prixManuel} onChange={e => setPrixManuel(e.target.value)}
+                  placeholder="Laisser vide si le prix est dans les parametres" min="0" step="0.01"
+                  style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', outline: 'none', width: '100%', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }} />
+              </div>
+            )}
 
             {error && <div className="form-error">⚠️ {error}</div>}
 
