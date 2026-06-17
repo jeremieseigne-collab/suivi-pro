@@ -99,8 +99,8 @@ La saison active n'est **pas** une table : elle vit dans `localStorage` et dans 
 ### Launcher multi-apps et navigation
 `src/App.jsx` est le routeur, **sans react-router**. Il n'y a plus de groupe « Suivi Pro » : les anciens onglets sont devenus des destinations de premier niveau.
 - **`Root`** (state local `view`) gère la navigation + le **code PIN** (`PIN_CODE = '2201'`, `PROTECTED_TABS = {reglement, parametres}`, déverrouillage en mémoire). `view` : `home` → `<HomeScreen>`, `cahier` → `<CahierEntrees>`, `commandes` → `<Commandes>`, `achats`/`reglement`/`parametres` → `<PageShell>` enveloppant le composant. Cliquer une vue protégée passe par `PinModal`.
-- **`PageShell`** = en-tête commun (bouton retour ←, titre, `SeasonBadge`, onglets optionnels) + `<main>`. **`CahierEntrees`** = `PageShell` avec 2 sous-onglets : **Suivi livraisons** + **Entrées**.
-- **`HomeScreen`** = le menu : cartes `APPS` (📥 Cahier des entrées, 🛍️ Commandes Clients, 🛒 Achats, 🛠️ Gestion des défectueux, 🧾 Éléments variables de paie, 📅 Planning) + 2 petits liens 🔒 (💳 Plan de règlement, ⚙️ Paramètres) + lien 📒 Répertoire + `<AgendaBoard>` dessous. Pour ajouter une app : entrée dans `APPS` (ou lien), cas dans `Root`, composant.
+- **`PageShell`** = en-tête commun (bouton retour ←, titre, slot `rightExtra` optionnel, `SeasonBadge`, onglets optionnels) + `<main>`. **`CahierEntrees`** = `PageShell` avec 2 sous-onglets : **Suivi livraisons** + **Entrées** ; dispose d'un `StoreSelect` au démarrage (localStorage `'cahier_magasin'`) et passe `defaultMagasin` à `Entrees`.
+- **`HomeScreen`** = le menu : cartes `APPS` (📥 Cahier des entrées, 🛍️ Commandes Clients, 🔧 SAV, 🛠️ Gestion des défectueux, 🧾 Éléments variables de paie, 📅 Planning) + 2 petits liens 🔒 (💳 Plan de règlement, ⚙️ Paramètres) + lien 📒 Répertoire + lien 🛒 Achats + `<AgendaBoard>` dessous. Pour ajouter une app : entrée dans `APPS` (ou lien), cas dans `Root`, composant.
 
 `src/tabs/` : `SuiviLivraisons`, `Entrees` (réunis dans Cahier des entrées), `Achats`, `PlanReglement`, `Parametres`.
 ⚠️ `src/tabs/PlanAchat.jsx` existe mais **n'est pas importé** (composant orphelin).
@@ -129,9 +129,21 @@ Planning hebdomadaire du personnel, filtré par magasin. Table `planning` (colon
 Carnet d'adresses des fournisseurs (petit lien 📒 sur l'accueil). Les coordonnées sont des colonnes sur `fournisseurs` : `contact`, `telephone`, `contact_sav`/`telephone_fixe`/`email` (bloc SAV), `numero_client`, `btob` (lien espace pro), `adresse`, `notes`. Édition inline (onBlur). Boutons ✉️ (Gmail) et 🔗 (ouvre le BtoB).
 
 ### App Gestion des défectueux (`src/defectueux/`)
-Table `defectueux` (liée à une entrée via `entree_id`). Le formulaire choisit magasin (→ société déduite), salarié, marque → modèle → **pointure parmi celles reçues** (lues dans `entrees`) ; le **N°** se pré-remplit depuis le N° du modèle dans les entrées. États : À traiter → Mail envoyé → Avoir reçu → Clôturé / Refusé.
-- **À l'enregistrement** : crée une **entrée « Retour »** dans le Cahier (`total: -1`, `pht` négatif = −prix unitaire, catégorie/typeKey repris du modèle) puis propose d'**envoyer un mail au SAV** (Gmail pré-rempli — `src/defectueux/mail.js`, compte expéditeur selon la société). Si la marque n'a pas d'email SAV enregistré, un **champ de saisie manuelle** apparaît ; après envoi, une étape `'save-contact'` propose d'enregistrer l'email dans la fiche fournisseur (`db.fournisseurs.update(id, { email })`). Flow : `'form'` → `'email'` → `'save-contact'` (si email manuel utilisé).
-- **Retours** : non comptés dans les stats Entrées (Unités/Valeur) ni dans le « reçu » du Suivi livraison. Dans le **Plan de règlement**, un retour génère un **avoir** (échéance unique à sa date, hors règles/conditions) **seulement** si le défectueux lié est « Avoir reçu » ou « Clôturé ».
+Table `defectueux` (liée à une entrée via `entree_id`). **Sélecteur de magasin** (`StoreSelect`) au démarrage, mémorisé dans `localStorage['defectueux_magasin']` (objet `{id, nom}`) ; bouton ▾ dans le header pour changer. La liste est filtrée sur le magasin. Le formulaire choisit salarié (filtré sur `salaries.magasin === currentMagasin`, bouton + pour saisie manuelle), marque → modèle → **pointure parmi celles reçues** ; le **N°** se pré-remplit. États : À traiter → Mail envoyé → Avoir reçu → Clôturé / Refusé.
+- **`DefectueuxModal`** props : `defect` (édition), `defaultMagasinId` (pré-remplit le select magasin), `currentMagasin` (nom, pour filtrer les salariés). Composant local `SalarieInput` : select filtré + bouton + pour saisie libre.
+- **À l'enregistrement** : crée une **entrée « Retour »** dans le Cahier puis propose d'**envoyer un mail au SAV** (Gmail pré-rempli). Si pas d'email : saisie manuelle + étape `'save-contact'`. Flow : `'form'` → `'email'` → `'save-contact'`.
+- **Plan de règlement** : le retour génère un avoir seulement si le défectueux lié est « Avoir reçu » ou « Clôturé ».
+
+### App SAV (`src/sav/`)
+Gestion du service après-vente. Table `sav`. **Sélecteur de magasin** (`StoreSelect`) au démarrage, mémorisé dans `localStorage['sav_magasin']`. Deux types de dossiers :
+- **Retour client** (`type: 'retour'`) : statuts Reçu → Mail marque envoyé → Réponse reçue → Clôturé. À la création : auto-crée une entrée « Retour » + un défectueux liés, puis propose d'envoyer un mail au SAV (même flow 3 étapes que DefectueuxModal). Décision finale : Remboursement / Échange / Avoir.
+- **Mise à la forme** (`type: 'forme'`) : statuts Déposé → En cours → Prêt à récupérer → Récupéré.
+- **`SavModal`** props : `sav` (édition), `defaultMagasinId`, `currentMagasin`. Composant local `SalarieInput` (même pattern que DefectueuxModal).
+- **`Sav.jsx`** : liste filtrée par magasin sélectionné + filtre type, barre de progression par statut (`StatusStepper`), stats, bouton supprimer.
+- **Constantes** : `src/sav/constants.js` — `STATUTS_RETOUR`, `STATUTS_FORME`, `DECISIONS`, `STATUT_COLORS`. Mail SAV : `src/sav/mail.js` (`buildSavRetourMailUrl`).
+
+### Composant partagé `StoreSelect` (`src/components/StoreSelect.jsx`)
+Écran plein-page "Dans quel magasin êtes-vous ?" chargé depuis `db.magasins`. Prop `onSelect(m)` reçoit l'objet magasin complet `{id, nom, ...}`. Utilisé par Défectueux (`localStorage['defectueux_magasin']`), SAV (`localStorage['sav_magasin']`) et CahierEntrees (`localStorage['cahier_magasin']`, stocke uniquement `m.nom`). Pattern : `!magasin → StoreSelect`, bouton `nom ▾` dans le header pour réinitialiser.
 
 ### App Éléments variables de paie (`src/paie/`)
 Chaque salarié remplit, **par mois**, ses éléments variables pour la comptable. Tables `paie_variables` (une ligne par `periode` `AAAA-MM` × `salarie`, contrainte unique ; les saisies dans `data` JSONB) et `paie_envois` (`periode` unique = récap déjà envoyé, garde-fou anti-doublon). Pas de notion de saison.
