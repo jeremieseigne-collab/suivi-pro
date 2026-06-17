@@ -67,12 +67,12 @@ function FormeTimer({ enCoursAt, savId }) {
   const color = pct >= 90 ? '#ef4444' : pct >= 60 ? '#f59e0b' : '#3b82f6'
 
   return (
-    <div style={{ margin: '10px 0 4px', textAlign: 'center' }}>
-      <div style={{ fontSize: 22, fontWeight: 800, color, letterSpacing: -1, lineHeight: 1 }}>
+    <div style={{ margin: '8px 0 2px', textAlign: 'center' }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color, letterSpacing: -0.5 }}>
         {'⏱'} {h}h{m}
       </div>
-      <div style={{ margin: '6px 0 2px', height: 5, borderRadius: 3, background: 'var(--border)', overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 3, transition: 'width 30s linear' }} />
+      <div style={{ margin: '4px 0 2px', height: 3, borderRadius: 2, background: 'var(--border)', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 2, transition: 'width 30s linear' }} />
       </div>
       <div style={{ fontSize: 10, color: 'var(--text-4)' }}>{Math.round(pct)}% des 48h</div>
     </div>
