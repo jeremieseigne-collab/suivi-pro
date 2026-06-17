@@ -63,6 +63,28 @@ function FournisseurInput({ value, onChange, fournisseurs, onAdd }) {
   )
 }
 
+function PointureInput({ value, onChange, sizes, disabled }) {
+  const [manual, setManual] = useState(false)
+  const btnStyle = { padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', background: 'var(--surface)', color: 'var(--text-3)', fontSize: 14, fontFamily: 'inherit' }
+  if (manual) return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      <input value={value} onChange={e => onChange(e.target.value)} placeholder="Ex: 42" autoFocus inputMode="decimal"
+        style={{ flex: 1, padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', outline: 'none', background: 'var(--surface)', color: 'var(--text)' }} />
+      <button type="button" onClick={() => { onChange(''); setManual(false) }} style={btnStyle}>x</button>
+    </div>
+  )
+  return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      <select value={value} onChange={e => onChange(e.target.value)} disabled={disabled} style={{ flex: 1 }}>
+        <option value="">{disabled ? 'Choisir un modele' : (sizes.length ? 'Choisir' : '—')}</option>
+        {sizes.map(s => <option key={s}>{s}</option>)}
+      </select>
+      <button type="button" onClick={() => setManual(true)} title="Saisir manuellement"
+        style={{ ...btnStyle, fontWeight: 700, fontSize: 18, lineHeight: 1, padding: '4px 11px' }}>+</button>
+    </div>
+  )
+}
+
 function ModeleInput({ value, onChange, models, disabled, canAdd, onAdd }) {
   const [adding, setAdding] = useState(false)
   const [nom, setNom] = useState('')
@@ -425,10 +447,13 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
                   </div>
                   <div className="form-field">
                     <label>Pointure</label>
-                    <select value={form.pointure} onChange={e => set('pointure', e.target.value)} disabled={!form.modele}>
-                      <option value="">{!form.modele ? 'Choisis un modèle' : (sizeOptions.length ? '— Choisir —' : '—')}</option>
-                      {sizeOptions.map(s => <option key={s}>{s}</option>)}
-                    </select>
+                    <PointureInput
+                      key={form.modele}
+                      value={form.pointure}
+                      onChange={v => set('pointure', v)}
+                      sizes={sizeOptions}
+                      disabled={!form.modele}
+                    />
                   </div>
                 </div>
                 <div className="form-field">
