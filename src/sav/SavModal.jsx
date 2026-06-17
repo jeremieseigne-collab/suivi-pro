@@ -142,7 +142,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
     pointure:      sav?.pointure      ?? '',
     probleme:      sav?.probleme      ?? '',
     note:          sav?.note          ?? '',
-    statut:        sav?.statut        ?? (sav?.type === 'forme' ? 'Déposé' : 'Reçu'),
+    statut:        sav?.statut        ?? (sav?.type === 'retour' ? 'Reçu' : 'Déposé'),
     decision:      sav?.decision      ?? '',
     marque:        sav?.marque        ?? '',
   })
@@ -155,6 +155,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
   const [savedCtx,    setSavedCtx]    = useState(null)
   const [manualEmail, setManualEmail] = useState('')
   const [prixManuel, setPrixManuel] = useState('')
+  const [facturation, setFacturation] = useState(sav?.facturation ?? 'offert')
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
@@ -213,6 +214,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
           magasinId, salarie: form.salarie, clientNom: form.clientNom, clientTel: form.clientTel,
           fournisseurId, modele: form.modele, pointure: form.pointure, marque: form.marque,
           probleme: form.probleme, note: form.note, statut: form.statut, decision: form.decision,
+          facturation: type === 'reparation' ? facturation : null,
         })
         // Sync défectueux statut si passage à "Mail marque envoyé"
         if (type === 'retour' && sav.defectueuxId && prevStatut !== 'Mail marque envoyé' && form.statut === 'Mail marque envoyé') {
@@ -259,6 +261,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
         probleme: form.probleme, note: form.note,
         statut: type === 'retour' ? 'Reçu' : 'Déposé',
         decision: '', defectueuxId, season,
+        facturation: type === 'reparation' ? facturation : null,
       })
 
       if (type === 'retour') {
@@ -360,7 +363,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
             {/* Sélecteur de type (création uniquement) */}
             {!editing && (
               <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                {[{ v: 'retour', label: '🔄 Retour client' }, { v: 'forme', label: '👟 Mise à la forme' }].map(({ v, label }) => (
+                {[{ v: 'retour', label: '🔄 Retour client' }, { v: 'forme', label: '👟 Mise à la forme' }, { v: 'reparation', label: '🧵 Réparation' }].map(({ v, label }) => (
                   <button key={v} onClick={() => { setType(v); set('statut', v === 'retour' ? 'Reçu' : 'Déposé') }}
                     style={{
                       flex: 1, padding: '9px 12px', borderRadius: 8,
@@ -469,6 +472,42 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
                       style={inputStyle} />
                   </div>
                 )}
+              </>
+            ) : type === 'reparation' ? (
+              <>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                  {[{ v: 'offert', label: '🎁 Offert' }, { v: 'payant', label: '💰 Payant' }].map(({ v, label }) => (
+                    <button key={v} type="button" onClick={() => setFacturation(v)}
+                      style={{
+                        flex: 1, padding: '9px 12px', borderRadius: 8,
+                        border: `2px solid ${facturation === v ? (v === 'offert' ? '#10b981' : '#f59e0b') : 'var(--border)'}`,
+                        background: facturation === v ? (v === 'offert' ? '#ecfdf5' : '#fffbeb') : 'var(--surface)',
+                        color: facturation === v ? (v === 'offert' ? '#065f46' : '#92400e') : 'var(--text-3)',
+                        cursor: 'pointer', fontSize: 13, fontWeight: facturation === v ? 700 : 400,
+                      }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className="form-grid">
+                  <div className="form-field">
+                    <label>Marque</label>
+                    <input value={form.marque} onChange={e => set('marque', e.target.value)} placeholder="Ex: Clarks" style={inputStyle} />
+                  </div>
+                  <div className="form-field">
+                    <label>Modèle</label>
+                    <input value={form.modele} onChange={e => set('modele', e.target.value)} placeholder="Nom du modele" style={inputStyle} />
+                  </div>
+                  <div className="form-field">
+                    <label>Pointure</label>
+                    <input value={form.pointure} onChange={e => set('pointure', e.target.value)} placeholder="Ex: 42" style={inputStyle} />
+                  </div>
+                </div>
+                <div className="form-field">
+                  <label>Travaux à effectuer</label>
+                  <textarea value={form.probleme} onChange={e => set('probleme', e.target.value)}
+                    rows={3} style={textareaStyle} placeholder="Décris les réparations à faire…" />
+                </div>
               </>
             ) : (
               <>

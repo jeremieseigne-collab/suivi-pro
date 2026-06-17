@@ -56,11 +56,20 @@ function SavCard({ row, onClick }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
             <span style={{
               fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
-              background: isRetour ? '#fef3c7' : '#dbeafe',
-              color: isRetour ? '#92400e' : '#1e40af',
+              background: isRetour ? '#fef3c7' : row.type === 'reparation' ? '#ecfdf5' : '#dbeafe',
+              color: isRetour ? '#92400e' : row.type === 'reparation' ? '#065f46' : '#1e40af',
             }}>
-              {isRetour ? '🔄 Retour' : '👟 Forme'}
+              {isRetour ? '🔄 Retour' : row.type === 'reparation' ? '🧵 Réparation' : '👟 Forme'}
             </span>
+            {row.type === 'reparation' && row.facturation && (
+              <span style={{
+                fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                background: row.facturation === 'offert' ? '#ecfdf5' : '#fffbeb',
+                color: row.facturation === 'offert' ? '#065f46' : '#92400e',
+              }}>
+                {row.facturation === 'offert' ? '🎁 Offert' : '💰 Payant'}
+              </span>
+            )}
             <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{row.clientNom || '—'}</span>
             {row.clientTel && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{row.clientTel}</span>}
           </div>
@@ -168,7 +177,7 @@ export default function Sav({ onHome }) {
         {/* Filtres */}
         <div className="controls" style={{ flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
           <div style={{ display: 'flex', gap: 6 }}>
-            {[{ v: '', label: 'Tous' }, { v: 'retour', label: 'Retours' }, { v: 'forme', label: 'Forme' }].map(({ v, label }) => (
+            {[{ v: '', label: 'Tous' }, { v: 'retour', label: 'Retours' }, { v: 'forme', label: 'Forme' }, { v: 'reparation', label: 'Réparation' }].map(({ v, label }) => (
               <button key={v} onClick={() => setFilterType(v)}
                 style={{
                   padding: '6px 14px', borderRadius: 20, border: `1px solid ${filterType === v ? 'var(--accent)' : 'var(--border)'}`,
