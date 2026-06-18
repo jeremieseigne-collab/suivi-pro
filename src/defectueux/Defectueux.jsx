@@ -62,7 +62,21 @@ export default function Defectueux({ onHome }) {
   const enCours = rows.filter(r => (!magasin || r.magasinId === magasin.id) && r.statut !== 'Refusé' && r.statut !== 'Clôturé').length
 
   async function changeStatut(id, statut) {
-    try { await db.defectueux.update(id, { statut }) } catch (e) { alert('Erreur : ' + (e.message || e)) }
+    try {
+      await db.defectueux.update(id, { statut })
+      if (['Mail envoyé', 'Avoir reçu', 'Clôturé', 'Refusé'].includes(statut)) {
+        const linkedSav = await db.sav.where('defectueuxId').equals(id).first()
+        if (linkedSav && (linkedSav.type === 'retour' || linkedSav.type === 'reparation')) {
+          if (statut === 'Mail envoyé'
+            && !['Mail marque envoyé', 'Réponse reçue', 'Clôturé'].includes(linkedSav.statut)) {
+            await db.sav.update(linkedSav.id, { statut: 'Mail marque envoyé' })
+          } else if (['Avoir reçu', 'Clôturé', 'Refusé'].includes(statut)
+            && !['Réponse reçue', 'Clôturé'].includes(linkedSav.statut)) {
+            await db.sav.update(linkedSav.id, { statut: 'Réponse reçue' })
+          }
+        }
+      }
+    } catch (e) { alert('Erreur : ' + (e.message || e)) }
   }
   async function handleDelete(id) {
     try { await db.defectueux.delete(id) } catch (e) { alert('Erreur : ' + (e.message || e)) } finally { setConfirmDel(null) }
