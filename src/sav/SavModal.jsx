@@ -217,7 +217,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
             clientNom: form.clientNom, clientTel: form.clientTel,
             fournisseurId, modele: form.modele, pointure: form.pointure, marque: form.marque,
             probleme: form.probleme, note: form.note,
-            statut: 'Reçu', decision: '', facturation: null, prixReparation: null, enCoursAt: null,
+            statut: 'Réponse reçue', decision: '', facturation: null, prixReparation: null, enCoursAt: null,
           })
           if (sav.defectueuxId) {
             const noteDefect = `Réparation — ${form.clientNom}${form.clientTel ? ` (${form.clientTel})` : ''} : ${form.probleme}`
