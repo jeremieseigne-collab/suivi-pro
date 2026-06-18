@@ -3,7 +3,7 @@ import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { useSeason } from '../context/SeasonContext'
 import { getSociete } from '../data/societes'
-import { STATUTS_RETOUR, STATUTS_FORME, DECISIONS } from './constants'
+import { STATUTS_RETOUR, STATUTS_FORME, DECISIONS, ETAPES_REPARATION } from './constants'
 import { buildSavRetourMailUrl } from './mail'
 
 const inputStyle = { padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', outline: 'none', width: '100%', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }
@@ -218,10 +218,14 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
         } else {
           enCoursAt = null
         }
+        // Pour réparation : étape "Récupéré par le client" → clôturer automatiquement
+        const statutFinal = (type === 'reparation' && form.decision === 'Récupéré par le client')
+          ? 'Clôturé' : form.statut
+
         await db.sav.update(sav.id, {
           magasinId, salarie: form.salarie, clientNom: form.clientNom, clientTel: form.clientTel,
           fournisseurId, modele: form.modele, pointure: form.pointure, marque: form.marque,
-          probleme: form.probleme, note: form.note, statut: form.statut, decision: form.decision,
+          probleme: form.probleme, note: form.note, statut: statutFinal, decision: form.decision,
           facturation: type === 'reparation' ? facturation : null,
           prixReparation: (type === 'reparation' && facturation === 'payant') ? parseFloat(prixReparation.replace(',', '.')) || null : null,
           enCoursAt,
@@ -229,6 +233,16 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
         // Sync défectueux statut si passage à "Mail marque envoyé"
         if ((type === 'retour' || type === 'reparation') && sav.defectueuxId && prevStatut !== 'Mail marque envoyé' && form.statut === 'Mail marque envoyé') {
           try { await db.defectueux.update(sav.defectueuxId, { statut: 'Mail envoyé' }) } catch {}
+        }
+        // Retour avec décision "Réparation" → créer un nouveau dossier réparation pré-rempli
+        if (type === 'retour' && form.decision === 'Réparation') {
+          await db.sav.add({
+            type: 'reparation', magasinId, salarie: form.salarie,
+            clientNom: form.clientNom, clientTel: form.clientTel,
+            fournisseurId, modele: form.modele, pointure: form.pointure, marque: form.marque,
+            probleme: form.probleme, note: form.note,
+            statut: 'Reçu', decision: '', defectueuxId: null, season,
+          })
         }
         onSaved?.(); onClose?.()
         return
@@ -590,23 +604,53 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
 
             {/* Statut + décision (édition) */}
             {editing && (
-              <div className="form-grid">
-                <div className="form-field">
-                  <label>Statut</label>
-                  <select value={form.statut} onChange={e => set('statut', e.target.value)}>
-                    {STATUTS.map(s => <option key={s}>{s}</option>)}
-                  </select>
-                </div>
-                {(type === 'retour' || type === 'reparation') && form.statut === 'Clôturé' && (
+              <>
+                <div className="form-grid">
                   <div className="form-field">
-                    <label>Décision</label>
-                    <select value={form.decision} onChange={e => set('decision', e.target.value)}>
-                      <option value="">— Choisir —</option>
-                      {DECISIONS.map(d => <option key={d}>{d}</option>)}
+                    <label>Statut</label>
+                    <select value={form.statut} onChange={e => set('statut', e.target.value)}>
+                      {STATUTS.map(s => <option key={s}>{s}</option>)}
                     </select>
                   </div>
+                  {type === 'retour' && form.statut === 'Clôturé' && (
+                    <div className="form-field">
+                      <label>Décision</label>
+                      <select value={form.decision} onChange={e => set('decision', e.target.value)}>
+                        <option value="">— Choisir —</option>
+                        {DECISIONS.map(d => <option key={d}>{d}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </div>
+                {type === 'reparation' && (
+                  <div className="form-field" style={{ marginTop: 8 }}>
+                    <label>Avancement réparation</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                      {ETAPES_REPARATION.map(e => {
+                        const active = form.decision === e
+                        return (
+                          <button key={e} type="button"
+                            onClick={() => set('decision', active ? '' : e)}
+                            style={{
+                              padding: '5px 12px', borderRadius: 999, fontSize: 12, fontWeight: 600,
+                              cursor: 'pointer', border: '2px solid',
+                              borderColor: active ? '#7c3aed' : 'var(--border)',
+                              background: active ? '#ede9fe' : 'var(--surface)',
+                              color: active ? '#7c3aed' : 'var(--text-3)',
+                            }}>
+                            {e}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {form.decision === 'Récupéré par le client' && (
+                      <p style={{ fontSize: 12, color: '#10b981', marginTop: 6, fontWeight: 600 }}>
+                        ✓ Le dossier sera clôturé automatiquement à l'enregistrement.
+                      </p>
+                    )}
+                  </div>
                 )}
-              </div>
+              </>
             )}
 
             {error && <div className="form-error">⚠️ {error}</div>}

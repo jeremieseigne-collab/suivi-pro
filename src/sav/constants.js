@@ -1,6 +1,13 @@
 export const STATUTS_RETOUR = ['Reçu', 'Mail marque envoyé', 'Réponse reçue', 'Clôturé']
 export const STATUTS_FORME  = ['Déposé', 'En cours', 'Prêt à récupérer', 'Récupéré']
-export const DECISIONS      = ['Remboursement', 'Échange', 'Avoir']
+export const DECISIONS      = ['Remboursement', 'Échange', 'Avoir', 'Réparation']
+export const ETAPES_REPARATION = [
+  'Déposé chez le cordonnier',
+  'Prête',
+  'En attente du client',
+  'Client appelé',
+  'Récupéré par le client',
+]
 
 export const STATUT_COLORS = {
   'Reçu':                '#f59e0b',

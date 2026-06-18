@@ -131,6 +131,11 @@ function SavCard({ row, onClick }) {
               ✅ {row.decision}
             </div>
           )}
+          {row.type === 'reparation' && row.decision && (
+            <div style={{ marginTop: 4, fontSize: 12, fontWeight: 600, color: '#7c3aed' }}>
+              🔧 {row.decision}
+            </div>
+          )}
         </div>
         <span style={{ fontSize: 18, color: hover ? 'var(--accent)' : 'var(--text-5)', flexShrink: 0 }}>›</span>
       </div>
