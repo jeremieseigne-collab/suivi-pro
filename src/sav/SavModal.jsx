@@ -227,7 +227,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
           enCoursAt,
         })
         // Sync défectueux statut si passage à "Mail marque envoyé"
-        if (type === 'retour' && sav.defectueuxId && prevStatut !== 'Mail marque envoyé' && form.statut === 'Mail marque envoyé') {
+        if ((type === 'retour' || type === 'reparation') && sav.defectueuxId && prevStatut !== 'Mail marque envoyé' && form.statut === 'Mail marque envoyé') {
           try { await db.defectueux.update(sav.defectueuxId, { statut: 'Mail envoyé' }) } catch {}
         }
         onSaved?.(); onClose?.()
@@ -271,7 +271,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
         clientNom: form.clientNom, clientTel: form.clientTel,
         fournisseurId, modele: form.modele, pointure: form.pointure, marque: form.marque,
         probleme: form.probleme, note: form.note,
-        statut: type === 'retour' ? 'Reçu' : 'Déposé',
+        statut: (type === 'retour' || type === 'reparation') ? 'Reçu' : 'Déposé',
         decision: '', defectueuxId, season,
         facturation: type === 'reparation' ? facturation : null,
         prixReparation: (type === 'reparation' && facturation === 'payant') ? parseFloat(prixReparation.replace(',', '.')) || null : null,
@@ -318,7 +318,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
     onSaved?.(); onClose?.()
   }
 
-  const STATUTS = type === 'retour' ? STATUTS_RETOUR : STATUTS_FORME
+  const STATUTS = (type === 'retour' || type === 'reparation') ? STATUTS_RETOUR : STATUTS_FORME
   const title = step === 'save-contact' ? '📋 Enregistrer le contact'
     : step === 'email' ? '✅ Dossier SAV créé'
     : editing ? 'Modifier le dossier SAV'
@@ -377,7 +377,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
             {!editing && (
               <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
                 {[{ v: 'retour', label: '🔄 Retour client' }, { v: 'forme', label: '👟 Mise à la forme' }, { v: 'reparation', label: '🧵 Réparation' }].map(({ v, label }) => (
-                  <button key={v} onClick={() => { setType(v); set('statut', v === 'retour' ? 'Reçu' : 'Déposé') }}
+                  <button key={v} onClick={() => { setType(v); set('statut', (v === 'retour' || v === 'reparation') ? 'Reçu' : 'Déposé') }}
                     style={{
                       flex: 1, padding: '9px 12px', borderRadius: 8,
                       border: `2px solid ${type === v ? 'var(--accent)' : 'var(--border)'}`,
@@ -597,7 +597,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
                     {STATUTS.map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
-                {type === 'retour' && form.statut === 'Clôturé' && (
+                {(type === 'retour' || type === 'reparation') && form.statut === 'Clôturé' && (
                   <div className="form-field">
                     <label>Décision</label>
                     <select value={form.decision} onChange={e => set('decision', e.target.value)}>
@@ -613,7 +613,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
 
             <div className="modal-actions">
               <button className="btn-secondary" onClick={onClose}>Annuler</button>
-              {editing && type === 'retour' && (
+              {editing && (type === 'retour' || type === 'reparation') && (
                 <button className="btn-secondary" onClick={() => window.open(buildMailUrl(fournisseur?.email), '_blank')}>
                   ✉️ Envoyer mail marque
                 </button>

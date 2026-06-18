@@ -12,7 +12,7 @@ function fmtDate(iso) {
 }
 
 function StatusStepper({ type, statut }) {
-  const statuts = type === 'retour' ? STATUTS_RETOUR : STATUTS_FORME
+  const statuts = (type === 'retour' || type === 'reparation') ? STATUTS_RETOUR : STATUTS_FORME
   const idx = statuts.indexOf(statut)
   const color = STATUT_COLORS[statut] || '#94a3b8'
   return (

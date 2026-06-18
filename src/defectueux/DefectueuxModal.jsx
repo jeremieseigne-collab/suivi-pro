@@ -182,6 +182,18 @@ export default function DefectueuxModal({ defect, onClose, onSaved, defaultMagas
           magasinId, fournisseurId, salarie: form.salarie, modele: form.modele,
           numero: form.numero, pointure: form.pointure, note: form.note, statut: form.statut,
         })
+        // Sync SAV si passage à Avoir reçu / Clôturé / Refusé
+        const TRIGGER = ['Avoir reçu', 'Clôturé', 'Refusé']
+        if (TRIGGER.includes(form.statut) && !TRIGGER.includes(defect.statut)) {
+          try {
+            const linkedSav = await db.sav.where('defectueuxId').equals(defect.id).first()
+            if (linkedSav && (linkedSav.type === 'retour' || linkedSav.type === 'reparation')) {
+              if (['Reçu', 'Mail marque envoyé'].includes(linkedSav.statut)) {
+                await db.sav.update(linkedSav.id, { statut: 'Réponse reçue' })
+              }
+            }
+          } catch { /* ignore */ }
+        }
         onSaved?.(); onClose?.()
         return
       }
