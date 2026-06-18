@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect } from 'react'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { STATUTS_RETOUR, STATUTS_FORME, STATUT_COLORS } from './constants'
+import { buildSavRetourMailUrl } from './mail'
+import { getSociete } from '../data/societes'
 import SavModal from './SavModal'
 import StoreSelect from '../components/StoreSelect'
 
@@ -159,7 +161,14 @@ export default function Sav({ onHome }) {
     const magMap  = Object.fromEntries(magasins.map(m => [m.id, m.nom]))
     const fourMap = Object.fromEntries(fournisseurs.map(f => [f.id, f.nom]))
     savs.sort((a, b) => b.id - a.id)
-    return { savs: savs.map(s => ({ ...s, magasinNom: magMap[s.magasinId] || '—', marqueNom: fourMap[s.fournisseurId] || '' })), magasins }
+    const fourObjMap = Object.fromEntries(fournisseurs.map(f => [f.id, f]))
+    return { savs: savs.map(s => ({
+      ...s,
+      magasinNom: magMap[s.magasinId] || '—',
+      marqueNom: fourMap[s.fournisseurId] || '',
+      fournisseurEmail: fourObjMap[s.fournisseurId]?.email || '',
+      fournisseurNumeroClient: fourObjMap[s.fournisseurId]?.numeroClient || '',
+    })), magasins }
   }, [])
 
   const rows    = data?.savs    ?? []
@@ -259,9 +268,27 @@ export default function Sav({ onHome }) {
                     </button>
                   </div>
                 ) : (
-                  <button onClick={e => { e.stopPropagation(); setConfirmDel(row.id) }}
-                    style={{ position: 'absolute', top: 10, right: 10, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-4)', cursor: 'pointer', fontSize: 13, opacity: 0.6 }}
-                    title="Supprimer">🗑</button>
+                  <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 4 }}>
+                    {(row.type === 'retour' || row.type === 'reparation') && (
+                      <button onClick={e => {
+                        e.stopPropagation()
+                        const url = buildSavRetourMailUrl({
+                          modele: row.modele, pointure: row.pointure, probleme: row.probleme,
+                          salarie: row.salarie, societe: getSociete(row.magasinNom),
+                          email: row.fournisseurEmail, numeroClient: row.fournisseurNumeroClient,
+                        })
+                        window.open(url, '_blank')
+                      }}
+                        style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-4)', cursor: 'pointer', fontSize: 13, opacity: 0.7 }}
+                        title="Envoyer mail marque">✉️</button>
+                    )}
+                    <button onClick={e => { e.stopPropagation(); setEditSav(row) }}
+                      style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-4)', cursor: 'pointer', fontSize: 13, opacity: 0.7 }}
+                      title="Modifier">✏️</button>
+                    <button onClick={e => { e.stopPropagation(); setConfirmDel(row.id) }}
+                      style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-4)', cursor: 'pointer', fontSize: 13, opacity: 0.7 }}
+                      title="Supprimer">🗑</button>
+                  </div>
                 )}
               </div>
             ))}
