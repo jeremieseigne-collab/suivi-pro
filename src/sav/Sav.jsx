@@ -270,7 +270,7 @@ export default function Sav({ onHome }) {
                 ) : (
                   <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 4 }}>
                     {(row.type === 'retour' || row.type === 'reparation') && (
-                      <button onClick={e => {
+                      <button onClick={async e => {
                         e.stopPropagation()
                         const url = buildSavRetourMailUrl({
                           modele: row.modele, pointure: row.pointure, probleme: row.probleme,
@@ -278,6 +278,14 @@ export default function Sav({ onHome }) {
                           email: row.fournisseurEmail, numeroClient: row.fournisseurNumeroClient,
                         })
                         window.open(url, '_blank')
+                        if (!['Mail marque envoyé', 'Réponse reçue', 'Clôturé'].includes(row.statut)) {
+                          await db.sav.update(row.id, { statut: 'Mail marque envoyé' })
+                          if (row.defectueuxId) {
+                            const def = await db.defectueux.get(row.defectueuxId)
+                            if (def && def.statut !== 'Mail envoyé' && !['Avoir reçu', 'Clôturé', 'Refusé'].includes(def.statut))
+                              await db.defectueux.update(row.defectueuxId, { statut: 'Mail envoyé' })
+                          }
+                        }
                       }}
                         style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-4)', cursor: 'pointer', fontSize: 13, opacity: 0.7 }}
                         title="Envoyer mail marque">✉️</button>
