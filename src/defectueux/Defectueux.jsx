@@ -61,23 +61,6 @@ export default function Defectueux({ onHome }) {
 
   const enCours = rows.filter(r => (!magasin || r.magasinId === magasin.id) && r.statut !== 'Refusé' && r.statut !== 'Clôturé').length
 
-  async function changeStatut(id, statut) {
-    try {
-      await db.defectueux.update(id, { statut })
-      if (['Mail envoyé', 'Avoir reçu', 'Clôturé', 'Refusé'].includes(statut)) {
-        const linkedSav = await db.sav.where('defectueuxId').equals(id).first()
-        if (linkedSav && (linkedSav.type === 'retour' || linkedSav.type === 'reparation')) {
-          if (statut === 'Mail envoyé'
-            && !['Mail marque envoyé', 'Réponse reçue', 'Clôturé'].includes(linkedSav.statut)) {
-            await db.sav.update(linkedSav.id, { statut: 'Mail marque envoyé' })
-          } else if (['Avoir reçu', 'Clôturé', 'Refusé'].includes(statut)
-            && !['Réponse reçue', 'Clôturé'].includes(linkedSav.statut)) {
-            await db.sav.update(linkedSav.id, { statut: 'Réponse reçue' })
-          }
-        }
-      }
-    } catch (e) { alert('Erreur : ' + (e.message || e)) }
-  }
   async function handleDelete(id) {
     try { await db.defectueux.delete(id) } catch (e) { alert('Erreur : ' + (e.message || e)) } finally { setConfirmDel(null) }
   }
@@ -150,12 +133,11 @@ export default function Defectueux({ onHome }) {
                     </td></tr>
                   )}
                   {filtered.map(r => (
-                    <tr key={r.id}>
+                    <tr key={r.id} onClick={() => setEditDef(r)} style={{ cursor: 'pointer' }}>
                       <td>
-                        <select value={r.statut} onChange={e => changeStatut(r.id, e.target.value)}
-                          style={{ border: 'none', borderRadius: 999, padding: '4px 8px', fontSize: 12, fontWeight: 600, cursor: 'pointer', outline: 'none', background: (STATUT_COLOR[r.statut] || {}).bg || 'var(--surface-3)', color: (STATUT_COLOR[r.statut] || {}).text || 'var(--text-3)' }}>
-                          {STATUTS.map(s => <option key={s} value={s} style={{ background: 'var(--surface)', color: 'var(--text)' }}>{s}</option>)}
-                        </select>
+                        <span style={{ borderRadius: 999, padding: '4px 8px', fontSize: 12, fontWeight: 600, background: (STATUT_COLOR[r.statut] || {}).bg || 'var(--surface-3)', color: (STATUT_COLOR[r.statut] || {}).text || 'var(--text-3)', display: 'inline-block', whiteSpace: 'nowrap' }}>
+                          {r.statut}
+                        </span>
                       </td>
                       <td style={{ whiteSpace: 'nowrap', fontSize: 13, color: 'var(--text-3)' }}>{fmtDate(r.createdAt)}</td>
                       <td style={{ fontWeight: 700 }}>{r.numero || '—'}</td>
@@ -171,14 +153,14 @@ export default function Defectueux({ onHome }) {
                       <td style={{ whiteSpace: 'nowrap' }}>
                         {confirmDel === r.id ? (
                           <span style={{ display: 'inline-flex', gap: 4 }}>
-                            <button onClick={() => handleDelete(r.id)} style={{ padding: '3px 8px', borderRadius: 6, border: 'none', background: '#dc2626', color: '#fff', cursor: 'pointer', fontSize: 12 }}>Oui</button>
-                            <button onClick={() => setConfirmDel(null)} style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 12 }}>Non</button>
+                            <button onClick={e => { e.stopPropagation(); handleDelete(r.id) }} style={{ padding: '3px 8px', borderRadius: 6, border: 'none', background: '#dc2626', color: '#fff', cursor: 'pointer', fontSize: 12 }}>Oui</button>
+                            <button onClick={e => { e.stopPropagation(); setConfirmDel(null) }} style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 12 }}>Non</button>
                           </span>
                         ) : (
                           <>
-                            <button className="edit-btn" onClick={() => sendMail(r)} title="Envoyer le mail au SAV">✉️</button>
-                            <button className="edit-btn" onClick={() => setEditDef(r)} title="Modifier">✏️</button>
-                            <button className="edit-btn" onClick={() => setConfirmDel(r.id)} title="Supprimer">🗑</button>
+                            <button className="edit-btn" onClick={e => { e.stopPropagation(); sendMail(r) }} title="Envoyer le mail au SAV">✉️</button>
+                            <button className="edit-btn" onClick={e => { e.stopPropagation(); setEditDef(r) }} title="Modifier">✏️</button>
+                            <button className="edit-btn" onClick={e => { e.stopPropagation(); setConfirmDel(r.id) }} title="Supprimer">🗑</button>
                           </>
                         )}
                       </td>
