@@ -61,6 +61,24 @@ export default function Defectueux({ onHome }) {
 
   const enCours = rows.filter(r => (!magasin || r.magasinId === magasin.id) && r.statut !== 'Refusé' && r.statut !== 'Clôturé').length
 
+  async function changeStatut(id, statut) {
+    try {
+      await db.defectueux.update(id, { statut })
+      if (['Mail envoyé', 'Avoir reçu', 'Clôturé', 'Refusé'].includes(statut)) {
+        const linkedSav = await db.sav.where('defectueuxId').equals(id).first()
+        if (linkedSav && (linkedSav.type === 'retour' || linkedSav.type === 'reparation')) {
+          if (statut === 'Mail envoyé'
+            && !['Mail marque envoyé', 'Réponse reçue', 'Clôturé'].includes(linkedSav.statut)) {
+            await db.sav.update(linkedSav.id, { statut: 'Mail marque envoyé' })
+          } else if (['Avoir reçu', 'Clôturé', 'Refusé'].includes(statut)
+            && !['Réponse reçue', 'Clôturé'].includes(linkedSav.statut)) {
+            await db.sav.update(linkedSav.id, { statut: 'Réponse reçue' })
+          }
+        }
+      }
+    } catch (e) { alert('Erreur : ' + (e.message || e)) }
+  }
+
   async function handleDelete(id) {
     try { await db.defectueux.delete(id) } catch (e) { alert('Erreur : ' + (e.message || e)) } finally { setConfirmDel(null) }
   }
@@ -135,9 +153,10 @@ export default function Defectueux({ onHome }) {
                   {filtered.map(r => (
                     <tr key={r.id} onClick={() => setEditDef(r)} style={{ cursor: 'pointer' }}>
                       <td>
-                        <span style={{ borderRadius: 999, padding: '4px 8px', fontSize: 12, fontWeight: 600, background: (STATUT_COLOR[r.statut] || {}).bg || 'var(--surface-3)', color: (STATUT_COLOR[r.statut] || {}).text || 'var(--text-3)', display: 'inline-block', whiteSpace: 'nowrap' }}>
-                          {r.statut}
-                        </span>
+                        <select value={r.statut} onChange={e => { e.stopPropagation(); changeStatut(r.id, e.target.value) }} onClick={e => e.stopPropagation()}
+                          style={{ border: 'none', borderRadius: 999, padding: '4px 8px', fontSize: 12, fontWeight: 600, cursor: 'pointer', outline: 'none', background: (STATUT_COLOR[r.statut] || {}).bg || 'var(--surface-3)', color: (STATUT_COLOR[r.statut] || {}).text || 'var(--text-3)' }}>
+                          {STATUTS.map(s => <option key={s} value={s} style={{ background: 'var(--surface)', color: 'var(--text)' }}>{s}</option>)}
+                        </select>
                       </td>
                       <td style={{ whiteSpace: 'nowrap', fontSize: 13, color: 'var(--text-3)' }}>{fmtDate(r.createdAt)}</td>
                       <td style={{ fontWeight: 700 }}>{r.numero || '—'}</td>
