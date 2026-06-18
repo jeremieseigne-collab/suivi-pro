@@ -182,12 +182,9 @@ export default function DefectueuxModal({ defect, onClose, onSaved, defaultMagas
           magasinId, fournisseurId, salarie: form.salarie, modele: form.modele,
           numero: form.numero, pointure: form.pointure, note: form.note, statut: form.statut,
         })
-        // Sync SAV si le statut défectueux change
-        if (form.statut !== defect.statut) {
+        // Sync SAV — on vérifie à chaque save si le SAV doit être mis à jour
+        if (['Mail envoyé', 'Avoir reçu', 'Clôturé', 'Refusé'].includes(form.statut)) {
           const linkedSav = await db.sav.where('defectueuxId').equals(defect.id).first()
-          if (!linkedSav) {
-            throw new Error(`[DEBUG] Aucun SAV lié — defect.id=${defect.id} (${typeof defect.id})`)
-          }
           if (linkedSav && (linkedSav.type === 'retour' || linkedSav.type === 'reparation')) {
             if (form.statut === 'Mail envoyé'
               && !['Mail marque envoyé', 'Réponse reçue', 'Clôturé'].includes(linkedSav.statut)) {
@@ -195,8 +192,6 @@ export default function DefectueuxModal({ defect, onClose, onSaved, defaultMagas
             } else if (['Avoir reçu', 'Clôturé', 'Refusé'].includes(form.statut)
               && !['Réponse reçue', 'Clôturé'].includes(linkedSav.statut)) {
               await db.sav.update(linkedSav.id, { statut: 'Réponse reçue' })
-            } else {
-              throw new Error(`[DEBUG] Condition non remplie — SAV statut="${linkedSav.statut}" type="${linkedSav.type}" form.statut="${form.statut}"`)
             }
           }
         }
