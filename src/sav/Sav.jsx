@@ -151,6 +151,7 @@ export default function Sav({ onHome }) {
   const [showModal, setShowModal]   = useState(false)
   const [editSav,   setEditSav]     = useState(null)
   const [filterType, setFilterType] = useState('') // '' | 'retour' | 'forme'
+  const [search, setSearch] = useState('')
   const [confirmDel, setConfirmDel] = useState(null)
   const [magasin, setMagasin] = useState(() => {
     try { return JSON.parse(localStorage.getItem('sav_magasin') || 'null') } catch { return null }
@@ -182,8 +183,13 @@ export default function Sav({ onHome }) {
 
   const filtered = useMemo(() => magRows.filter(r => {
     if (filterType && r.type !== filterType) return false
+    if (search) {
+      const q = search.toLowerCase()
+      const hay = [r.clientNom, r.clientTel, r.marqueNom, r.marque, r.modele, r.pointure, r.salarie, r.probleme, r.note].map(v => (v || '').toLowerCase()).join(' ')
+      if (!hay.includes(q)) return false
+    }
     return true
-  }), [magRows, filterType])
+  }), [magRows, filterType, search])
 
   const enCours = magRows.filter(r => r.statut !== 'Clôturé' && r.statut !== 'Récupéré').length
 
@@ -234,6 +240,7 @@ export default function Sav({ onHome }) {
 
         {/* Filtres */}
         <div className="controls" style={{ flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+          <input type="text" placeholder="🔍 Client, marque, modèle, salarié…" value={search} onChange={e => setSearch(e.target.value)} className="search-input" />
           <div style={{ display: 'flex', gap: 6 }}>
             {[{ v: '', label: 'Tous' }, { v: 'retour', label: 'Retours' }, { v: 'forme', label: 'Forme' }, { v: 'reparation', label: 'Réparation' }].map(({ v, label }) => (
               <button key={v} onClick={() => setFilterType(v)}
