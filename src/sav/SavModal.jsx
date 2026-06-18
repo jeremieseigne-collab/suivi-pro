@@ -210,6 +210,23 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
       const fournisseurId = (type === 'retour' || type === 'reparation') ? Number(form.fournisseurId) : null
 
       if (editing) {
+        // Cas spécial : conversion retour → réparation
+        if (type === 'retour' && form.decision === 'Réparation') {
+          await db.sav.update(sav.id, {
+            type: 'reparation', magasinId, salarie: form.salarie,
+            clientNom: form.clientNom, clientTel: form.clientTel,
+            fournisseurId, modele: form.modele, pointure: form.pointure, marque: form.marque,
+            probleme: form.probleme, note: form.note,
+            statut: 'Reçu', decision: '', facturation: null, prixReparation: null, enCoursAt: null,
+          })
+          if (sav.defectueuxId) {
+            const noteDefect = `Réparation — ${form.clientNom}${form.clientTel ? ` (${form.clientTel})` : ''} : ${form.probleme}`
+            try { await db.defectueux.update(sav.defectueuxId, { note: noteDefect }) } catch {}
+          }
+          onSaved?.(); onClose?.()
+          return
+        }
+
         const prevStatut = sav.statut
         let enCoursAt = sav.enCoursAt ?? null
         if (type === 'forme') {
@@ -233,16 +250,6 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
         // Sync défectueux statut si passage à "Mail marque envoyé"
         if ((type === 'retour' || type === 'reparation') && sav.defectueuxId && prevStatut !== 'Mail marque envoyé' && form.statut === 'Mail marque envoyé') {
           try { await db.defectueux.update(sav.defectueuxId, { statut: 'Mail envoyé' }) } catch {}
-        }
-        // Retour avec décision "Réparation" → créer un nouveau dossier réparation pré-rempli
-        if (type === 'retour' && form.decision === 'Réparation') {
-          await db.sav.add({
-            type: 'reparation', magasinId, salarie: form.salarie,
-            clientNom: form.clientNom, clientTel: form.clientTel,
-            fournisseurId, modele: form.modele, pointure: form.pointure, marque: form.marque,
-            probleme: form.probleme, note: form.note,
-            statut: 'Reçu', decision: '', defectueuxId: null, season,
-          })
         }
         onSaved?.(); onClose?.()
         return
