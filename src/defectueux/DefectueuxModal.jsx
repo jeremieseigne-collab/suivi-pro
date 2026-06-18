@@ -188,7 +188,7 @@ export default function DefectueuxModal({ defect, onClose, onSaved, defaultMagas
           try {
             const linkedSav = await db.sav.where('defectueuxId').equals(defect.id).first()
             if (linkedSav && (linkedSav.type === 'retour' || linkedSav.type === 'reparation')) {
-              if (['Reçu', 'Mail marque envoyé'].includes(linkedSav.statut)) {
+              if (!['Réponse reçue', 'Clôturé', 'Récupéré'].includes(linkedSav.statut)) {
                 await db.sav.update(linkedSav.id, { statut: 'Réponse reçue' })
               }
             }
