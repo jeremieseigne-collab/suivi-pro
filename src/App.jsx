@@ -378,6 +378,57 @@ function AppCard({ app, onClick }) {
   )
 }
 
+// Menu « hamburger » qui se déploie (Répertoire / Achats / Plan de règlement / Paramètres)
+function NavMenu({ onOpen }) {
+  const [open, setOpen] = useState(false)
+  const items = [
+    { id: 'repertoire', label: '📒 Répertoire' },
+    { id: 'achats',     label: '🛒 Achats' },
+    { id: 'reglement',  label: '💳 Plan de règlement', lock: true },
+    { id: 'parametres', label: '⚙️ Paramètres',        lock: true },
+  ]
+  const bar = { display: 'block', width: 18, height: 2, borderRadius: 2, background: 'var(--text-2)', transition: 'all 0.2s' }
+  return (
+    <div style={{ position: 'relative' }}>
+      <button onClick={() => setOpen(o => !o)} title="Menu" aria-label="Menu"
+        style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+          width: 40, height: 40, borderRadius: 10, cursor: 'pointer',
+          border: `1px solid ${open ? 'var(--accent)' : 'var(--border)'}`,
+          background: open ? 'var(--accent-bg)' : 'var(--surface)',
+        }}>
+        <span style={{ ...bar, background: open ? 'var(--accent)' : 'var(--text-2)' }} />
+        <span style={{ ...bar, background: open ? 'var(--accent)' : 'var(--text-2)' }} />
+        <span style={{ ...bar, background: open ? 'var(--accent)' : 'var(--text-2)' }} />
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+          <div style={{
+            position: 'absolute', left: 0, top: 'calc(100% + 8px)', zIndex: 50, minWidth: 220,
+            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12,
+            boxShadow: '0 10px 30px var(--shadow)', padding: 6, display: 'flex', flexDirection: 'column', gap: 2,
+          }}>
+            {items.map(it => (
+              <button key={it.id} onClick={() => { setOpen(false); onOpen(it.id) }}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+                  padding: '10px 12px', borderRadius: 8, border: 'none', background: 'none', cursor: 'pointer',
+                  fontSize: 14, color: 'var(--text)', textAlign: 'left', width: '100%',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'none' }}>
+                <span>{it.label}</span>
+                {it.lock && <span style={{ fontSize: 12, opacity: 0.6 }}>🔒</span>}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 function HomeScreen({ onOpen }) {
   return (
     <div style={{
@@ -385,23 +436,8 @@ function HomeScreen({ onOpen }) {
       background: 'var(--bg-grad)',
     }}>
       <div style={{ maxWidth: 1120, margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 18, flexWrap: 'wrap' }}>
-          <button onClick={() => onOpen('repertoire')} title="Répertoire des fournisseurs"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13 }}>
-            📒 Répertoire
-          </button>
-          <button onClick={() => onOpen('achats')} title="Achats par marque"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13 }}>
-            🛒 Achats
-          </button>
-          <button onClick={() => onOpen('reglement')} title="Accéder au plan de règlement"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13 }}>
-            💳 Plan de règlement 🔒
-          </button>
-          <button onClick={() => onOpen('parametres')} title="Accéder aux paramètres"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13 }}>
-            ⚙️ Paramètres 🔒
-          </button>
+        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+          <NavMenu onOpen={onOpen} />
         </div>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <h1 style={{ fontSize: 36, fontWeight: 800, color: 'var(--text)', letterSpacing: -1 }}>
