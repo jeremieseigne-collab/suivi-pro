@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
-import { LoadingState } from '../components/shared'
+import { LoadingState, fmtTel } from '../components/shared'
 
 // Coordonnées regroupées par bloc logique
 const GROUPS = [
@@ -123,6 +123,11 @@ export default function Repertoire() {
                                 }}
                               >🔗</a>
                             </div>
+                          ) : fl.type === 'tel' ? (
+                            <input key={f.id + fl.key} type="tel" inputMode="tel" defaultValue={fmtTel(f[fl.key])}
+                              onChange={e => { e.target.value = fmtTel(e.target.value) }}
+                              onBlur={e => updateField(f.id, fl.key, fmtTel(e.target.value))}
+                              placeholder={fl.placeholder} style={inputStyle} />
                           ) : (
                             <input key={f.id + fl.key} type={fl.type} defaultValue={f[fl.key] || ''} onBlur={e => updateField(f.id, fl.key, e.target.value)}
                               placeholder={fl.placeholder} style={inputStyle} />

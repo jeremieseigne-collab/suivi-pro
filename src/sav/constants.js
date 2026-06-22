@@ -1,5 +1,5 @@
-export const STATUTS_RETOUR = ['Reçu', 'Mail marque envoyé', 'Réponse reçue', 'Clôturé']
-export const STATUTS_FORME  = ['Déposé', 'En cours', 'Prêt à récupérer', 'Récupéré']
+// Retour ET réparation partagent les mêmes statuts. La mise à la forme n'a plus de statut.
+export const STATUTS_RETOUR     = ['Mail marque envoyé', 'Clôturé']
 export const DECISIONS      = ['Remboursement', 'Échange', 'Avoir', 'Réparation']
 export const ETAPES_REPARATION = [
   'Déposé chez le cordonnier',

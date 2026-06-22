@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
-import { LoadingState } from '../components/shared'
+import { LoadingState, fmtTel } from '../components/shared'
 import CommandeModal from './CommandeModal'
 import { MAGASINS, PROVENANCES, STATUTS, STATUTS_CLOS, STATUT_COLOR, PROVENANCE_COLOR } from './constants'
 
@@ -256,6 +256,10 @@ export default function Commandes({ onHome }) {
                     const clientName = [r.clientPrenom, r.clientNom].filter(Boolean).join(' ')
                     return (
                     <tr key={r.id}
+                      style={{
+                        background: STATUTS_CLOS.includes(r.statut) ? 'var(--surface-3)' : undefined,
+                        opacity: STATUTS_CLOS.includes(r.statut) ? 0.55 : undefined,
+                      }}
                       onMouseEnter={e => {
                         if (!r.note) return
                         const cell = e.currentTarget.querySelector('[data-note-cell]')
@@ -283,7 +287,7 @@ export default function Commandes({ onHome }) {
                       <td style={{ fontSize: 13 }}>{r.salarie || '—'}</td>
                       <td><Pill map={PROVENANCE_COLOR} value={r.provenance} /></td>
                       <td><strong>{clientName || '—'}</strong></td>
-                      <td style={{ whiteSpace: 'nowrap', fontSize: 13 }}>{r.telephone || '—'}</td>
+                      <td style={{ whiteSpace: 'nowrap', fontSize: 13 }}>{r.telephone ? fmtTel(r.telephone) : '—'}</td>
                       <td>{r.marque || '—'}</td>
                       <td style={{ fontSize: 13 }}>{r.modele || '—'}</td>
                       <td style={{ fontSize: 13 }}>{r.reference || '—'}</td>

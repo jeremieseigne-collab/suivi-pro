@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { db } from '../db'
 import { PROVENANCES, STATUTS } from './constants'
+import { fmtTel } from '../components/shared'
 
 const todayStr = () => new Date().toISOString().slice(0, 10)
 
@@ -39,7 +40,7 @@ export default function CommandeModal({ commande, defaultMagasin, salaries = [],
     pointure:     commande?.pointure     || '',
     clientNom:    commande?.clientNom    || '',
     clientPrenom: commande?.clientPrenom || '',
-    telephone:    commande?.telephone    || '',
+    telephone:    fmtTel(commande?.telephone || ''),
     note:         commande?.note         || '',
     statut:       commande?.statut       || 'À commander',
   })
@@ -133,7 +134,7 @@ export default function CommandeModal({ commande, defaultMagasin, salaries = [],
             </div>
             <div className="form-field">
               <label>Téléphone portable</label>
-              <input value={form.telephone} onChange={e => set('telephone', e.target.value)} inputMode="tel" />
+              <input value={form.telephone} onChange={e => set('telephone', fmtTel(e.target.value))} inputMode="tel" />
             </div>
           </div>
 

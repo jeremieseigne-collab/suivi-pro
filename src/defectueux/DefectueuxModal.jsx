@@ -190,8 +190,8 @@ export default function DefectueuxModal({ defect, onClose, onSaved, defaultMagas
               && !['Mail marque envoyé', 'Réponse reçue', 'Clôturé'].includes(linkedSav.statut)) {
               await db.sav.update(linkedSav.id, { statut: 'Mail marque envoyé' })
             } else if (['Avoir reçu', 'Clôturé', 'Refusé'].includes(form.statut)
-              && !['Réponse reçue', 'Clôturé'].includes(linkedSav.statut)) {
-              await db.sav.update(linkedSav.id, { statut: 'Réponse reçue' })
+              && linkedSav.statut !== 'Clôturé') {
+              await db.sav.update(linkedSav.id, { statut: 'Clôturé' })
             }
           }
         }

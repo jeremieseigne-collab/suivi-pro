@@ -71,8 +71,8 @@ export default function Defectueux({ onHome }) {
             && !['Mail marque envoyé', 'Réponse reçue', 'Clôturé'].includes(linkedSav.statut)) {
             await db.sav.update(linkedSav.id, { statut: 'Mail marque envoyé' })
           } else if (['Avoir reçu', 'Clôturé', 'Refusé'].includes(statut)
-            && !['Réponse reçue', 'Clôturé'].includes(linkedSav.statut)) {
-            await db.sav.update(linkedSav.id, { statut: 'Réponse reçue' })
+            && linkedSav.statut !== 'Clôturé') {
+            await db.sav.update(linkedSav.id, { statut: 'Clôturé' })
           }
         }
       }
@@ -81,6 +81,12 @@ export default function Defectueux({ onHome }) {
 
   async function handleDelete(id) {
     try { await db.defectueux.delete(id) } catch (e) { alert('Erreur : ' + (e.message || e)) } finally { setConfirmDel(null) }
+  }
+
+  function openEdit(r) {
+    if (['Clôturé', 'Refusé'].includes(r.statut)
+      && !window.confirm('Ce dossier est terminé (clôturé / refusé). Souhaitez-vous vraiment le modifier ?')) return
+    setEditDef(r)
   }
 
   function sendMail(r) {
@@ -151,7 +157,10 @@ export default function Defectueux({ onHome }) {
                     </td></tr>
                   )}
                   {filtered.map(r => (
-                    <tr key={r.id} onClick={() => setEditDef(r)} style={{ cursor: 'pointer' }}>
+                    <tr key={r.id} style={{
+                      background: ['Clôturé', 'Refusé'].includes(r.statut) ? 'var(--surface-3)' : undefined,
+                      opacity: ['Clôturé', 'Refusé'].includes(r.statut) ? 0.55 : undefined,
+                    }}>
                       <td>
                         <select value={r.statut} onChange={e => { e.stopPropagation(); changeStatut(r.id, e.target.value) }} onClick={e => e.stopPropagation()}
                           style={{ border: 'none', borderRadius: 999, padding: '4px 8px', fontSize: 12, fontWeight: 600, cursor: 'pointer', outline: 'none', background: (STATUT_COLOR[r.statut] || {}).bg || 'var(--surface-3)', color: (STATUT_COLOR[r.statut] || {}).text || 'var(--text-3)' }}>
@@ -178,7 +187,7 @@ export default function Defectueux({ onHome }) {
                         ) : (
                           <>
                             <button className="edit-btn" onClick={e => { e.stopPropagation(); sendMail(r) }} title="Envoyer le mail au SAV">✉️</button>
-                            <button className="edit-btn" onClick={e => { e.stopPropagation(); setEditDef(r) }} title="Modifier">✏️</button>
+                            <button className="edit-btn" onClick={e => { e.stopPropagation(); openEdit(r) }} title="Modifier">✏️</button>
                             <button className="edit-btn" onClick={e => { e.stopPropagation(); setConfirmDel(r.id) }} title="Supprimer">🗑</button>
                           </>
                         )}

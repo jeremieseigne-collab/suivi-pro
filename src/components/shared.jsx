@@ -89,3 +89,14 @@ export function fmtEur(n) {
   if (!n) return '—'
   return Number(n).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 }
+
+// Espace un numéro de téléphone par paires de chiffres : "0612345678" → "06 12 34 56 78".
+// Conserve un éventuel préfixe international "+" et ignore les autres caractères.
+export function fmtTel(v) {
+  if (v == null) return ''
+  const str = String(v)
+  const plus = str.trimStart().startsWith('+')
+  const digits = str.replace(/\D/g, '')
+  if (!digits) return ''
+  return (plus ? '+' : '') + (digits.match(/.{1,2}/g) || []).join(' ')
+}
