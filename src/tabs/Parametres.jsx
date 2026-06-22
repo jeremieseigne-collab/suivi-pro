@@ -726,14 +726,30 @@ function SectionModes() {
   }
   const inputStyle = { width: 92, padding: '4px 6px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, textAlign: 'center', background: 'var(--surface)', color: 'var(--text)' }
 
+  async function setGroupe(fId, value) {
+    await db.fournisseurs.update(fId, { groupe: (value || '').trim() || null })
+  }
+
   if (!magasins || !fournisseurs) return null
+
+  // Regroupement par « vrai fournisseur » : clé = groupe (si renseigné) sinon nom de la marque.
+  // La marque PILOTE d'un groupe (plus petit id) porte la config de règlement de tout le groupe.
+  const groupKeyOf = f => ((f.groupe || '').trim()) || f.nom
+  const groupMembers = {}
+  fournisseurs.forEach(f => { (groupMembers[groupKeyOf(f)] ||= []).push(f) })
+  const canonicalId = {}
+  Object.entries(groupMembers).forEach(([k, arr]) => { canonicalId[k] = arr.reduce((mn, f) => Math.min(mn, f.id), arr[0].id) })
+  const sortedFournisseurs = [...fournisseurs].sort((a, b) => groupKeyOf(a).localeCompare(groupKeyOf(b)) || a.id - b.id)
+  const groupeOptions = [...new Set(fournisseurs.map(f => (f.groupe || '').trim()).filter(Boolean))].sort()
 
   return (
     <>
+    <datalist id="groupe-options">{groupeOptions.map(g => <option key={g} value={g} />)}</datalist>
     <div className="store-card" style={{ padding: 0, overflow: 'hidden' }}>
       <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
         <p style={{ fontSize: 13, color: 'var(--text-3)', margin: 0 }}>
-          Mode de règlement <strong>et conditions</strong> par marque × magasin (utilisé dans le plan de règlement).
+          Mode de règlement <strong>et conditions</strong> par <strong>fournisseur</strong> × magasin (utilisé dans le plan de règlement).
+          <br />Renseigne le champ <strong>« Fournisseur réel »</strong> sous une marque pour la rattacher à un vrai fournisseur (ex. <em>No Name</em> et <em>Schmoove</em> → <em>Rautureau Apple Shoes</em>) : le règlement se configure alors <strong>une seule fois</strong> pour le fournisseur (sur sa 1ʳᵉ marque), et le plan additionne ses marques.
           <br /><strong>CHEQUE</strong> : nombre de chèques (montant ÷ N sur N fins de mois) <em>ou</em> bouton 🗓 pour saisir un <strong>plan chèque personnalisé</strong> (dates + montants), <strong>par saison</strong> (saison active : <strong>{seasonLabel}</strong>) — le plan perso remplace le calcul auto. <strong>Autres</strong> : délais en jours, séparés par des virgules — ex. <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>0</code> (jour de livraison), <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>30, 60</code> (2 échéances). Vide = valeur par défaut.
         </p>
       </div>
@@ -746,10 +762,34 @@ function SectionModes() {
             </tr>
           </thead>
           <tbody>
-            {fournisseurs.map(f => (
+            {sortedFournisseurs.map(f => {
+              const gk = groupKeyOf(f)
+              const grouped = groupMembers[gk].length > 1
+              const isPilote = canonicalId[gk] === f.id
+              return (
               <tr key={f.id}>
-                <td><strong>{f.nom}</strong></td>
+                <td style={{ verticalAlign: 'top' }}>
+                  <strong>{f.nom}</strong>
+                  {grouped && (
+                    <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 10, background: 'var(--accent-bg)', color: 'var(--accent)' }}>
+                      {isPilote ? '🏢 pilote' : `↳ ${gk}`}
+                    </span>
+                  )}
+                  <div style={{ marginTop: 4 }}>
+                    <input list="groupe-options" defaultValue={f.groupe || ''} placeholder="Fournisseur réel (optionnel)"
+                      onBlur={e => setGroupe(f.id, e.target.value)}
+                      title="Rattacher cette marque à un vrai fournisseur (paiement groupé)"
+                      style={{ width: 150, padding: '3px 6px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 11, background: 'var(--surface)', color: 'var(--text-2)' }} />
+                  </div>
+                </td>
                 {magasins.map(m => {
+                  if (!isPilote) {
+                    return (
+                      <td key={m.id} style={{ textAlign: 'center', verticalAlign: 'top', fontSize: 11, color: 'var(--text-4)' }}>
+                        ↳ réglé via <strong style={{ color: 'var(--text-3)' }}>{gk}</strong>
+                      </td>
+                    )
+                  }
                   const k = f.id + '_' + m.id
                   const cur = modeMap[k] || ''
                   const cond = condMap[k] || {}
@@ -804,7 +844,8 @@ function SectionModes() {
                   )
                 })}
               </tr>
-            ))}
+              )
+            })}
             {fournisseurs.length === 0 && (
               <tr><td colSpan={magasins.length + 1} style={{ textAlign: 'center', padding: 32, color: 'var(--text-4)' }}>
                 Aucune marque — ajoutez-en dans l'onglet Marques.

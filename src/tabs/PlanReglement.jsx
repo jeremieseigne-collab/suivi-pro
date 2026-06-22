@@ -127,60 +127,82 @@ export default function PlanReglement() {
       db.defectueux.toArray(),
       db.reglementPaye.toArray(),
     ])
-    const magasinMap     = Object.fromEntries(magasins.map(m => [m.id, m.nom]))
-    const fournisseurMap = Object.fromEntries(fournisseurs.map(f => [f.id, f.nom]))
-    const regleByKey     = Object.fromEntries(modesReglement.map(m => [`${m.fournisseurId}_${m.magasinId}`, { mode: m.modeReglement || '', cond: m.condition || {} }]))
+    const magasinMap      = Object.fromEntries(magasins.map(m => [m.id, m.nom]))
+    const fournisseurById = Object.fromEntries(fournisseurs.map(f => [f.id, f]))
+    const regleByKey      = Object.fromEntries(modesReglement.map(m => [`${m.fournisseurId}_${m.magasinId}`, { mode: m.modeReglement || '', cond: m.condition || {} }]))
+
+    // Regroupement par « vrai fournisseur » : clé = fournisseurs.groupe (si renseigné) sinon nom de la marque.
+    // La marque PILOTE (plus petit id du groupe) porte la config de règlement et son plan chèque éventuel.
+    const groupKeyOf = fId => { const f = fournisseurById[fId]; return f ? (((f.groupe || '').trim()) || f.nom) : null }
+    const canonicalId = {}
+    fournisseurs.forEach(f => {
+      const k = ((f.groupe || '').trim()) || f.nom
+      if (canonicalId[k] == null || f.id < canonicalId[k]) canonicalId[k] = f.id
+    })
+    const regleForGroup = (gk, magasinId) => regleByKey[`${canonicalId[gk]}_${magasinId}`]
+
     // statut du défectueux par entrée liée (pour ne compter l'avoir qu'une fois confirmé)
     const defStatutByEntree = {}
     defectueux.forEach(d => { if (d.entreeId) defStatutByEntree[d.entreeId] = d.statut })
 
     const result = []
 
-    // ── 1. CHEQUE : reelN ÷ 4, déclenché à la 1ère réception ──
-    const firstReception = {}
+    // ── 1. CHEQUE par (fournisseur × magasin) : Σ reelN du groupe ÷ N, 1ère réception la plus ancienne ──
+    const firstRecepGM = {}   // `${gk}|${magasinId}` -> Date la plus ancienne
     entrees.forEach(e => {
-      if (e.statut === 'Retour') return // les retours n'entrent pas dans les règles de règlement
-      const fNom = fournisseurMap[e.fournisseurId]
-      const mNom = magasinMap[e.magasinId]
-      if (!fNom || !mNom) return
+      if (e.statut === 'Retour') return
+      const gk = groupKeyOf(e.fournisseurId)
+      if (!gk || !magasinMap[e.magasinId]) return
       const date = parseDate(e.date)
       if (!date) return
-      const key = fNom + mNom
-      if (!firstReception[key] || date < firstReception[key]) firstReception[key] = date
+      const kk = `${gk}|${e.magasinId}`
+      if (!firstRecepGM[kk] || date < firstRecepGM[kk]) firstRecepGM[kk] = date
     })
-
+    const reelByGM = {}        // `${gk}|${magasinId}` -> Σ reelN
+    const chequesByGM = {}     // `${gk}|${magasinId}` -> plan chèque perso (de la pilote)
     params.forEach(p => {
-      const regle = regleByKey[`${p.fournisseurId}_${p.magasinId}`]
-      if (!regle || regle.mode !== 'CHEQUE') return
-      const fNom = fournisseurMap[p.fournisseurId]
-      const mNom = magasinMap[p.magasinId]
-      if (!fNom || !mNom) return
-      const keyBase = `cheque|${p.fournisseurId}|${p.magasinId}|${season}`
-      // Plan chèque personnalisé (dates + montants saisis) prioritaire sur le calcul auto ÷ N
-      if (Array.isArray(p.cheques) && p.cheques.length) {
-        result.push(...echeancesChequeCustom(fNom, mNom, p.cheques, keyBase))
-      } else if (p.reelN) {
-        const firstDate = firstReception[fNom + mNom]
-        const nb = parseInt(regle.cond.nb) || DEFAULT_NB_CHEQUE
-        result.push(...echeancesCheque(fNom, mNom, p.reelN, firstDate, nb, keyBase))
-      }
+      const gk = groupKeyOf(p.fournisseurId)
+      if (!gk) return
+      const kk = `${gk}|${p.magasinId}`
+      if (p.reelN) reelByGM[kk] = (reelByGM[kk] || 0) + p.reelN
+      if (Array.isArray(p.cheques) && p.cheques.length && p.fournisseurId === canonicalId[gk]) chequesByGM[kk] = p.cheques
+    })
+    // Une série de chèques par (groupe × magasin) dont la règle pilote est CHEQUE
+    const seenGM = new Set()
+    fournisseurs.forEach(f => {
+      const gk = ((f.groupe || '').trim()) || f.nom
+      magasins.forEach(m => {
+        const kk = `${gk}|${m.id}`
+        if (seenGM.has(kk)) return
+        seenGM.add(kk)
+        const regle = regleForGroup(gk, m.id)
+        if (!regle || regle.mode !== 'CHEQUE') return
+        const keyBase = `cheque|${canonicalId[gk]}|${m.id}|${season}`
+        const cheques = chequesByGM[kk]
+        if (Array.isArray(cheques) && cheques.length) {
+          result.push(...echeancesChequeCustom(gk, m.nom, cheques, keyBase))
+        } else if (reelByGM[kk]) {
+          const nb = parseInt(regle.cond.nb) || DEFAULT_NB_CHEQUE
+          result.push(...echeancesCheque(gk, m.nom, reelByGM[kk], firstRecepGM[kk], nb, keyBase))
+        }
+      })
     })
 
-    // ── 2. Autres modes : par livraison individuelle (pht + date) ──
+    // ── 2. Autres modes : par livraison individuelle (pht + date), règle du fournisseur ──
     entrees.forEach(e => {
       if (e.statut === 'Retour') return // traité séparément comme avoir
-      const fNom = fournisseurMap[e.fournisseurId]
+      const gk = groupKeyOf(e.fournisseurId)
       const mNom = magasinMap[e.magasinId]
-      if (!fNom || !mNom || !e.pht || !e.date) return
+      if (!gk || !mNom || !e.pht || !e.date) return
       const date = parseDate(e.date)
       if (!date) return
 
-      const regle = regleByKey[`${e.fournisseurId}_${e.magasinId}`]
+      const regle = regleForGroup(gk, e.magasinId)
       const mode = regle?.mode
       if (!mode || mode === 'CHEQUE') return
       const delais = (Array.isArray(regle.cond.delais) && regle.cond.delais.length) ? regle.cond.delais : (DEFAULT_DELAIS[mode] || [])
 
-      result.push(...echeancesLivraison(fNom, mNom, e.pht, date, mode, delais, `liv|${e.id}`))
+      result.push(...echeancesLivraison(gk, mNom, e.pht, date, mode, delais, `liv|${e.id}`))
     })
 
     // ── 3. Avoirs (retours/défectueux) : une échéance unique à la date du retour, sans règle.
@@ -188,14 +210,14 @@ export default function PlanReglement() {
     entrees.forEach(e => {
       if (e.statut !== 'Retour') return
       if (!['Avoir reçu', 'Clôturé'].includes(defStatutByEntree[e.id])) return
-      const fNom = fournisseurMap[e.fournisseurId]
+      const gk = groupKeyOf(e.fournisseurId)
       const mNom = magasinMap[e.magasinId]
-      if (!fNom || !mNom || !e.pht || !e.date) return
+      if (!gk || !mNom || !e.pht || !e.date) return
       const date = parseDate(e.date)
       if (!date) return
       result.push({
         date, montant: e.pht, info: 'Avoir', mode: 'AVOIR',
-        fournisseur: fNom, magasin: mNom, societe: getSociete(mNom),
+        fournisseur: gk, magasin: mNom, societe: getSociete(mNom),
         source: `Retour${e.modele ? ' ' + e.modele : ''}`,
         key: `avoir|${e.id}`,
         entreeId: e.id,
