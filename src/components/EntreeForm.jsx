@@ -73,13 +73,14 @@ export default function EntreeForm({ onClose, onSaved, defaultMagasin = '' }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paramRow])
 
-  // Prix unitaire HT = prix HT total du modèle ÷ quantité commandée (sinon PM de secours)
+  // Prix unitaire HT = prix HT total du modèle (paramètres) ÷ quantité commandée.
+  // Plus de repli sur le prix moyen de la marque : 0 si le modèle n'a pas de prix renseigné.
   const unitPrice = useMemo(() => {
     if (!paramRow) return 0
     const q  = paramRow.modeles?.[form.modele]
     const px = paramRow.prixModeles?.[form.modele]
     if (q > 0 && px > 0) return px / q
-    return paramRow.pm || 0
+    return 0
   }, [paramRow, form.modele])
 
   function set(field, val) { setForm(f => ({ ...f, [field]: val })) }

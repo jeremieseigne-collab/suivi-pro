@@ -83,13 +83,14 @@ export default function EntreeEditModal({ entry, onClose, onSaved }) {
     return () => { cancelled = true }
   }, [form.magasin, form.marque, season])
 
-  // Prix unitaire HT = prix HT total du modèle ÷ quantité commandée (sinon PM de secours)
+  // Prix unitaire HT = prix HT total du modèle (paramètres) ÷ quantité commandée.
+  // Plus de repli sur le prix moyen de la marque : 0 si le modèle n'a pas de prix renseigné.
   const unitPrice = useMemo(() => {
     if (!paramRow) return 0
     const q  = paramRow.modeles?.[form.modele]
     const px = paramRow.prixModeles?.[form.modele]
     if (q > 0 && px > 0) return px / q
-    return paramRow.pm || 0
+    return 0
   }, [paramRow, form.modele])
 
   // PHT livré = prix unitaire × quantité reçue (toujours auto, non modifiable)
