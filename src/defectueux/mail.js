@@ -17,13 +17,9 @@ export function buildDefectueuxMailUrl({ modele, pointure, note, salarie, societ
   const subject = `Défectueux modèle "${modele}" — Société ${societe}${numeroClient ? ` — N° client ${numeroClient}` : ''}`
   const body =
 `Bonjour,
-
 Nous avons reçu une paire de la référence "${modele}"${pointure ? ` pointure ${pointure}` : ''} présentant le défaut suivant : ${defautSeul(note)}
-
 Vous trouverez les photos en pièce jointe.
-
 Nous vous remercions de bien vouloir nous faire parvenir l'avoir correspondant.
-
 Bien cordialement,
 
 ${salarie || ''}

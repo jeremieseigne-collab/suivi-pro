@@ -7,13 +7,9 @@ export function buildSavRetourMailUrl({ modele, pointure, probleme, salarie, soc
   const subject = `Retour client — Modèle "${modele}" — Société ${societe}${numeroClient ? ` — N° client ${numeroClient}` : ''}`
   const body =
 `Bonjour,
-
 Nous avons reçu une paire de la référence "${modele}"${pointure ? ` pointure ${pointure}` : ''} présentant le défaut suivant : ${probleme || ''}
-
 Vous trouverez les photos en pièce jointe.
-
 Nous vous remercions de bien vouloir nous faire parvenir l'avoir correspondant.
-
 Bien cordialement,
 
 ${salarie || ''}
