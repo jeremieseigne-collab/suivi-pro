@@ -64,16 +64,13 @@ export default function Defectueux({ onHome }) {
   async function changeStatut(id, statut) {
     try {
       await db.defectueux.update(id, { statut })
-      if (['Mail envoyé', 'Avoir reçu', 'Clôturé', 'Refusé'].includes(statut)) {
+      // Sync vers SAV : seul le passage à « Mail envoyé » propage (→ « Mail marque envoyé »).
+      // La clôture du dossier SAV reste MANUELLE (on ne la déclenche jamais automatiquement).
+      if (statut === 'Mail envoyé') {
         const linkedSav = await db.sav.where('defectueuxId').equals(id).first()
-        if (linkedSav && (linkedSav.type === 'retour' || linkedSav.type === 'reparation')) {
-          if (statut === 'Mail envoyé'
-            && !['Mail marque envoyé', 'Réponse reçue', 'Clôturé'].includes(linkedSav.statut)) {
-            await db.sav.update(linkedSav.id, { statut: 'Mail marque envoyé' })
-          } else if (['Avoir reçu', 'Clôturé', 'Refusé'].includes(statut)
-            && linkedSav.statut !== 'Clôturé') {
-            await db.sav.update(linkedSav.id, { statut: 'Clôturé' })
-          }
+        if (linkedSav && (linkedSav.type === 'retour' || linkedSav.type === 'reparation')
+          && !['Mail marque envoyé', 'Clôturé'].includes(linkedSav.statut)) {
+          await db.sav.update(linkedSav.id, { statut: 'Mail marque envoyé' })
         }
       }
     } catch (e) { alert('Erreur : ' + (e.message || e)) }

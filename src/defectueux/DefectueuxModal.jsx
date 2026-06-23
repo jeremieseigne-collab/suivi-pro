@@ -182,17 +182,13 @@ export default function DefectueuxModal({ defect, onClose, onSaved, defaultMagas
           magasinId, fournisseurId, salarie: form.salarie, modele: form.modele,
           numero: form.numero, pointure: form.pointure, note: form.note, statut: form.statut,
         })
-        // Sync SAV — on vérifie à chaque save si le SAV doit être mis à jour
-        if (['Mail envoyé', 'Avoir reçu', 'Clôturé', 'Refusé'].includes(form.statut)) {
+        // Sync SAV : seul « Mail envoyé » propage (→ « Mail marque envoyé »).
+        // La clôture du dossier SAV reste MANUELLE (jamais automatique).
+        if (form.statut === 'Mail envoyé') {
           const linkedSav = await db.sav.where('defectueuxId').equals(defect.id).first()
-          if (linkedSav && (linkedSav.type === 'retour' || linkedSav.type === 'reparation')) {
-            if (form.statut === 'Mail envoyé'
-              && !['Mail marque envoyé', 'Réponse reçue', 'Clôturé'].includes(linkedSav.statut)) {
-              await db.sav.update(linkedSav.id, { statut: 'Mail marque envoyé' })
-            } else if (['Avoir reçu', 'Clôturé', 'Refusé'].includes(form.statut)
-              && linkedSav.statut !== 'Clôturé') {
-              await db.sav.update(linkedSav.id, { statut: 'Clôturé' })
-            }
+          if (linkedSav && (linkedSav.type === 'retour' || linkedSav.type === 'reparation')
+            && !['Mail marque envoyé', 'Clôturé'].includes(linkedSav.statut)) {
+            await db.sav.update(linkedSav.id, { statut: 'Mail marque envoyé' })
           }
         }
         onSaved?.(); onClose?.()
