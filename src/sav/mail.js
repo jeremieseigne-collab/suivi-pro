@@ -3,7 +3,7 @@ const SENDER_BY_SOCIETE = {
   'JR Shoes': 'contact.baillyrouffiac@gmail.com',
 }
 
-export function buildSavRetourMailUrl({ modele, pointure, probleme, societe, email, numeroClient }) {
+export function buildSavRetourMailUrl({ modele, pointure, probleme, salarie, societe, email, numeroClient }) {
   const subject = `Retour client — Modèle "${modele}" — Société ${societe}${numeroClient ? ` — N° client ${numeroClient}` : ''}`
   const body =
 `Bonjour,
@@ -16,6 +16,7 @@ Nous vous remercions de bien vouloir nous faire parvenir l'avoir correspondant.
 
 Bien cordialement,
 
+${salarie || ''}
 Société ${societe}`
   const sender = SENDER_BY_SOCIETE[societe]
   const base = sender ? `https://mail.google.com/mail/u/${encodeURIComponent(sender)}/` : 'https://mail.google.com/mail/'

@@ -13,7 +13,7 @@ function defautSeul(note) {
 }
 
 // Construit l'URL de rédaction Gmail pour un défectueux (utilisé à la création ET depuis la liste)
-export function buildDefectueuxMailUrl({ modele, pointure, note, societe, email, numeroClient }) {
+export function buildDefectueuxMailUrl({ modele, pointure, note, salarie, societe, email, numeroClient }) {
   const subject = `Défectueux modèle "${modele}" — Société ${societe}${numeroClient ? ` — N° client ${numeroClient}` : ''}`
   const body =
 `Bonjour,
@@ -26,6 +26,7 @@ Nous vous remercions de bien vouloir nous faire parvenir l'avoir correspondant.
 
 Bien cordialement,
 
+${salarie || ''}
 Société ${societe}`
   // Compte expéditeur selon la société (sinon compte Gmail par défaut)
   const sender = SENDER_BY_SOCIETE[societe]
