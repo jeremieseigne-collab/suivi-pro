@@ -104,7 +104,7 @@ La saison active n'est **pas** une table : elle vit dans `localStorage` et dans 
 `src/App.jsx` est le routeur, **sans react-router**. Il n'y a plus de groupe « Suivi Pro » : les anciens onglets sont devenus des destinations de premier niveau.
 - **`Root`** (state local `view`) gère la navigation + le **code PIN** (`PIN_CODE = '2201'`, `PROTECTED_TABS = {reglement, parametres}`, déverrouillage en mémoire). `view` : `home` → `<HomeScreen>`, `cahier` → `<CahierEntrees>`, `commandes` → `<Commandes>`, `achats`/`reglement`/`parametres` → `<PageShell>` enveloppant le composant. Cliquer une vue protégée passe par `PinModal`.
 - **`PageShell`** = en-tête commun (bouton retour ←, titre, slot `rightExtra` optionnel, `SeasonBadge`, onglets optionnels) + `<main>`. **`CahierEntrees`** = `PageShell` avec 2 sous-onglets : **Suivi livraisons** + **Entrées** ; dispose d'un `StoreSelect` au démarrage (localStorage `'cahier_magasin'`) et passe `defaultMagasin` à `Entrees`.
-- **`HomeScreen`** = le menu : un **menu hamburger ☰** en haut à gauche (`NavMenu`, se déploie en liste : 📒 Répertoire, 🛒 Achats, 💳 Plan de règlement 🔒, ⚙️ Paramètres 🔒 — clic extérieur ferme), puis les cartes `APPS` (📥 Cahier des entrées, 🛍️ Commandes Clients, 🔧 SAV, 🛠️ Gestion des défectueux, 🧾 Éléments variables de paie, 📅 Planning) + `<AgendaBoard>` dessous. Le PIN s'applique toujours via `Root.open`. Pour ajouter une app : entrée dans `APPS` (ou dans `NavMenu.items`), cas dans `Root`, composant.
+- **`HomeScreen`** = le menu : un **menu hamburger ☰** en haut à gauche (`NavMenu`, se déploie en liste : 📒 Répertoire, 🛒 Achats, 📄 Factures, 💳 Plan de règlement 🔒, ⚙️ Paramètres 🔒 — clic extérieur ferme), puis les cartes `APPS` (📥 Cahier des entrées, 🛍️ Commandes Clients, 🔧 SAV, 🛠️ Gestion des défectueux, 🧾 Éléments variables de paie, 📅 Planning) + `<AgendaBoard>` dessous. Le PIN s'applique toujours via `Root.open`. Pour ajouter une app : entrée dans `APPS` (ou dans `NavMenu.items`), cas dans `Root`, composant.
 
 `src/tabs/` : `SuiviLivraisons`, `Entrees` (réunis dans Cahier des entrées), `Achats`, `PlanReglement`, `Parametres`.
 ⚠️ `src/tabs/PlanAchat.jsx` existe mais **n'est pas importé** (composant orphelin).
@@ -159,6 +159,13 @@ Gestion du service après-vente. Table `sav`. **Sélecteur de magasin** (`StoreS
 
 ### Composant partagé `StoreSelect` (`src/components/StoreSelect.jsx`)
 Écran plein-page "Dans quel magasin êtes-vous ?" chargé depuis `db.magasins`. Prop `onSelect(m)` reçoit l'objet magasin complet `{id, nom, ...}`. Utilisé par Défectueux (`localStorage['defectueux_magasin']`), SAV (`localStorage['sav_magasin']`) et CahierEntrees (`localStorage['cahier_magasin']`, stocke uniquement `m.nom`). Pattern : `!magasin → StoreSelect`, bouton `nom ▾` dans le header pour réinitialiser.
+
+### App Factures (`src/factures/Factures.jsx`)
+Édition de factures clients (depuis le menu ☰ → 📄 Factures ; pas de PIN, pas de saison). Pas de table DB : tout est en **localStorage**.
+- **Boutique → société** : `BOUTIQUES` (Les Deux Zèbres + By Albi → B'Shoes ; By Rouffiac → JR Shoes). Le choix de boutique remonte le composant interne `FactureEditor` (`key={boutiqueId}`) → recharge depuis localStorage sans `useEffect`.
+- **Coordonnées société** mémorisées par société (`localStorage['factures_soc::{societe}']` : raisonSociale, adresse, siret, tvaIntra, tel, email, mentions) — éditables dans un repli. **Logo** par boutique (`factures_logo::{id}`, data URL). **Numéro** auto année+compteur par société (`factures_seq::{societe}`, modifiable ; `commitSeq()` cale le compteur sur le n° utilisé à l'impression/envoi).
+- **Calcul** : on saisit le **Total TTC** → `HT = TTC / 1,20`, `TVA = TTC − HT` (TVA_RATE = 0.20). Désignation libre.
+- **Aperçu = impression** : `FacturePreview` (id `#facture-print`, couleurs fixes claires) ; impression via `@media print` (visibility: seul `#facture-print` visible). **Envoi mail** = Gmail compose (expéditeur selon société, `SENDER_BY_SOCIETE`) au client, PDF à joindre manuellement.
 
 ### App Éléments variables de paie (`src/paie/`)
 Chaque salarié remplit, **par mois**, ses éléments variables pour la comptable. Tables `paie_variables` (une ligne par `periode` `AAAA-MM` × `salarie`, contrainte unique ; les saisies dans `data` JSONB) et `paie_envois` (`periode` unique = récap déjà envoyé, garde-fou anti-doublon). Pas de notion de saison.

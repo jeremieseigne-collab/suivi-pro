@@ -11,6 +11,7 @@ import Defectueux       from './defectueux/Defectueux'
 import Paie             from './paie/Paie'
 import Planning         from './planning/Planning'
 import Sav             from './sav/Sav'
+import Factures         from './factures/Factures'
 import StoreSelect      from './components/StoreSelect'
 import AgendaBoard      from './agenda/AgendaBoard'
 import { SeasonProvider, useSeason } from './context/SeasonContext'
@@ -384,6 +385,7 @@ function NavMenu({ onOpen }) {
   const items = [
     { id: 'repertoire', label: '📒 Répertoire' },
     { id: 'achats',     label: '🛒 Achats' },
+    { id: 'factures',   label: '📄 Factures' },
     { id: 'reglement',  label: '💳 Plan de règlement', lock: true },
     { id: 'parametres', label: '⚙️ Paramètres',        lock: true },
   ]
@@ -485,6 +487,7 @@ function Root() {
   else if (view === 'repertoire') content = <PageShell title="📒 Répertoire fournisseurs" onHome={home} withSeason={false}><Repertoire /></PageShell>
   else if (view === 'reglement')  content = <PageShell title="💳 Plan de règlement" onHome={home}><PlanReglement /></PageShell>
   else if (view === 'parametres') content = <PageShell title="⚙️ Paramètres" onHome={home}><Parametres /></PageShell>
+  else if (view === 'factures')   content = <PageShell title="📄 Factures" onHome={home} withSeason={false}><Factures /></PageShell>
   else if (view === 'planning')   content = <Planning onHome={home} />
   else if (view === 'sav')        content = <Sav onHome={home} />
   else                            content = <HomeScreen onOpen={open} />
