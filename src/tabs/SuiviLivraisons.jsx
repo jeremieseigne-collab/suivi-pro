@@ -128,19 +128,24 @@ function DetailModal({ row, onClose }) {
 }
 
 function StoreCard({ store, rows, onOpen }) {
+  const [open, setOpen] = useState(false)
   const totals = rows.reduce((s, r) => ({ recu: s.recu + r.recu, attendu: s.attendu + r.attendu }), { recu: 0, attendu: 0 })
   const globalPct = totals.attendu > 0 ? (totals.recu / totals.attendu) * 100 : 0
 
   return (
     <div className="store-card">
-      <div className="store-header">
+      <div className="store-header" onClick={() => setOpen(o => !o)} style={{ cursor: 'pointer' }} title="Afficher / masquer les marques">
         <div>
-          <h2 className="store-name">{store}</h2>
+          <h2 className="store-name">
+            <span style={{ color: 'var(--text-4)', fontSize: 14, marginRight: 7 }}>{open ? '▾' : '▸'}</span>
+            {store}
+          </h2>
           <p className="store-sub">{rows.length} marque{rows.length > 1 ? 's' : ''} · {totals.recu}/{totals.attendu} unités</p>
         </div>
         {statusBadge(globalPct)}
       </div>
       <GaugeBar percent={globalPct} />
+      {open && (
       <table className="brand-table">
         <thead style={{ display: 'none' }}></thead>
         <tbody>
@@ -157,6 +162,7 @@ function StoreCard({ store, rows, onOpen }) {
           })}
         </tbody>
       </table>
+      )}
     </div>
   )
 }
@@ -165,6 +171,7 @@ export default function SuiviLivraisons() {
   const { season } = useSeason()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
+  const [magFilter, setMagFilter] = useState('')   // '' = tous les magasins
   const [detail, setDetail] = useState(null)
 
   const rows = useLiveQuery(async () => {
@@ -241,14 +248,17 @@ export default function SuiviLivraisons() {
   const totalAttendu = allRows.reduce((s, r) => s + r.attendu, 0)
   const globalPct    = totalAttendu > 0 ? Math.round(totalRecu / totalAttendu * 100) : 0
 
+  const magasinsList = useMemo(() => [...new Set(allRows.map(r => r.magasin))].sort(), [allRows])
+
   const filtered = useMemo(() => allRows.filter(r => {
     const p = r.attendu > 0 ? (r.recu / r.attendu) * 100 : 0
+    if (magFilter && r.magasin !== magFilter)        return false
     if (search && !r.marque.toLowerCase().includes(search.toLowerCase())) return false
     if (filter === 'done'    && p < 100)             return false
     if (filter === 'zero'    && p !== 0)             return false
     if (filter === 'pending' && (p === 0 || p >= 100)) return false
     return true
-  }), [allRows, search, filter])
+  }), [allRows, search, filter, magFilter])
 
   const grouped = {}
   filtered.forEach(row => {
@@ -275,12 +285,16 @@ export default function SuiviLivraisons() {
         ))}
       </div>
 
-      <div className="controls">
+      <div className="controls" style={{ flexWrap: 'wrap', gap: 8 }}>
         <input
           type="text" placeholder="🔍 Rechercher une marque…"
           value={search} onChange={e => setSearch(e.target.value)}
           className="search-input"
         />
+        <select value={magFilter} onChange={e => setMagFilter(e.target.value)} className="sel" title="Filtrer par magasin">
+          <option value="">🏪 Tous les magasins</option>
+          {magasinsList.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
         <div className="filter-tabs">
           {[['all','Tout'],['done','✅ Complet'],['pending','🔵 En cours'],['zero','⚠️ Non reçu']].map(([k, l]) => (
             <button key={k} className={`filter-tab${filter === k ? ' active' : ''}`} onClick={() => setFilter(k)}>{l}</button>

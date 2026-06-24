@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { LoadingState, fmtTel } from '../components/shared'
+import RepertoireImportModal from '../components/RepertoireImportModal'
 
 // Coordonnées par magasin (le reste — compta, adresse, notes — est commun au fournisseur)
 const STORE_KEYS = ['contact', 'telephone', 'contactSav', 'telephoneFixe', 'email', 'numeroClient', 'btob']
@@ -98,6 +99,7 @@ export default function Repertoire() {
   const [search, setSearch] = useState('')
   const [newNom, setNewNom] = useState('')
   const [error,  setError]  = useState('')
+  const [showImport, setShowImport] = useState(false)
   const [magId,  setMagId]  = useState(() => {
     const v = localStorage.getItem('repertoire_magasin')
     return v ? Number(v) : null
@@ -173,7 +175,10 @@ export default function Repertoire() {
           <input className="sel" style={{ minWidth: 180 }} placeholder="Nouveau fournisseur…" value={newNom} onChange={e => { setNewNom(e.target.value); setError('') }} />
           <button type="submit" className="btn-primary" disabled={!newNom.trim()}>+ Ajouter</button>
         </form>
+        <button type="button" className="btn-secondary" onClick={() => setShowImport(true)} title="Importer des contacts depuis un fichier CSV">📥 Importer CSV</button>
       </div>
+
+      {showImport && <RepertoireImportModal onClose={() => setShowImport(false)} onDone={() => setShowImport(false)} />}
       {error && <p style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>⚠️ {error}</p>}
 
       <p style={{ fontSize: 12, color: 'var(--text-4)', margin: '0 0 12px' }}>
