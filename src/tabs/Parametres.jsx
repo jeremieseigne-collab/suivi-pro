@@ -436,6 +436,9 @@ function SectionFournisseurs() {
   const [newPrix,    setNewPrix]    = useState({})
   const [editingId,  setEditingId]  = useState(null)
   const [editingNom, setEditingNom] = useState('')
+  const [mergeSource, setMergeSource] = useState('')
+  const [mergeTarget, setMergeTarget] = useState('')
+  const [merging,     setMerging]     = useState(false)
 
   const selectedMagasin = selM ?? (magasins && magasins[0] ? magasins[0].id : null)
   const selMagasinNom   = (magasins || []).find(m => m.id === selectedMagasin)?.nom || ''
@@ -469,6 +472,66 @@ function SectionFournisseurs() {
       db.suivi.where('fournisseurId').equals(id).delete(),
       db.modesReglement.where('fournisseurId').equals(id).delete(),
     ])
+  }
+
+  // Fusionne la marque "source" dans la marque "cible" (la cible est conservée).
+  // Règle : la cible gagne, la source comble les trous (pas de double comptage).
+  async function mergeFournisseurs() {
+    const sId = Number(mergeSource), tId = Number(mergeTarget)
+    if (!sId || !tId || sId === tId) return
+    const src = (fournisseurs || []).find(f => f.id === sId)
+    const tgt = (fournisseurs || []).find(f => f.id === tId)
+    if (!src || !tgt) return
+    if (!confirm(`Fusionner « ${src.nom} » dans « ${tgt.nom} » ?\n\nToutes les entrées, paramètres, SAV, défectueux et modèles de « ${src.nom} » seront rattachés à « ${tgt.nom} », puis « ${src.nom} » sera supprimée.\nAction irréversible.`)) return
+    setMerging(true)
+    try {
+      const fill   = (t, s) => ({ ...(s || {}), ...(t || {}) })   // la cible (t) gagne, la source (s) comble
+      const fillSz = (t, s) => { const o = { ...(s || {}) }; for (const [m, sz] of Object.entries(t || {})) o[m] = { ...(o[m] || {}), ...sz }; return o }
+
+      // 1. Réassignation simple (toutes saisons)
+      for (const table of ['entrees', 'defectueux', 'sav', 'suivi']) {
+        const rows = await db[table].where('fournisseurId').equals(sId).toArray()
+        for (const r of rows) await db[table].update(r.id, { fournisseurId: tId })
+      }
+      // 2. Modes de règlement : éviter un doublon (fournisseur × magasin)
+      const srcModes = await db.modesReglement.where('fournisseurId').equals(sId).toArray()
+      const tgtMag   = new Set((await db.modesReglement.where('fournisseurId').equals(tId).toArray()).map(m => m.magasinId))
+      for (const m of srcModes) {
+        if (tgtMag.has(m.magasinId)) await db.modesReglement.delete(m.id)
+        else await db.modesReglement.update(m.id, { fournisseurId: tId })
+      }
+      // 3. Paramètres : fusion par (magasin × saison)
+      const srcParams = await db.parametres.where('fournisseurId').equals(sId).toArray()
+      const tgtParams = await db.parametres.where('fournisseurId').equals(tId).toArray()
+      const tgtByKey  = {}; tgtParams.forEach(p => { tgtByKey[`${p.magasinId}_${p.season}`] = p })
+      for (const sp of srcParams) {
+        const tp = tgtByKey[`${sp.magasinId}_${sp.season}`]
+        if (!tp) { await db.parametres.update(sp.id, { fournisseurId: tId }); continue }
+        await db.parametres.update(tp.id, {
+          modeles:      fill(tp.modeles, sp.modeles),
+          prixModeles:  fill(tp.prixModeles, sp.prixModeles),
+          modelesSizes: fillSz(tp.modelesSizes, sp.modelesSizes),
+          modelesTypes: fill(tp.modelesTypes, sp.modelesTypes),
+          recuN1:    tp.recuN1    || sp.recuN1    || 0,
+          objectifN: tp.objectifN || sp.objectifN || 0,
+          reelN:     tp.reelN     || sp.reelN     || 0,
+          quantite:  tp.quantite  || sp.quantite  || 0,
+          pm:        tp.pm        || sp.pm        || 0,
+          strategie: tp.strategie || sp.strategie || '',
+          statut:    tp.statut    || sp.statut    || '',
+          cheques:   (tp.cheques && tp.cheques.length) ? tp.cheques : (sp.cheques || []),
+        })
+        await db.parametres.delete(sp.id)
+      }
+      // 4. Fusion des modèles par saison + coordonnées, puis suppression de la source
+      const mbs = { ...(tgt.modelesBySeason || {}) }
+      for (const [s, arr] of Object.entries(src.modelesBySeason || {})) mbs[s] = [...new Set([...(mbs[s] || []), ...(arr || [])])].sort()
+      await db.fournisseurs.update(tId, { modelesBySeason: mbs, coordsMagasin: { ...(src.coordsMagasin || {}), ...(tgt.coordsMagasin || {}) } })
+      await db.fournisseurs.delete(sId)
+
+      setMergeSource(''); setMergeTarget('')
+    } catch (e) { alert('Erreur lors de la fusion : ' + (e.message || e)) }
+    setMerging(false)
   }
 
   async function setModeleQte(fId, nom, qteRaw) {
@@ -537,6 +600,24 @@ function SectionFournisseurs() {
           {(magasins || []).map(m => <option key={m.id} value={m.id}>{m.nom}</option>)}
         </select>
         <span style={{ fontSize: 12, color: 'var(--text-4)' }}>Les quantités ci-dessous concernent ce magasin.</span>
+      </div>
+
+      {/* Fusion de marques en doublon */}
+      <div className="store-card" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: 16 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)' }}>🔀 Fusionner deux marques :</span>
+        <select value={mergeSource} onChange={e => setMergeSource(e.target.value)} className="sel" title="Marque en doublon (sera supprimée)">
+          <option value="">Marque à fusionner…</option>
+          {(fournisseurs || []).map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
+        </select>
+        <span style={{ color: 'var(--text-4)' }}>dans</span>
+        <select value={mergeTarget} onChange={e => setMergeTarget(e.target.value)} className="sel" title="Marque à conserver">
+          <option value="">Marque à conserver…</option>
+          {(fournisseurs || []).filter(f => String(f.id) !== mergeSource).map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
+        </select>
+        <button className="btn-primary" disabled={!mergeSource || !mergeTarget || merging} onClick={mergeFournisseurs}>
+          {merging ? '⏳ Fusion…' : 'Fusionner'}
+        </button>
+        <span style={{ fontSize: 12, color: 'var(--text-4)', flexBasis: '100%' }}>La 1ʳᵉ marque (doublon) est rattachée à la 2ᵉ puis supprimée. La marque conservée garde ses infos ; les données manquantes sont complétées depuis le doublon.</span>
       </div>
 
       {(fournisseurs || []).map(f => {
