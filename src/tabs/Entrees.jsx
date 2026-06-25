@@ -4,6 +4,7 @@ import { db } from '../db'
 import { LoadingState } from '../components/shared'
 import EntreeForm from '../components/EntreeForm'
 import EntreeEditModal from '../components/EntreeEditModal'
+import EntreeImportModal from '../components/EntreeImportModal'
 
 import { useSeason } from '../context/SeasonContext'
 import { SOCIETES, getSociete } from '../data/societes'
@@ -29,6 +30,7 @@ export default function Entrees({ defaultMagasin = '' }) {
   const [statut,    setStatut]    = useState('')
   const [page,      setPage]      = useState(1)
   const [showForm,   setShowForm]   = useState(false)
+  const [showImport, setShowImport] = useState(false)
 
   const [editEntry,  setEditEntry]  = useState(null)
   const PAGE = 50
@@ -84,6 +86,7 @@ export default function Entrees({ defaultMagasin = '' }) {
   return (
     <div>
       {showForm   && <EntreeForm onClose={() => setShowForm(false)} onSaved={() => setShowForm(false)} defaultMagasin={defaultMagasin} />}
+      {showImport && <EntreeImportModal onClose={() => setShowImport(false)} onSaved={() => setShowImport(false)} />}
 
       {editEntry  && <EntreeEditModal entry={editEntry} onClose={() => setEditEntry(null)} onSaved={() => setEditEntry(null)} />}
 
@@ -131,6 +134,7 @@ export default function Entrees({ defaultMagasin = '' }) {
           {statutList.map(s => <option key={s}>{s}</option>)}
         </select>
         <button className="btn-primary" onClick={() => setShowForm(true)}>+ Nouvelle entrée</button>
+        <button className="btn-secondary" onClick={() => setShowImport(true)} title="Importer les entrées depuis un fichier CSV">📂 Importer CSV</button>
       </div>
 
       <div className="store-card" style={{ marginTop: 0, padding: 0, overflow: 'hidden' }}>
