@@ -4,6 +4,7 @@ import { db } from '../db'
 import { LoadingState } from '../components/shared'
 import AchatEditModal from '../components/AchatEditModal'
 import AchatAddModal  from '../components/AchatAddModal'
+import AchatImportModal from '../components/AchatImportModal'
 import { useSeason } from '../context/SeasonContext'
 import { SOCIETES, getSociete } from '../data/societes'
 
@@ -29,6 +30,7 @@ export default function Achats() {
   const [magasin,   setMagasin]   = useState('')
   const [strategie, setStrategie] = useState('')
   const [editRow,   setEditRow]   = useState(null)
+  const [showImport, setShowImport] = useState(false)
   const [showAdd,   setShowAdd]   = useState(false)
   const [ghost,     setGhost]     = useState(false)
   const [selected,  setSelected]  = useState('') // fournisseur sélectionné (mode fantôme ciblé)
@@ -111,6 +113,7 @@ export default function Achats() {
     <div>
       {editRow  && <AchatEditModal row={editRow}  onClose={() => setEditRow(null)} onSaved={() => setEditRow(null)} />}
       {showAdd  && <AchatAddModal  onClose={() => setShowAdd(false)} onSaved={() => setShowAdd(false)} />}
+      {showImport && <AchatImportModal season={season} onClose={() => setShowImport(false)} onDone={() => setShowImport(false)} />}
 
       {/* Stats */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
@@ -180,6 +183,7 @@ export default function Achats() {
           {magasinList.map(m => <option key={m}>{m}</option>)}
         </select>
         <button className="btn-primary" onClick={() => setShowAdd(true)}>+ Nouveau fournisseur</button>
+        <button className="btn-secondary" onClick={() => setShowImport(true)} title="Importer les achats depuis un fichier CSV">📂 Importer CSV</button>
       </div>
 
       <div className="store-card" style={{ padding: 0, overflow: 'hidden' }}>
