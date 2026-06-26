@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react'
 import { useParams } from '../hooks/useParams'
 import { db } from '../db'
 
-const STRATEGIES      = ['🚀 BOOSTER', '🛡️ MAINTENIR', '📉 RÉDUIRE', '🛑 ARRÊTER']
+const STRATEGIES      = ['🆕 NOUVEAU', '🚀 BOOSTER', '🛡️ MAINTENIR', '📉 RÉDUIRE', '🛑 ARRÊTER']
 const STATUTS         = ['', '✅', '⏳', '❌']
 const MODES_REGLEMENT = ['', 'PRELEVEMENT', 'CHEQUE', 'GARANT', 'VIREMENT', 'GMS', 'LCR']
+const UNIVERS         = ['Femme', 'Homme', 'Enfant', 'Accessoire']
+const emptyUnivers = u => Object.fromEntries(UNIVERS.map(k => [k, { prix: u?.[k]?.prix ?? '', qte: u?.[k]?.qte ?? '' }]))
+const eur0 = n => (Number(n) || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 
 const STRAT_COLORS = {
+  '🆕 NOUVEAU':   '#ede9fe',
   '🚀 BOOSTER':   '#dbeafe',
   '🛡️ MAINTENIR': '#d1fae5',
   '📉 RÉDUIRE':   '#fef3c7',
@@ -22,8 +26,7 @@ export default function AchatEditModal({ row, onClose, onSaved }) {
     fournisseur: row.fournisseur || '',
     recuN1:      row.recuN1      || '',
     objectifN:   row.objectifN   || '',
-    reel:        row.reelN       || '',
-    quantite:    row.quantite    || '',
+    univers:     emptyUnivers(row.univers),
     strategie:   row.strategie   || '',
     moderegl:    row.modeReglement || '',
   })
@@ -40,6 +43,7 @@ export default function AchatEditModal({ row, onClose, onSaved }) {
   }, [form.fournisseur, form.magasin, params])
 
   function set(field, val) { setForm(f => ({ ...f, [field]: val })) }
+  function setUniv(u, field, val) { setForm(f => ({ ...f, univers: { ...f.univers, [u]: { ...f.univers[u], [field]: val } } })) }
 
   function navAchat(e) {
     const idx = parseInt(e.currentTarget.dataset.achatIndex)
@@ -52,9 +56,12 @@ export default function AchatEditModal({ row, onClose, onSaved }) {
     }
   }
 
-  const pm = form.reel && form.quantite && Number(form.quantite) > 0
-    ? Math.round((Number(form.reel) / Number(form.quantite)) * 100) / 100
-    : null
+  const totalReel  = UNIVERS.reduce((s, k) => s + (Number(form.univers[k].prix) || 0), 0)
+  const totalQte   = UNIVERS.reduce((s, k) => s + (Number(form.univers[k].qte) || 0), 0)
+  const hasUnivers = UNIVERS.some(k => form.univers[k].prix !== '' || form.univers[k].qte !== '')
+  const reelN      = hasUnivers ? totalReel : (Number(row.reelN) || 0)
+  const quantite   = hasUnivers ? totalQte  : (Number(row.quantite) || 0)
+  const pm = quantite > 0 ? Math.round((reelN / quantite) * 100) / 100 : null
 
   async function handleDelete() {
     setSaving(true)
@@ -89,9 +96,10 @@ export default function AchatEditModal({ row, onClose, onSaved }) {
         fournisseurId: fournisseurRow.id,
         recuN1:        Number(form.recuN1)    || 0,
         objectifN:     Number(form.objectifN) || 0,
-        reelN:         Number(form.reel)      || 0,
-        quantite:      Number(form.quantite)  || 0,
+        reelN:         reelN,
+        quantite:      quantite,
         pm:            pm ?? 0,
+        univers:       hasUnivers ? Object.fromEntries(UNIVERS.map(k => [k, { prix: Number(form.univers[k].prix) || 0, qte: Number(form.univers[k].qte) || 0 }])) : null,
         strategie:     form.strategie,
       })
 
@@ -192,27 +200,45 @@ export default function AchatEditModal({ row, onClose, onSaved }) {
               </div>
             </div>
 
-            <div className="form-grid">
-              <div className="form-field">
-                <label>Réel achat N (€)</label>
-                <input type="number" step="0.01" min="0" value={form.reel}
-                  onChange={e => set('reel', e.target.value)} placeholder="0"
-                  data-achat-index="2" onKeyDown={navAchat} />
-              </div>
-              <div className="form-field">
-                <label>Quantité</label>
-                <input type="number" min="0" value={form.quantite}
-                  onChange={e => set('quantite', e.target.value)} placeholder="0"
-                  data-achat-index="3" onKeyDown={navAchat} />
-              </div>
-              <div className="form-field">
-                <label>PM calculé</label>
-                <div className="form-total" style={{ fontSize: 14 }}>
-                  {pm != null
-                    ? pm.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })
-                    : '—'}
-                </div>
-              </div>
+            <div className="form-field">
+              <label>Réel achat N — par univers</label>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ color: 'var(--text-3)' }}>
+                    <th style={{ textAlign: 'left', padding: '2px 6px' }}>Univers</th>
+                    <th style={{ textAlign: 'right', padding: '2px 6px' }}>Prix (€)</th>
+                    <th style={{ textAlign: 'right', padding: '2px 6px' }}>Quantité</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {UNIVERS.map((u, i) => {
+                    const inpS = { width: '100%', padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 13, textAlign: 'right', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }
+                    return (
+                      <tr key={u}>
+                        <td style={{ padding: '3px 6px', fontWeight: 600 }}>{u}</td>
+                        <td style={{ padding: '3px 6px' }}>
+                          <input type="number" step="0.01" min="0" value={form.univers[u].prix} onChange={e => setUniv(u, 'prix', e.target.value)} placeholder="0" style={inpS} data-achat-index={2 + i * 2} onKeyDown={navAchat} />
+                        </td>
+                        <td style={{ padding: '3px 6px' }}>
+                          <input type="number" min="0" value={form.univers[u].qte} onChange={e => setUniv(u, 'qte', e.target.value)} placeholder="0" style={inpS} data-achat-index={3 + i * 2} onKeyDown={navAchat} />
+                        </td>
+                      </tr>
+                    )
+                  })}
+                  <tr style={{ borderTop: '2px solid var(--border)', fontWeight: 700 }}>
+                    <td style={{ padding: '5px 6px' }}>Total</td>
+                    <td style={{ padding: '5px 6px', textAlign: 'right' }}>{eur0(reelN)}</td>
+                    <td style={{ padding: '5px 6px', textAlign: 'right' }}>{quantite}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '2px 6px', color: 'var(--text-3)' }}>PM</td>
+                    <td colSpan={2} style={{ padding: '2px 6px', textAlign: 'right' }}>{pm != null ? pm.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }) : '—'}</td>
+                  </tr>
+                </tbody>
+              </table>
+              {!hasUnivers && (Number(row.reelN) || 0) > 0 && (
+                <div style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 4 }}>Total global actuel conservé tant qu'aucun univers n'est saisi.</div>
+              )}
             </div>
 
             <div className="form-grid">
