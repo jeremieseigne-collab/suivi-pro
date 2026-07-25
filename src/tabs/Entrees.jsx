@@ -11,6 +11,8 @@ import { SOCIETES, getSociete } from '../data/societes'
 
 function uniq(arr) { return [...new Set(arr.filter(Boolean))].sort() }
 
+const STATUTS = ['', 'Imp. Etiquettes', 'Enregistré', 'Retour']
+
 function numeroColor(n) {
   const num = parseInt(n)
   if (!num) return {}
@@ -33,6 +35,8 @@ export default function Entrees({ defaultMagasin = '' }) {
   const [showImport, setShowImport] = useState(false)
 
   const [editEntry,  setEditEntry]  = useState(null)
+  const [selected,   setSelected]   = useState(() => new Set())
+  const [bulkStatut, setBulkStatut] = useState('Enregistré')
   const PAGE = 50
 
   const data = useLiveQuery(async () => {
@@ -80,6 +84,24 @@ export default function Entrees({ defaultMagasin = '' }) {
   const statutList   = useMemo(() => uniq(rows.map(r => r.statut)),    [rows])
 
   function resetPage() { setPage(1) }
+
+  function toggleSel(id) { setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n }) }
+  const allFilteredSelected = filtered.length > 0 && filtered.every(r => selected.has(r.id))
+  const someFilteredSelected = filtered.some(r => selected.has(r.id))
+  function toggleAll() {
+    setSelected(prev => {
+      const n = new Set(prev)
+      if (filtered.every(r => n.has(r.id))) filtered.forEach(r => n.delete(r.id))
+      else filtered.forEach(r => n.add(r.id))
+      return n
+    })
+  }
+  async function applyBulkStatut() {
+    const ids = [...selected]
+    if (!ids.length) return
+    for (const id of ids) { try { await db.entrees.update(id, { statut: bulkStatut }) } catch { /* ignore */ } }
+    setSelected(new Set())
+  }
 
   if (data === undefined) return <LoadingState />
 
@@ -137,11 +159,28 @@ export default function Entrees({ defaultMagasin = '' }) {
         <button className="btn-secondary" onClick={() => setShowImport(true)} title="Importer les entrées depuis un fichier CSV">📂 Importer CSV</button>
       </div>
 
+      {selected.size > 0 && (
+        <div className="store-card" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 16px', marginBottom: 12, background: 'var(--accent-bg)', border: '1px solid var(--accent-border)' }}>
+          <strong style={{ color: 'var(--text)' }}>✓ {selected.size} sélectionnée{selected.size > 1 ? 's' : ''}</strong>
+          <span style={{ color: 'var(--text-3)' }}>→ changer le statut en :</span>
+          <select value={bulkStatut} onChange={e => setBulkStatut(e.target.value)} className="sel">
+            {STATUTS.map(s => <option key={s} value={s}>{s || '— Vide —'}</option>)}
+          </select>
+          <button className="btn-primary" onClick={applyBulkStatut}>Appliquer</button>
+          <button className="btn-secondary" onClick={() => setSelected(new Set())}>Désélectionner</button>
+        </div>
+      )}
+
       <div className="store-card" style={{ marginTop: 0, padding: 0, overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
           <table className="data-table">
             <thead>
               <tr>
+                <th style={{ width: 32, textAlign: 'center' }}>
+                  <input type="checkbox" checked={allFilteredSelected}
+                    ref={el => { if (el) el.indeterminate = !allFilteredSelected && someFilteredSelected }}
+                    onChange={toggleAll} title="Tout sélectionner (lignes filtrées)" style={{ cursor: 'pointer', width: 15, height: 15 }} />
+                </th>
                 <th>Statut</th><th>Magasin</th><th>Date</th><th>Marque</th>
                 <th>Modèle</th><th>N°</th><th>Catégorie</th>
                 <th style={{ textAlign: 'right' }}>Total</th>
@@ -151,12 +190,15 @@ export default function Entrees({ defaultMagasin = '' }) {
             </thead>
             <tbody>
               {paginated.length === 0 && (
-                <tr><td colSpan={10} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>
+                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>
                   {rows.length === 0 ? 'Aucune entrée — cliquez sur "+ Nouvelle entrée".' : 'Aucun résultat.'}
                 </td></tr>
               )}
               {paginated.map(r => (
-                <tr key={r.id}>
+                <tr key={r.id} style={{ background: selected.has(r.id) ? 'var(--accent-bg)' : undefined }}>
+                  <td style={{ textAlign: 'center' }}>
+                    <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSel(r.id)} style={{ cursor: 'pointer', width: 15, height: 15 }} />
+                  </td>
                   <td style={{ fontSize: 13, color: '#64748b' }}>{r.statut}</td>
                   <td>{r.magasin}</td>
                   <td style={{ whiteSpace: 'nowrap', fontSize: 13 }}>{r.date}</td>
