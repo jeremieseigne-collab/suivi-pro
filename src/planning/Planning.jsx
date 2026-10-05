@@ -4,6 +4,7 @@ import { useLiveQuery } from '../lib/useLiveQuery'
 import { isoDate, mondayOf, parseLocal, fmtShort } from '../agenda/dates'
 import { JOURS, MIN_ROWS, EMPLOYEE_COLORS } from './constants'
 import { isGerant } from '../paie/constants'
+import { useMagasin } from '../context/MagasinContext'
 
 function addDays(isoStr, n) {
   const d = parseLocal(isoStr)
@@ -122,7 +123,8 @@ function CellPopover({ shift, salarie, jour, anchorRect, clipboard, onSave, onCo
 export default function Planning({ onHome }) {
   const today = isoDate(new Date())
   const [semaine,        setSemaine]        = useState(() => isoDate(mondayOf(new Date())))
-  const [magasin,        setMagasin]        = useState(() => localStorage.getItem('planning_magasin') || '')
+  const { magasin: magasinCourant, setMagasin: setMagasinCourant } = useMagasin()
+  const magasin = magasinCourant?.nom || ''
   const [active,         setActive]         = useState(null)
   const [saving,         setSaving]         = useState(false)
   const [clipboard,      setClipboard]      = useState(null)
@@ -185,7 +187,7 @@ export default function Planning({ onHome }) {
   const colorMap = {}
   allRows.forEach((s, i) => { colorMap[s.nom] = EMPLOYEE_COLORS[i % EMPLOYEE_COLORS.length] })
 
-  function selectMagasin(m) { setMagasin(m); localStorage.setItem('planning_magasin', m) }
+  function selectMagasin(nom) { setMagasinCourant((magasins || []).find(m => m.nom === nom) || null) }
   function getShift(nom, jourIdx) { return (shifts || []).find(s => s.salarie === nom && s.jour === jourIdx) }
   function rowHasShifts(nom) { return nom && JOURS.some((_, i) => getShift(nom, i)) }
 

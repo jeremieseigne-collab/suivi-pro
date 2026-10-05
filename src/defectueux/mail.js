@@ -1,5 +1,5 @@
 // Compte Gmail expéditeur selon la société
-const SENDER_BY_SOCIETE = {
+export const SENDER_BY_SOCIETE = {
   "B'Shoes":  'contact.baillyalbi@gmail.com',
   'JR Shoes': 'contact.baillyrouffiac@gmail.com',
 }

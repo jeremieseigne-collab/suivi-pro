@@ -14,6 +14,8 @@ const FIELD_TO_DB = {
   paie_envois:     { sentAt: 'sent_at' },
   planning:        { heureDebut: 'heure_debut', heureFin: 'heure_fin', createdAt: 'created_at' },
   sav:             { magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', clientNom: 'client_nom', clientTel: 'client_tel', defectueuxId: 'defectueux_id', createdAt: 'created_at', prixReparation: 'prix_reparation', enCoursAt: 'en_cours_at' },
+  top_modeles:     { createdAt: 'created_at', magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', typeKey: 'type_key', stockAt: 'stock_at' },
+  reassorts:       { createdAt: 'created_at', topId: 'top_id', magasinId: 'magasin_id', fournisseurId: 'fournisseur_id' },
 }
 
 const FIELD_FROM_DB = {}
@@ -214,4 +216,6 @@ export const db = {
   paieEnvois:     new SupabaseTable('paie_envois'),
   planning:       new SupabaseTable('planning'),
   sav:            new SupabaseTable('sav'),
+  topModeles:     new SupabaseTable('top_modeles'),
+  reassorts:      new SupabaseTable('reassorts'),
 }

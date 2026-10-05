@@ -5,6 +5,7 @@ import { buildSavRetourMailUrl } from './mail'
 import { getSociete } from '../data/societes'
 import SavModal from './SavModal'
 import StoreSelect from '../components/StoreSelect'
+import { useMagasin } from '../context/MagasinContext'
 import { fmtTel } from '../components/shared'
 
 function fmtDate(iso) {
@@ -250,12 +251,10 @@ export default function Sav({ onHome }) {
   const [filterType, setFilterType] = useState('') // '' | 'retour' | 'forme'
   const [search, setSearch] = useState('')
   const [confirmDel, setConfirmDel] = useState(null)
-  const [magasin, setMagasin] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('sav_magasin') || 'null') } catch { return null }
-  })
+  const { magasin, setMagasin } = useMagasin()
 
-  function selectMagasin(m) { localStorage.setItem('sav_magasin', JSON.stringify(m)); setMagasin(m) }
-  function changeMagasin() { localStorage.removeItem('sav_magasin'); setMagasin(null) }
+  function selectMagasin(m) { setMagasin(m) }
+  function changeMagasin() { setMagasin(null) }
 
   const data = useLiveQuery(async () => {
     const [savs, magasins, fournisseurs] = await Promise.all([

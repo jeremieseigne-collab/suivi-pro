@@ -3,7 +3,9 @@ import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { LoadingState, fmtTel } from '../components/shared'
 import CommandeModal from './CommandeModal'
-import { MAGASINS, PROVENANCES, STATUTS, STATUTS_CLOS, STATUT_COLOR, PROVENANCE_COLOR } from './constants'
+import StoreSelect from '../components/StoreSelect'
+import { useMagasin } from '../context/MagasinContext'
+import { magasinCommandes, PROVENANCES, STATUTS, STATUTS_CLOS, STATUT_COLOR, PROVENANCE_COLOR } from './constants'
 
 function Pill({ map, value }) {
   if (!value) return <span style={{ color: 'var(--text-5)' }}>—</span>
@@ -20,59 +22,6 @@ function fmtDate(val) {
   const d = new Date(val)
   if (isNaN(d)) return '—'
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })
-}
-
-// ─── Écran de sélection du magasin ────────────────────────────────────────────
-function StoreSelect({ onSelect, onHome }) {
-  const [hover, setHover] = useState(null)
-  return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', padding: 24,
-      background: 'var(--bg-grad)',
-    }}>
-      <button
-        onClick={onHome}
-        style={{ position: 'fixed', top: 20, left: 20, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 9, width: 38, height: 38, cursor: 'pointer', fontSize: 17, color: 'var(--text-2)' }}
-        title="Retour à l'accueil"
-      >←</button>
-
-      <div style={{ textAlign: 'center', marginBottom: 36 }}>
-        <div style={{ fontSize: 34 }}>🏪</div>
-        <h1 style={{ fontSize: 30, fontWeight: 800, color: 'var(--text)', letterSpacing: -0.5, marginTop: 6 }}>
-          Dans quel magasin êtes-vous ?
-        </h1>
-        <p style={{ fontSize: 15, color: 'var(--text-3)', marginTop: 8 }}>
-          Les commandes seront enregistrées pour ce magasin
-        </p>
-      </div>
-
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
-        {MAGASINS.map(m => (
-          <button
-            key={m}
-            onClick={() => onSelect(m)}
-            onMouseEnter={() => setHover(m)}
-            onMouseLeave={() => setHover(null)}
-            style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
-              background: 'var(--surface)', border: '2px solid', borderColor: hover === m ? '#7c3aed' : 'var(--border)',
-              borderRadius: 18, padding: '28px 24px', cursor: 'pointer', width: 200,
-              boxShadow: hover === m ? '0 14px 34px rgba(124,58,237,0.18)' : '0 4px 16px var(--shadow)',
-              transform: hover === m ? 'translateY(-4px)' : 'none', transition: 'all 0.2s ease',
-            }}
-          >
-            <div style={{
-              width: 56, height: 56, borderRadius: 14,
-              background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28,
-            }}>🏪</div>
-            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', textAlign: 'center' }}>{m}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
 }
 
 // ─── Popup d'affichage d'une note ─────────────────────────────────────────────
@@ -95,7 +44,8 @@ function NoteView({ commande, onClose }) {
 }
 
 export default function Commandes({ onHome }) {
-  const [magasin, setMagasinState] = useState(() => localStorage.getItem('commandes_magasin') || '')
+  const { magasin: magasinCourant, setMagasin: setMagasinCourant } = useMagasin()
+  const magasin = magasinCommandes(magasinCourant?.nom)
   const [search,     setSearch]     = useState('')
   const [fStatut,    setFStatut]    = useState('')
   const [fProv,      setFProv]      = useState('')
@@ -106,10 +56,6 @@ export default function Commandes({ onHome }) {
   const [noteView,   setNoteView]   = useState(null)
   const [hoverNote,  setHoverNote]  = useState(null)
 
-  function setMagasin(m) {
-    localStorage.setItem('commandes_magasin', m)
-    setMagasinState(m)
-  }
 
   const data = useLiveQuery(async () => {
     const rows = await db.commandes.toArray()
@@ -153,7 +99,8 @@ export default function Commandes({ onHome }) {
   }
 
   // Tant qu'aucun magasin n'est choisi → écran de sélection
-  if (!magasin) return <StoreSelect onSelect={setMagasin} onHome={onHome} />
+  if (!magasin) return <StoreSelect onSelect={setMagasinCourant} onHome={onHome}
+    theme={{ accent: '#6d28d9', border: '#c4b5fd', shadow: 'rgba(109,40,217,0.18)', gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', icon: '🛍️' }} />
 
   return (
     <div className="app">
@@ -188,7 +135,7 @@ export default function Commandes({ onHome }) {
             >←</button>
             <h1>🛍️ Commandes Clients</h1>
             <button
-              onClick={() => setMagasin('')}
+              onClick={() => setMagasinCourant(null)}
               title="Changer de magasin"
               style={{
                 display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20,

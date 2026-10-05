@@ -3,6 +3,7 @@ import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { LoadingState, fmtTel } from '../components/shared'
 import RepertoireImportModal from '../components/RepertoireImportModal'
+import { useMagasin } from '../context/MagasinContext'
 
 // Coordonnées par magasin (le reste — compta, adresse, notes — est commun au fournisseur)
 const STORE_KEYS = ['contact', 'telephone', 'contactSav', 'telephoneFixe', 'email', 'numeroClient', 'btob']
@@ -100,7 +101,9 @@ export default function Repertoire() {
   const [newNom, setNewNom] = useState('')
   const [error,  setError]  = useState('')
   const [showImport, setShowImport] = useState(false)
+  const { magasin: magasinCourant } = useMagasin()
   const [magId,  setMagId]  = useState(() => {
+    if (magasinCourant?.id) return magasinCourant.id
     const v = localStorage.getItem('repertoire_magasin')
     return v ? Number(v) : null
   })

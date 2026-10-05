@@ -13,7 +13,7 @@ function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1) }
 function accentOf(e) { return e.source === 'google' ? e.color : 'var(--accent)' }
 
 export default function AgendaBoard() {
-  const [mode,         setMode]         = useState('semaine')
+  const [mode,         setMode]         = useState('mois')
   const [cursor,       setCursor]       = useState(() => isoDate(new Date()))
   const [googleEvents, setGoogleEvents] = useState([])
   const [formDate,     setFormDate]     = useState(null)

@@ -9,7 +9,7 @@ import { buildDefectueuxMailUrl } from './mail'
 const todayFr = () => { const d = new Date(); const p = n => String(n).padStart(2, '0'); return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}` }
 const textareaStyle = { padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', resize: 'vertical', outline: 'none', width: '100%', background: 'var(--surface)', color: 'var(--text)' }
 
-function SalarieInput({ value, onChange, salaries }) {
+export function SalarieInput({ value, onChange, salaries }) {
   const [manual, setManual] = useState(false)
   const btnStyle = { padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', background: 'var(--surface)', color: 'var(--text-3)', fontSize: 14, fontFamily: 'inherit' }
   if (manual) return (
@@ -31,7 +31,7 @@ function SalarieInput({ value, onChange, salaries }) {
   )
 }
 
-function FournisseurInput({ value, onChange, fournisseurs, onAdd }) {
+export function FournisseurInput({ value, onChange, fournisseurs, onAdd }) {
   const [adding, setAdding] = useState(false)
   const [nom, setNom] = useState('')
   const [saving, setSaving] = useState(false)
@@ -63,7 +63,7 @@ function FournisseurInput({ value, onChange, fournisseurs, onAdd }) {
   )
 }
 
-function ModeleInput({ value, onChange, models, disabled, canAdd, onAdd }) {
+export function ModeleInput({ value, onChange, models, disabled, canAdd, onAdd }) {
   const [adding, setAdding] = useState(false)
   const [nom, setNom] = useState('')
   const [saving, setSaving] = useState(false)

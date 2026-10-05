@@ -2,6 +2,15 @@
 
 export const MAGASINS = ['Bailly Albi', 'Bailly Rouffiac-Tolosan', 'Les 2 Zèbres']
 
+// Nom « Commandes » d'un magasin de la base (ex. « Bailly Rouffiac » → « Bailly Rouffiac-Tolosan »)
+export function magasinCommandes(nom) {
+  if (!nom) return ''
+  const n = nom.trim().toLowerCase()
+  return MAGASINS.find(m => m.toLowerCase() === n)
+    || MAGASINS.find(m => m.toLowerCase().startsWith(n) || n.startsWith(m.toLowerCase()))
+    || nom
+}
+
 // La liste des salariés vit désormais dans la table `salaries` (gérée dans Paramètres).
 
 export const PROVENANCES = ['Bailly Albi', 'Bailly Rouffiac', 'Les 2 Zèbres', 'BtoB']

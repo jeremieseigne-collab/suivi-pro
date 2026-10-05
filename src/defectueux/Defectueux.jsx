@@ -5,6 +5,7 @@ import { LoadingState } from '../components/shared'
 import { getSociete } from '../data/societes'
 import DefectueuxModal from './DefectueuxModal'
 import StoreSelect from '../components/StoreSelect'
+import { useMagasin } from '../context/MagasinContext'
 import { STATUTS, STATUT_COLOR } from './constants'
 import { buildDefectueuxMailUrl } from './mail'
 
@@ -20,12 +21,10 @@ export default function Defectueux({ onHome }) {
   const [showForm,   setShowForm]   = useState(false)
   const [editDef,    setEditDef]    = useState(null)
   const [confirmDel, setConfirmDel] = useState(null)
-  const [magasin, setMagasin] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('defectueux_magasin') || 'null') } catch { return null }
-  })
+  const { magasin, setMagasin } = useMagasin()
 
-  function selectMagasin(m) { localStorage.setItem('defectueux_magasin', JSON.stringify(m)); setMagasin(m) }
-  function changeMagasin() { localStorage.removeItem('defectueux_magasin'); setMagasin(null) }
+  function selectMagasin(m) { setMagasin(m) }
+  function changeMagasin() { setMagasin(null) }
 
   const data = useLiveQuery(async () => {
     const [defs, magasins, fournisseurs] = await Promise.all([

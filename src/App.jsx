@@ -12,9 +12,11 @@ import Paie             from './paie/Paie'
 import Planning         from './planning/Planning'
 import Sav             from './sav/Sav'
 import Factures         from './factures/Factures'
+import Reassort         from './reassort/Reassort'
 import StoreSelect      from './components/StoreSelect'
-import AgendaBoard      from './agenda/AgendaBoard'
+import HomeScreen       from './home/HomeScreen'
 import { SeasonProvider, useSeason } from './context/SeasonContext'
+import { MagasinProvider, useMagasin } from './context/MagasinContext'
 import './App.css'
 
 const PIN_CODE       = '2201'
@@ -301,10 +303,11 @@ const CAHIER_TABS = [
 
 function CahierEntrees({ onHome }) {
   const [tab, setTab] = useState('suivi')
-  const [magasin, setMagasin] = useState(() => localStorage.getItem('cahier_magasin') || '')
+  const { magasin: magasinCourant, setMagasin } = useMagasin()
+  const magasin = magasinCourant?.nom || ''
 
-  function selectMagasin(m) { localStorage.setItem('cahier_magasin', m.nom); setMagasin(m.nom) }
-  function changeMagasin() { localStorage.removeItem('cahier_magasin'); setMagasin('') }
+  function selectMagasin(m) { setMagasin(m) }
+  function changeMagasin() { setMagasin(null) }
 
   if (!magasin) return <StoreSelect onSelect={selectMagasin} onHome={onHome}
     theme={{ accent: '#1d4ed8', border: '#93c5fd', shadow: 'rgba(29,78,216,0.18)', gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', icon: '📥' }} />
@@ -329,136 +332,28 @@ function CahierEntrees({ onHome }) {
   )
 }
 
-const APPS = [
-  { id: 'cahier',    icon: '📥',  title: 'Cahier des entrées', desc: 'Suivi des livraisons et entrées',          gradient: 'linear-gradient(135deg, var(--accent), #2563eb)' },
-  { id: 'commandes', icon: '🛍️', title: 'Commandes Clients',  desc: 'Commandes inter-magasins, B2B et clients', gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
-  { id: 'sav',       icon: '🔧',  title: 'SAV',                    desc: "Retours clients et mises à la forme",       gradient: 'linear-gradient(135deg, #0891b2, #0e7490)' },
-  { id: 'defectueux',icon: '🛠️', title: 'Gestion des défectueux', desc: "Suivi des défauts et demandes d'avoir",     gradient: 'linear-gradient(135deg, #f43f5e, #be123c)' },
-  { id: 'paie',      icon: '🧾',  title: 'Éléments variables de paie', desc: 'Chaque salarié remplit ses éléments du mois', warning: '⚠️ À remplir avant le 25 de chaque mois !', gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
-  { id: 'planning',  icon: '📅',  title: 'Planning',                   desc: 'Planning hebdomadaire de l\'équipe',             gradient: 'linear-gradient(135deg, #0ea5e9, #0284c7)' },
-]
+// Top modèles & réassorts (par magasin, liés à la saison)
+function ReassortApp({ onHome }) {
+  const { magasin, setMagasin } = useMagasin()
+  function selectMagasin(m) { setMagasin(m) }
+  function changeMagasin() { setMagasin(null) }
 
-function AppCard({ app, onClick }) {
-  const [hover, setHover] = useState(false)
+  if (!magasin) return <StoreSelect onSelect={selectMagasin} onHome={onHome}
+    theme={{ accent: '#059669', border: '#6ee7b7', shadow: 'rgba(5,150,105,0.18)', gradient: 'linear-gradient(135deg, #10b981, #047857)', icon: '⭐' }} />
+
   return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        position: 'relative',
-        display: 'flex', alignItems: 'center', gap: 20,
-        background: 'var(--surface)', border: '2px solid', borderColor: hover ? 'var(--accent)' : 'var(--border)',
-        borderRadius: 20, padding: '26px 34px', cursor: 'pointer',
-        boxShadow: hover ? '0 16px 40px rgba(59,130,246,0.20)' : '0 4px 16px var(--shadow)',
-        transform: hover ? 'translateY(-4px)' : 'none',
-        transition: 'all 0.2s ease', textAlign: 'left', width: 360, maxWidth: '100%',
-      }}
+    <PageShell
+      title="⭐ Top modèles & réassorts"
+      onHome={onHome}
+      rightExtra={
+        <button onClick={changeMagasin}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, border: '2px solid #6ee7b7', background: '#ecfdf5', color: '#047857', fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+          🏪 {magasin.nom} &#9662;
+        </button>
+      }
     >
-      {app.warning && hover && (
-        <div style={{
-          position: 'absolute', left: '50%', bottom: '100%', zIndex: 20,
-          transform: 'translate(-50%, -8px) rotate(-3deg)', pointerEvents: 'none',
-          background: '#fde047', color: '#7c2d12', fontSize: 13, fontWeight: 700,
-          padding: '10px 14px', borderRadius: 4, maxWidth: 240, lineHeight: 1.35,
-          boxShadow: '0 8px 20px rgba(0,0,0,0.28)',
-        }}>
-          {app.warning}
-        </div>
-      )}
-      <div style={{
-        width: 64, height: 64, borderRadius: 16, flexShrink: 0, background: app.gradient,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32,
-      }}>{app.icon}</div>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>{app.title}</div>
-        <div style={{ fontSize: 14, color: 'var(--text-3)', marginTop: 2 }}>{app.desc}</div>
-      </div>
-      <span style={{ fontSize: 24, color: hover ? 'var(--accent)' : 'var(--text-5)', transition: 'color 0.2s' }}>→</span>
-    </button>
-  )
-}
-
-// Menu « hamburger » qui se déploie (Répertoire / Achats / Plan de règlement / Paramètres)
-function NavMenu({ onOpen }) {
-  const [open, setOpen] = useState(false)
-  const items = [
-    { id: 'repertoire', label: '📒 Répertoire' },
-    { id: 'achats',     label: '🛒 Achats' },
-    { id: 'factures',   label: '📄 Factures' },
-    { id: 'reglement',  label: '💳 Plan de règlement', lock: true },
-    { id: 'parametres', label: '⚙️ Paramètres',        lock: true },
-  ]
-  const bar = { display: 'block', width: 18, height: 2, borderRadius: 2, background: 'var(--text-2)', transition: 'all 0.2s' }
-  return (
-    <div style={{ position: 'relative' }}>
-      <button onClick={() => setOpen(o => !o)} title="Menu" aria-label="Menu"
-        style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
-          width: 40, height: 40, borderRadius: 10, cursor: 'pointer',
-          border: `1px solid ${open ? 'var(--accent)' : 'var(--border)'}`,
-          background: open ? 'var(--accent-bg)' : 'var(--surface)',
-        }}>
-        <span style={{ ...bar, background: open ? 'var(--accent)' : 'var(--text-2)' }} />
-        <span style={{ ...bar, background: open ? 'var(--accent)' : 'var(--text-2)' }} />
-        <span style={{ ...bar, background: open ? 'var(--accent)' : 'var(--text-2)' }} />
-      </button>
-      {open && (
-        <>
-          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
-          <div style={{
-            position: 'absolute', left: 0, top: 'calc(100% + 8px)', zIndex: 50, minWidth: 220,
-            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12,
-            boxShadow: '0 10px 30px var(--shadow)', padding: 6, display: 'flex', flexDirection: 'column', gap: 2,
-          }}>
-            {items.map(it => (
-              <button key={it.id} onClick={() => { setOpen(false); onOpen(it.id) }}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
-                  padding: '10px 12px', borderRadius: 8, border: 'none', background: 'none', cursor: 'pointer',
-                  fontSize: 14, color: 'var(--text)', textAlign: 'left', width: '100%',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'none' }}>
-                <span>{it.label}</span>
-                {it.lock && <span style={{ fontSize: 12, opacity: 0.6 }}>🔒</span>}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
-function HomeScreen({ onOpen }) {
-  return (
-    <div style={{
-      minHeight: '100vh', padding: '32px 16px 56px',
-      background: 'var(--bg-grad)',
-    }}>
-      <div style={{ maxWidth: 1120, margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-          <NavMenu onOpen={onOpen} />
-        </div>
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <h1 style={{ fontSize: 36, fontWeight: 800, color: 'var(--text)', letterSpacing: -1 }}>
-            Bienvenue
-          </h1>
-          <p style={{ fontSize: 15, color: 'var(--text-3)', marginTop: 6 }}>
-            Choisissez une application pour commencer
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {APPS.map(app => <AppCard key={app.id} app={app} onClick={() => onOpen(app.id)} />)}
-        </div>
-
-        <div style={{ marginTop: 40 }}>
-          <AgendaBoard />
-        </div>
-      </div>
-    </div>
+      <Reassort magasin={magasin} />
+    </PageShell>
   )
 }
 
@@ -490,6 +385,7 @@ function Root() {
   else if (view === 'factures')   content = <PageShell title="📄 Factures" onHome={home} withSeason={false}><Factures /></PageShell>
   else if (view === 'planning')   content = <Planning onHome={home} />
   else if (view === 'sav')        content = <Sav onHome={home} />
+  else if (view === 'reassort')   content = <ReassortApp onHome={home} />
   else                            content = <HomeScreen onOpen={open} />
 
   return (
@@ -503,8 +399,10 @@ function Root() {
 export default function App() {
   return (
     <SeasonProvider>
-      <ThemeToggle />
-      <Root />
+      <MagasinProvider>
+        <ThemeToggle />
+        <Root />
+      </MagasinProvider>
     </SeasonProvider>
   )
 }
