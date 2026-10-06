@@ -15,6 +15,9 @@ import Factures         from './factures/Factures'
 import Reassort         from './reassort/Reassort'
 import StoreSelect      from './components/StoreSelect'
 import HomeScreen       from './home/HomeScreen'
+import Sidebar          from './home/Sidebar'
+import { useAlerts }    from './home/useAlerts'
+import { useMediaQuery, TABLET } from './lib/useMediaQuery'
 import { SeasonProvider, useSeason } from './context/SeasonContext'
 import { MagasinProvider, useMagasin } from './context/MagasinContext'
 import './App.css'
@@ -372,6 +375,15 @@ function Root() {
     setPinTarget(null)
   }
   const home = () => setView('home')
+  const { magasin, setMagasin } = useMagasin()
+  const alerts  = useAlerts(magasin)
+  const tablet  = useMediaQuery(TABLET)
+  const [drawer,    setDrawer]    = useState(false)
+  const [collapsed, setCollapsed] = useState(() => { try { return localStorage.getItem('sidebar_collapsed') === '1' } catch { return false } })
+  function toggleCollapse() {
+    setCollapsed(c => { try { localStorage.setItem('sidebar_collapsed', c ? '0' : '1') } catch { /* ignore */ } return !c })
+  }
+  function navigate(v) { setDrawer(false); open(v) }
 
   let content
   if (view === 'cahier')          content = <CahierEntrees onHome={home} />
@@ -386,13 +398,40 @@ function Root() {
   else if (view === 'planning')   content = <Planning onHome={home} />
   else if (view === 'sav')        content = <Sav onHome={home} />
   else if (view === 'reassort')   content = <ReassortApp onHome={home} />
-  else                            content = <HomeScreen onOpen={open} />
+  else                            content = <HomeScreen onOpen={open} alerts={alerts} onMenu={() => setDrawer(true)} />
+
+  const sidebarProps = { view, magasin, setMagasin, alerts, onOpen: navigate }
 
   return (
-    <>
-      {content}
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Barre latérale toujours visible sur ordinateur */}
+      {!tablet && (
+        <aside style={{ width: collapsed ? 68 : 248, flexShrink: 0, position: 'sticky', top: 0, height: '100vh', background: 'var(--surface)', borderRight: '1px solid var(--border)', zIndex: 20, transition: 'width .2s' }}>
+          <Sidebar {...sidebarProps} collapsed={collapsed} onToggleCollapse={toggleCollapse} />
+        </aside>
+      )}
+      {/* Tablette / téléphone : tiroir ouvert par le bouton ☰ */}
+      {tablet && drawer && (
+        <>
+          <div onClick={() => setDrawer(false)} style={{ position: 'fixed', inset: 0, zIndex: 900, background: 'rgba(15,23,42,0.45)' }} />
+          <aside style={{ position: 'fixed', left: 0, top: 0, bottom: 0, width: 280, maxWidth: '85vw', zIndex: 901, background: 'var(--surface)', boxShadow: '8px 0 30px rgba(0,0,0,0.25)' }}>
+            <Sidebar {...sidebarProps} />
+          </aside>
+        </>
+      )}
+      {tablet && view !== 'home' && !drawer && (
+        <button onClick={() => setDrawer(true)} aria-label="Menu" title="Menu"
+          style={{
+            position: 'fixed', bottom: 20, left: 16, zIndex: 3000, width: 46, height: 46, borderRadius: '50%', cursor: 'pointer',
+            border: '1px solid var(--border)', background: 'var(--surface)', fontSize: 20, color: 'var(--text-2)', boxShadow: '0 4px 14px var(--shadow-lg)',
+          }}>☰</button>
+      )}
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {content}
+      </div>
       {pinTarget && <PinModal onSuccess={handlePinSuccess} onClose={() => setPinTarget(null)} />}
-    </>
+    </div>
   )
 }
 

@@ -4,7 +4,7 @@ import { db } from '../db'
 import { useSeason } from '../context/SeasonContext'
 import { SIZE_TYPES, DEFAULT_GRID_BY_MARQUE } from '../data/sizes'
 import { FournisseurInput, ModeleInput } from '../defectueux/DefectueuxModal'
-import { CATEGORIES, CAT_TO_KEY, ETAPE_COLORS, ETAPE_ICONS, CELL, fmtDate, sortSizes, cleanStock } from './constants'
+import { CATEGORIES, CAT_TO_KEY, ETAPE_COLORS, ETAPE_ICONS, CELL, fmtDate, sortSizes, cleanStock, supprimerTop } from './constants'
 
 const KEY_TO_CAT = Object.fromEntries(Object.entries(CAT_TO_KEY).map(([c, k]) => [k, c]))
 
@@ -131,7 +131,7 @@ export default function TopModal({ top, magasinId, historique = [], onClose }) {
 
   async function handleDelete() {
     try {
-      await db.topModeles.delete(top.id)
+      await supprimerTop(top.id)
       onClose?.()
     } catch (e) { setError('Erreur : ' + (e.message || e)) }
   }
@@ -261,9 +261,9 @@ export default function TopModal({ top, magasinId, historique = [], onClose }) {
 
           <div className="modal-actions">
             {editing && (confirmDel ? (
-              <button className="btn-secondary" style={{ marginRight: 'auto', color: '#dc2626', borderColor: '#fca5a5' }} onClick={handleDelete}>Confirmer la suppression</button>
+              <button className="btn-secondary" style={{ marginRight: 'auto', color: '#dc2626', borderColor: '#fca5a5' }} onClick={handleDelete}>Supprimer définitivement ?</button>
             ) : (
-              <button className="btn-secondary" style={{ marginRight: 'auto' }} onClick={() => setConfirmDel(true)}>🗑 Retirer des tops</button>
+              <button className="btn-secondary" style={{ marginRight: 'auto' }} onClick={() => setConfirmDel(true)}>🗑 Supprimer ce top</button>
             ))}
             <button className="btn-secondary" onClick={onClose}>Annuler</button>
             <button className="btn-primary" onClick={handleSave} disabled={saving}>

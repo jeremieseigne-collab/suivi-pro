@@ -18,17 +18,17 @@ export default function StoreSelect({ onSelect, onHome, description = '', theme 
 
   return (
     <div style={{
-      minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', padding: 24,
+      position: 'relative', minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', padding: '72px 16px 24px',
       background: 'var(--bg-grad)',
     }}>
       <button onClick={onHome}
-        style={{ position: 'fixed', top: 20, left: 20, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 9, width: 38, height: 38, cursor: 'pointer', fontSize: 17, color: 'var(--text-2)' }}
+        style={{ position: 'absolute', top: 20, left: 20, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 9, width: 38, height: 38, cursor: 'pointer', fontSize: 17, color: 'var(--text-2)' }}
         title="Retour">←</button>
 
       <div style={{ textAlign: 'center', marginBottom: 36 }}>
         <div style={{ fontSize: 34 }}>{t.icon}</div>
-        <h1 style={{ fontSize: 30, fontWeight: 800, color: 'var(--text)', letterSpacing: -0.5, marginTop: 6 }}>
+        <h1 style={{ fontSize: 'clamp(22px, 6vw, 30px)', fontWeight: 800, color: 'var(--text)', letterSpacing: -0.5, marginTop: 6 }}>
           Dans quel magasin êtes-vous ?
         </h1>
         {description && (
@@ -46,7 +46,7 @@ export default function StoreSelect({ onSelect, onHome, description = '', theme 
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
               background: 'var(--surface)', border: '2px solid',
               borderColor: hover === m.id ? t.accent : 'var(--border)',
-              borderRadius: 18, padding: '28px 24px', cursor: 'pointer', width: 200,
+              borderRadius: 18, padding: '28px 24px', cursor: 'pointer', width: 200, maxWidth: '100%',
               boxShadow: hover === m.id ? `0 14px 34px ${t.shadow}` : '0 4px 16px var(--shadow)',
               transform: hover === m.id ? 'translateY(-4px)' : 'none', transition: 'all 0.2s ease',
             }}>

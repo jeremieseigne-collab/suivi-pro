@@ -3,6 +3,7 @@ import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import AgendaModal from './AgendaModal'
 import { isoDate, parseLocal, mondayOf, fmtDayShort, fmtDayLabel, fmtShort } from './dates'
+import { useMediaQuery, PHONE, TABLET } from '../lib/useMediaQuery'
 import { GOOGLE_CALENDARS, GOOGLE_API_KEY, fetchGoogleEvents, rangeFor } from './googleCalendars'
 
 const MODES = [['jour', 'Jour'], ['semaine', 'Semaine'], ['mois', 'Mois'], ['annee', 'Année']]
@@ -23,6 +24,8 @@ export default function AgendaBoard() {
 
   const today = isoDate(new Date())
   const cur = parseLocal(cursor)
+  const phone  = useMediaQuery(PHONE)
+  const tablet = useMediaQuery(TABLET)
 
   const data = useLiveQuery(async () => {
     const rows = await db.evenements.toArray()
@@ -77,7 +80,7 @@ export default function AgendaBoard() {
           {MODES.map(([m, lbl]) => (
             <button key={m} onClick={() => setMode(m)}
               style={{
-                padding: '5px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                padding: phone ? '5px 10px' : '5px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
                 fontSize: 13, fontWeight: 600,
                 background: mode === m ? 'var(--surface)' : 'transparent',
                 color: mode === m ? 'var(--text)' : 'var(--text-3)',
@@ -88,10 +91,10 @@ export default function AgendaBoard() {
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: phone ? 8 : 12, marginBottom: 10, flexWrap: 'wrap' }}>
         <button onClick={() => shift(-1)} title="Précédent"
           style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', color: 'var(--text-2)' }}>←</button>
-        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', minWidth: 180, textAlign: 'center' }}>{label}</span>
+        <span style={{ fontSize: phone ? 13 : 14, fontWeight: 700, color: 'var(--text)', minWidth: phone ? 0 : 180, flex: phone ? 1 : 'none', textAlign: 'center' }}>{label}</span>
         <button onClick={() => shift(1)} title="Suivant"
           style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', color: 'var(--text-2)' }}>→</button>
         <button onClick={() => setCursor(today)}
@@ -110,9 +113,9 @@ export default function AgendaBoard() {
       ) : (
         <>
           {mode === 'jour'    && <DayView    cursor={cursor} byDay={byDay} today={today} onAdd={openNew} onEvent={onEvent} />}
-          {mode === 'semaine' && <WeekView   cur={cur} byDay={byDay} today={today} onAdd={openNew} onEvent={onEvent} />}
-          {mode === 'mois'    && <MonthView  cur={cur} byDay={byDay} today={today} onDay={openDay} />}
-          {mode === 'annee'   && <YearView   cur={cur} byDay={byDay} today={today} onMonth={openMonth} />}
+          {mode === 'semaine' && <WeekView   cur={cur} byDay={byDay} today={today} onAdd={openNew} onEvent={onEvent} stacked={tablet} />}
+          {mode === 'mois'    && <MonthView  cur={cur} byDay={byDay} today={today} onDay={openDay} dots={phone} />}
+          {mode === 'annee'   && <YearView   cur={cur} byDay={byDay} today={today} onMonth={openMonth} small={phone} />}
         </>
       )}
     </div>
@@ -164,18 +167,18 @@ function DayView({ cursor, byDay, today, onAdd, onEvent }) {
 }
 
 // ─── Vue SEMAINE (Lun → Sam) ──────────────────────────────────────────────────
-function WeekView({ cur, byDay, today, onAdd, onEvent }) {
+function WeekView({ cur, byDay, today, onAdd, onEvent, stacked }) {
   const mon = mondayOf(cur)
   const days = Array.from({ length: 6 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); return d })
   return (
-    <div style={{ overflowX: 'auto', paddingBottom: 4 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(150px, 1fr))', gap: 10, minWidth: 6 * 150 }}>
+    <div style={{ overflowX: stacked ? 'visible' : 'auto', paddingBottom: 4 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: stacked ? 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))' : 'repeat(6, minmax(150px, 1fr))', gap: 10, minWidth: stacked ? 0 : 6 * 150 }}>
         {days.map(d => {
           const iso = isoDate(d)
           const events = byDay[iso] || []
           const isToday = iso === today
           return (
-            <div key={iso} style={{ background: 'var(--surface)', borderRadius: 12, overflow: 'hidden', border: isToday ? '2px solid var(--accent-border)' : '1px solid var(--border)', boxShadow: '0 1px 4px var(--shadow-sm)', minHeight: 120, display: 'flex', flexDirection: 'column' }}>
+            <div key={iso} style={{ background: 'var(--surface)', borderRadius: 12, overflow: 'hidden', border: isToday ? '2px solid var(--accent-border)' : '1px solid var(--border)', boxShadow: '0 1px 4px var(--shadow-sm)', minHeight: stacked ? 0 : 120, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', background: isToday ? 'var(--accent-bg)' : 'var(--surface-2)', borderBottom: '1px solid var(--surface-3)' }}>
                 <span style={{ fontSize: 13, fontWeight: 700, color: isToday ? 'var(--accent-2)' : 'var(--text-2)' }}>{fmtDayShort(d)}</span>
                 <button onClick={() => onAdd(iso)} title="Ajouter" style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', color: 'var(--accent)', fontSize: 15, lineHeight: 1 }}>+</button>
@@ -194,7 +197,7 @@ function WeekView({ cur, byDay, today, onAdd, onEvent }) {
 }
 
 // ─── Vue MOIS ─────────────────────────────────────────────────────────────────
-function MonthView({ cur, byDay, today, onDay }) {
+function MonthView({ cur, byDay, today, onDay, dots }) {
   const y = cur.getFullYear(), mth = cur.getMonth()
   const first = new Date(y, mth, 1)
   const start = mondayOf(first)
@@ -204,8 +207,8 @@ function MonthView({ cur, byDay, today, onDay }) {
   const cells = Array.from({ length: weeks * 7 }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d })
 
   return (
-    <div className="store-card" style={{ padding: 12 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
+    <div className="store-card" style={{ padding: dots ? 8 : 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: dots ? 3 : 6 }}>
         {WD.map(w => <div key={w} style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase' }}>{w}</div>)}
         {cells.map(d => {
           const iso = isoDate(d)
@@ -217,15 +220,21 @@ function MonthView({ cur, byDay, today, onDay }) {
               style={{
                 textAlign: 'left', border: '1px solid var(--surface-3)', borderRadius: 8, cursor: 'pointer',
                 background: isToday ? 'var(--accent-bg)' : 'var(--surface)', opacity: inMonth ? 1 : 0.4,
-                minHeight: 78, padding: 6, display: 'flex', flexDirection: 'column', gap: 3,
+                minWidth: 0, overflow: 'hidden', minHeight: dots ? 46 : 78, padding: dots ? '4px 2px' : 6,
+                display: 'flex', flexDirection: 'column', alignItems: dots ? 'center' : 'stretch', gap: 3,
               }}>
-              <span style={{ fontSize: 12, fontWeight: isToday ? 800 : 600, color: isToday ? 'var(--accent-2)' : 'var(--text-2)', alignSelf: 'flex-start' }}>{d.getDate()}</span>
-              {events.slice(0, 3).map(e => (
+              <span style={{ fontSize: 12, fontWeight: isToday ? 800 : 600, color: isToday ? 'var(--accent-2)' : 'var(--text-2)', alignSelf: dots ? 'center' : 'flex-start' }}>{d.getDate()}</span>
+              {dots ? (
+                <span style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 2, maxWidth: '100%' }}>
+                  {events.slice(0, 4).map(e => <span key={e.id} style={{ width: 6, height: 6, borderRadius: '50%', background: accentOf(e) }} />)}
+                  {events.length > 4 && <span style={{ fontSize: 9, lineHeight: '6px', color: 'var(--text-4)' }}>+</span>}
+                </span>
+              ) : events.slice(0, 3).map(e => (
                 <span key={e.id} style={{ fontSize: 11, color: 'var(--text)', background: accentOf(e) === 'var(--accent)' ? 'var(--accent-bg)' : accentOf(e) + '22', borderLeft: `2px solid ${accentOf(e)}`, borderRadius: 3, padding: '1px 4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {e.heure ? e.heure + ' ' : ''}{e.titre}
                 </span>
               ))}
-              {events.length > 3 && <span style={{ fontSize: 10, color: 'var(--text-4)' }}>+{events.length - 3}</span>}
+              {!dots && events.length > 3 && <span style={{ fontSize: 10, color: 'var(--text-4)' }}>+{events.length - 3}</span>}
             </button>
           )
         })}
@@ -235,10 +244,10 @@ function MonthView({ cur, byDay, today, onDay }) {
 }
 
 // ─── Vue ANNÉE ────────────────────────────────────────────────────────────────
-function YearView({ cur, byDay, today, onMonth }) {
+function YearView({ cur, byDay, today, onMonth, small }) {
   const y = cur.getFullYear()
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${small ? 140 : 180}px, 1fr))`, gap: small ? 8 : 14 }}>
       {MONTHS.map((name, mth) => {
         const first = new Date(y, mth, 1)
         const start = mondayOf(first)

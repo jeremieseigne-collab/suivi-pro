@@ -10,7 +10,7 @@ import ReceptionModal from './ReceptionModal'
 import { buildReassortMailUrl, coordMarque } from './mail'
 import {
   ETAPES, ETAPES_ACTIVES, ETAPE_COLORS, ETAPE_ICONS, CELL, RETARD_ORANGE,
-  fmtDate, joursDepuis, sortSizes, resteParPointure, isActif, retard, etatPointure, proposition, cleanStock,
+  fmtDate, joursDepuis, sortSizes, resteParPointure, isActif, retard, etatPointure, proposition, cleanStock, supprimerTop,
 } from './constants'
 
 const RETARD_COLOR = { orange: '#f97316', rouge: '#dc2626' }
@@ -82,7 +82,7 @@ function smallBtn(color) {
   return { padding: '6px 10px', borderRadius: 8, border: `1px solid ${color || 'var(--border)'}`, background: 'var(--surface)', color: color || 'var(--text-2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }
 }
 
-function TopCard({ t, onEdit, onStock, onNewReassort, onEditReassort, onAdvance, onMail, onReception }) {
+function TopCard({ t, onEdit, onDelete, onStock, onNewReassort, onEditReassort, onAdvance, onMail, onReception }) {
   const r = t.actif
   const niveau = r ? retard(r) : null
   const joursRoute = r?.statut === 'En route' ? joursDepuis(r.etapes?.['En route']) : null
@@ -169,6 +169,7 @@ function TopCard({ t, onEdit, onStock, onNewReassort, onEditReassort, onAdvance,
 
       <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         <button style={smallBtn()} onClick={() => onStock(t)}>📝 Stock</button>
+        <button style={{ ...smallBtn(), marginLeft: 'auto', color: 'var(--text-4)' }} onClick={() => onDelete(t)} title="Supprimer ce top modèle">🗑</button>
         {!r && (
           <button style={t.ruptures > 0 ? { ...smallBtn('#dc2626'), background: '#dc2626', color: '#fff' } : smallBtn('var(--accent)')}
             onClick={() => onNewReassort(t)}>
@@ -290,9 +291,18 @@ export default function Reassort({ magasin }) {
     }
   }
 
+  async function deleteTop(t) {
+    const nb = t.histo.length
+    const msg = `Supprimer le top modèle « ${t.modele} » (${t.marque}) ?`
+      + (nb ? `\n\nSes ${nb} réassort${nb > 1 ? 's' : ''} ser${nb > 1 ? 'ont' : 'a'} aussi supprimé${nb > 1 ? 's' : ''}. Les entrées déjà créées dans le Cahier restent.` : '')
+    if (!window.confirm(msg)) return
+    try { await supprimerTop(t.id) } catch (e) { alert('Erreur : ' + (e.message || e)) }
+  }
+
   const close = () => setModal(null)
   const handlers = {
     onEdit:         t => setModal({ type: 'top', top: t }),
+    onDelete:       deleteTop,
     onStock:        t => setModal({ type: 'stock', top: t }),
     onNewReassort:  t => setModal({ type: 'reassort', top: t }),
     onEditReassort: (t, r) => setModal({ type: 'reassort', top: t, reassort: r }),

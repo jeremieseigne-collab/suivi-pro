@@ -1,3 +1,5 @@
+import { db } from '../db'
+
 // Étapes d'un réassort (dans l'ordre)
 export const ETAPES = ['À réassortir', 'Demandé', 'Commandé', 'En route', 'Reçu']
 export const ETAPES_ACTIVES = ETAPES.slice(0, 4)
@@ -99,4 +101,11 @@ export function cleanStock(stock, pointures) {
   const out = {}
   pointures.forEach(s => { const v = stock[s]; if (v !== undefined && v !== '' && v !== null) out[s] = Math.max(0, parseInt(v) || 0) })
   return out
+}
+
+// Supprime un top modèle et ses réassorts (les entrées déjà créées dans le Cahier restent)
+export async function supprimerTop(topId) {
+  const rs = await db.reassorts.where('topId').equals(topId).toArray()
+  for (const r of rs) await db.reassorts.delete(r.id)
+  await db.topModeles.delete(topId)
 }
