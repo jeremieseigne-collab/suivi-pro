@@ -32,7 +32,6 @@ export const CELL = {
   rupture:  { bg: '#fee2e2', border: '#fca5a5', text: '#b91c1c' },
   commande: { bg: '#ffedd5', border: '#fdba74', text: '#c2410c' },
   ok:       { bg: '#dcfce7', border: '#86efac', text: '#15803d' },
-  inconnu:  { bg: 'var(--surface-2)', border: 'var(--border)', text: 'var(--text-4)' },
 }
 
 export const todayFr = () => { const d = new Date(); const p = n => String(n).padStart(2, '0'); return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}` }
@@ -79,27 +78,24 @@ export function retard(r) {
 // État d'une pointure d'un top modèle
 export function etatPointure(top, s, enCommande) {
   if ((enCommande?.[s] || 0) > 0) return 'commande'
-  const st = top.stock?.[s]
-  if (st === undefined || st === null || st === '') return 'inconnu'
-  return Number(st) < (top.cible || 1) ? 'rupture' : 'ok'
+  // Stock non saisi = 0
+  return (Number(top.stock?.[s]) || 0) < (top.cible || 1) ? 'rupture' : 'ok'
 }
 
 // Quantités proposées pour un réassort = cible − stock − déjà en commande
 export function proposition(top, enCommande) {
   const out = {}
   ;(top.pointures || []).forEach(s => {
-    const st = top.stock?.[s]
-    if (st === undefined || st === null || st === '') return
-    const q = (top.cible || 1) - Number(st) - (enCommande?.[s] || 0)
+    const q = (top.cible || 1) - (Number(top.stock?.[s]) || 0) - (enCommande?.[s] || 0)
     if (q > 0) out[s] = q
   })
   return out
 }
 
-// Nettoie le stock saisi : { '38': '2', '39': '' } → { '38': 2 }
+// Nettoie le stock saisi : { '38': '2', '39': '' } → { '38': 2, '39': 0 }
 export function cleanStock(stock, pointures) {
   const out = {}
-  pointures.forEach(s => { const v = stock[s]; if (v !== undefined && v !== '' && v !== null) out[s] = Math.max(0, parseInt(v) || 0) })
+  pointures.forEach(s => { out[s] = Math.max(0, parseInt(stock[s]) || 0) })
   return out
 }
 

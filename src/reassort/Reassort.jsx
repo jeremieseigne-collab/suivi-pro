@@ -119,11 +119,11 @@ function TopCard({ t, onEdit, onDelete, onStock, onNewReassort, onEditReassort, 
           const c = CELL[etatPointure(t, s, t.enCommande)]
           const st = t.stock?.[s]
           return (
-            <div key={s} title={`Pointure ${s} · stock ${st ?? '?'}${t.enCommande[s] ? ` · ${t.enCommande[s]} en commande` : ''}`}
+            <div key={s} title={`Pointure ${s} · stock ${st ?? 0}${t.enCommande[s] ? ` · ${t.enCommande[s]} en commande` : ''}`}
               style={{ minWidth: 38, padding: '2px 4px', borderRadius: 6, textAlign: 'center', background: c.bg, border: `1px solid ${c.border}`, color: c.text }}>
               <div style={{ fontSize: 11, fontWeight: 700 }}>{s}</div>
               <div style={{ fontSize: 12, fontWeight: 800 }}>
-                {st ?? '·'}{t.enCommande[s] ? <span style={{ fontSize: 10, fontWeight: 700 }}> +{t.enCommande[s]}</span> : null}
+                {st ?? 0}{t.enCommande[s] ? <span style={{ fontSize: 10, fontWeight: 700 }}> +{t.enCommande[s]}</span> : null}
               </div>
             </div>
           )
@@ -241,7 +241,6 @@ export default function Reassort({ magasin }) {
         marque: fById[t.fournisseurId]?.nom || '—', fournisseurObj: fById[t.fournisseurId],
         magasinNom: magById[t.magasinId] || '—',
         ruptures: etats.filter(e => e === 'rupture').length,
-        inconnues: etats.filter(e => e === 'inconnu').length,
         prop: proposition({ ...t, pointures }, enCommande),
         recuSaison: rc?.total || 0, derniere: rc?.lastDate || '',
       }
@@ -390,7 +389,7 @@ export default function Reassort({ magasin }) {
           </div>
 
           <div style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--text-3)', marginBottom: 12, flexWrap: 'wrap' }}>
-            {[['rupture', 'Rupture'], ['commande', 'En commande'], ['ok', 'OK'], ['inconnu', 'Stock non saisi']].map(([k, l]) => (
+            {[['rupture', 'Rupture'], ['commande', 'En commande'], ['ok', 'OK']].map(([k, l]) => (
               <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                 <span style={{ width: 12, height: 12, borderRadius: 3, background: CELL[k].bg, border: `1px solid ${CELL[k].border}` }} />{l}
               </span>

@@ -15,7 +15,7 @@ export function StockGrid({ sizes, pointures, stock, cible = 1, onToggle, onStoc
       {sizes.map(s => {
         const suivie = pointures.includes(s)
         const v = stock[s]
-        const etat = !suivie ? null : (v === undefined || v === '' ? 'inconnu' : Number(v) < cible ? 'rupture' : 'ok')
+        const etat = !suivie ? null : (Number(v) || 0) < cible ? 'rupture' : 'ok'
         const c = etat ? CELL[etat] : null
         return (
           <div key={s} style={{
@@ -30,7 +30,8 @@ export function StockGrid({ sizes, pointures, stock, cible = 1, onToggle, onStoc
                 background: c ? c.bg : 'var(--surface-2)', color: c ? c.text : 'var(--text-3)',
               }}>{s}</button>
             {suivie && (
-              <input type="number" min="0" inputMode="numeric" value={v ?? ''} placeholder="?"
+              <input type="number" min="0" inputMode="numeric" value={v === undefined || v === '' ? '0' : v}
+                onFocus={e => e.target.select()}
                 onChange={e => onStock(s, e.target.value)}
                 style={{ width: '100%', border: 'none', borderTop: '1px solid var(--border)', textAlign: 'center', fontSize: 14, padding: '4px 0', background: 'var(--surface)', color: 'var(--text)', outline: 'none' }} />
             )}

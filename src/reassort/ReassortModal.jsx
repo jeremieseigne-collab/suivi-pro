@@ -75,7 +75,7 @@ export default function ReassortModal({ top, reassort, proposition = {}, enComma
                   <div key={s} style={{ width: 64, borderRadius: 8, overflow: 'hidden', textAlign: 'center', border: `1px solid ${c.border}` }}>
                     <div style={{ padding: '3px 0', fontSize: 12, fontWeight: 700, background: c.bg, color: c.text }}>{s}</div>
                     <div style={{ fontSize: 10, color: 'var(--text-4)', padding: '2px 0' }}>
-                      stock {st ?? '?'}{autres[s] ? ` · +${autres[s]}` : ''}
+                      stock {st ?? 0}{autres[s] ? ` · +${autres[s]}` : ''}
                     </div>
                     <input type="number" min="0" inputMode="numeric" value={qtes[s] ?? ''} placeholder="0"
                       onChange={e => setQtes(q => ({ ...q, [s]: e.target.value }))}
