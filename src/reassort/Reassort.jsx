@@ -82,16 +82,17 @@ function smallBtn(color) {
   return { padding: '6px 10px', borderRadius: 8, border: `1px solid ${color || 'var(--border)'}`, background: 'var(--surface)', color: color || 'var(--text-2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }
 }
 
-function TopCard({ t, onEdit, onDelete, onStock, onNewReassort, onEditReassort, onAdvance, onMail, onReception }) {
+function TopCard({ t, onEdit, onDelete, onStock, onNewReassort, onEditReassort, onAdvance, onMail, onReception, onArchive, onUnarchive, onRelance }) {
   const r = t.actif
   const niveau = r ? retard(r) : null
   const joursRoute = r?.statut === 'En route' ? joursDepuis(r.etapes?.['En route']) : null
-  const borderColor = niveau ? RETARD_COLOR[niveau] : t.ruptures > 0 && !r ? CELL.rupture.border : 'var(--border)'
+  const borderColor = niveau ? RETARD_COLOR[niveau] : t.alerte ? CELL.rupture.border : t.termine ? '#86efac' : 'var(--border)'
 
   return (
     <div onClick={onEdit} style={{
       background: 'var(--surface)', border: `2px solid ${borderColor}`, borderRadius: 14, padding: 14,
       display: 'flex', flexDirection: 'column', gap: 10, cursor: 'pointer', boxShadow: '0 2px 10px var(--shadow)',
+      opacity: t.archive ? 0.65 : 1,
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
         <div style={{ minWidth: 0 }}>
@@ -104,10 +105,14 @@ function TopCard({ t, onEdit, onDelete, onStock, onNewReassort, onEditReassort, 
           <Badge color={niveau ? RETARD_COLOR[niveau] : ETAPE_COLORS[r.statut]}>
             {ETAPE_ICONS[r.statut]} {r.statut}{joursRoute != null ? ` · ${joursRoute} j` : ''}
           </Badge>
-        ) : t.ruptures > 0 ? (
+        ) : t.archive ? (
+          <Badge color="#64748b">🗄 Archivé</Badge>
+        ) : t.termine ? (
+          <Badge color="#16a34a">✅ Réassort reçu</Badge>
+        ) : t.alerte ? (
           <Badge color="#dc2626">⚠️ {t.ruptures} en rupture</Badge>
         ) : t.dernierRecu ? (
-          <Badge color="#16a34a">✅ Réassort reçu</Badge>
+          <Badge color="#16a34a">✓ OK</Badge>
         ) : (
           <Badge color="#64748b">○ Aucun réassort</Badge>
         )}
@@ -182,9 +187,18 @@ function TopCard({ t, onEdit, onDelete, onStock, onNewReassort, onEditReassort, 
       )}
 
       <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        <button style={smallBtn()} onClick={() => onStock(t)}>📝 Stock</button>
-        {!r && (
-          <button style={t.ruptures > 0 ? { ...smallBtn('#dc2626'), background: '#dc2626', color: '#fff' } : smallBtn('var(--accent)')}
+        {!t.archive && <button style={smallBtn()} onClick={() => onStock(t)}>📝 Stock</button>}
+        {t.archive && (
+          <button style={smallBtn('var(--accent)')} onClick={() => onUnarchive(t)} title="Remettre ce modèle dans le suivi">↩ Désarchiver</button>
+        )}
+        {t.termine && (
+          <>
+            <button style={{ ...smallBtn('#16a34a'), background: '#16a34a', color: '#fff' }} onClick={() => onArchive(t)} title="Réassort terminé : ranger ce modèle dans les archives">🗄 Archiver</button>
+            <button style={smallBtn()} onClick={() => onRelance(t)} title="Le modèle marche encore : reprendre le suivi et pouvoir relancer un réassort">↻ Relancer le suivi</button>
+          </>
+        )}
+        {!r && !t.archive && !t.termine && (
+          <button style={t.alerte ? { ...smallBtn('#dc2626'), background: '#dc2626', color: '#fff' } : smallBtn('var(--accent)')}
             onClick={() => onNewReassort(t)}>
             🔄 Lancer un réassort{Object.keys(t.prop).length ? ` (${Object.values(t.prop).reduce((a, b) => a + b, 0)} p.)` : ''}
           </button>
@@ -199,7 +213,7 @@ export default function Reassort({ magasin }) {
   const { season } = useSeason()
   const [vue,     setVue]     = useState('magasin') // 'magasin' | 'tous'
   const [search,  setSearch]  = useState('')
-  const [filtre,  setFiltre]  = useState('')        // '' | 'rupture' | 'encours' | 'retard'
+  const [filtre,  setFiltre]  = useState('')        // '' | 'rupture' | 'encours' | 'retard' | 'recu' | 'aucun' | 'archive'
   const [modal,   setModal]   = useState(null)      // { type, top, reassort }
 
   const data = useLiveQuery(async () => {
@@ -236,11 +250,18 @@ export default function Reassort({ magasin }) {
       histo.filter(isActif).forEach(r => Object.entries(resteParPointure(r)).forEach(([s, q]) => { enCommande[s] = (enCommande[s] || 0) + q }))
       const etats = pointures.map(s => etatPointure(t, s, enCommande))
       const rc = recu[`${t.magasinId}|${t.fournisseurId}|${t.modele}`]
+      const archive = !!t.archivedAt
+      // Réassort reçu et suivi pas encore relancé : on n'en propose plus
+      const recuLe = dernierRecu?.etapes?.['Reçu'] || ''
+      const termine = !archive && !actif && !!dernierRecu && (!t.relanceAt || recuLe > t.relanceAt)
       return {
         ...t, pointures, histo, actif, dernierRecu, enCommande,
         marque: fById[t.fournisseurId]?.nom || '—', fournisseurObj: fById[t.fournisseurId],
         magasinNom: magById[t.magasinId] || '—',
         ruptures: etats.filter(e => e === 'rupture').length,
+        archive, termine,
+        // À réassortir = ruptures, hors réassort en cours / reçu en attente / archivé
+        alerte: !archive && !termine && !actif && etats.includes('rupture'),
         prop: proposition({ ...t, pointures }, enCommande),
         recuSaison: rc?.total || 0, derniere: rc?.lastDate || '',
       }
@@ -252,18 +273,20 @@ export default function Reassort({ magasin }) {
     const n = t.actif ? retard(t.actif) : null
     if (n === 'rouge') return 0
     if (n === 'orange') return 1
-    if (!t.actif && t.ruptures > 0) return 2
+    if (t.alerte) return 2
     if (t.actif) return 3
+    if (t.termine) return 5
     return 4
   }
 
   const tops = useMemo(() => enriched
     .filter(t => t.magasinId === magasin.id)
     .filter(t => {
-      if (filtre === 'rupture' && !(t.ruptures > 0 && !t.actif)) return false
+      if (filtre === 'archive' ? !t.archive : t.archive) return false
+      if (filtre === 'rupture' && !t.alerte) return false
       if (filtre === 'encours' && !t.actif) return false
       if (filtre === 'retard' && !(t.actif && retard(t.actif))) return false
-      if (filtre === 'recu'   && !(!t.actif && t.dernierRecu)) return false
+      if (filtre === 'recu'   && !t.termine) return false
       if (filtre === 'aucun'  && t.histo.length > 0) return false
       if (search) {
         const q = search.toLowerCase()
@@ -276,13 +299,14 @@ export default function Reassort({ magasin }) {
 
   const mine = enriched.filter(t => t.magasinId === magasin.id)
   const stats = {
-    tops:     mine.length,
-    rupture:  mine.filter(t => t.ruptures > 0 && !t.actif).length,
+    tops:     mine.filter(t => !t.archive).length,
+    rupture:  mine.filter(t => t.alerte).length,
     encours:  mine.filter(t => t.actif).length,
     enroute:  mine.filter(t => t.actif?.statut === 'En route').length,
     retard:   mine.filter(t => t.actif && retard(t.actif)).length,
-    recu:     mine.filter(t => !t.actif && t.dernierRecu).length,
-    aucun:    mine.filter(t => t.histo.length === 0).length,
+    recu:     mine.filter(t => t.termine).length,
+    aucun:    mine.filter(t => !t.archive && t.histo.length === 0).length,
+    archive:  mine.filter(t => t.archive).length,
   }
 
   const salariesMag = (data?.salaries || []).filter(s => !s.magasin || s.magasin === magasin.nom)
@@ -309,6 +333,10 @@ export default function Reassort({ magasin }) {
     }
   }
 
+  async function majTop(t, changes) {
+    try { await db.topModeles.update(t.id, changes) } catch (e) { alert('Erreur : ' + (e.message || e)) }
+  }
+
   async function deleteTop(t) {
     const nb = t.histo.length
     const msg = `Supprimer le top modèle « ${t.modele} » (${t.marque}) ?`
@@ -321,6 +349,9 @@ export default function Reassort({ magasin }) {
   const handlers = {
     onEdit:         t => setModal({ type: 'top', top: t }),
     onDelete:       deleteTop,
+    onArchive:      t => majTop(t, { archivedAt: new Date().toISOString() }),
+    onUnarchive:    t => majTop(t, { archivedAt: null, relanceAt: new Date().toISOString() }),
+    onRelance:      t => majTop(t, { relanceAt: new Date().toISOString() }),
     onStock:        t => setModal({ type: 'stock', top: t }),
     onNewReassort:  t => setModal({ type: 'reassort', top: t }),
     onEditReassort: (t, r) => setModal({ type: 'reassort', top: t, reassort: r }),
@@ -386,6 +417,7 @@ export default function Reassort({ magasin }) {
             {chip('retard', '⏰ En retard', stats.retard, '#f97316')}
             {chip('recu', '✅ Réassortis', stats.recu, '#16a34a')}
             {chip('aucun', '○ Sans réassort', stats.aucun, '#64748b')}
+            {chip('archive', '🗄 Archivés', stats.archive, '#64748b')}
           </div>
 
           <div style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--text-3)', marginBottom: 12, flexWrap: 'wrap' }}>
