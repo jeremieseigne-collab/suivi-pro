@@ -106,10 +106,10 @@ function TopCard({ t, onEdit, onDelete, onStock, onNewReassort, onEditReassort, 
           </Badge>
         ) : t.ruptures > 0 ? (
           <Badge color="#dc2626">⚠️ {t.ruptures} en rupture</Badge>
-        ) : t.inconnues === t.pointures.length ? (
-          <Badge color="#64748b">Stock à saisir</Badge>
+        ) : t.dernierRecu ? (
+          <Badge color="#16a34a">✅ Réassort reçu</Badge>
         ) : (
-          <Badge color="#16a34a">✓ OK</Badge>
+          <Badge color="#64748b">○ Aucun réassort</Badge>
         )}
       </div>
 
@@ -134,6 +134,20 @@ function TopCard({ t, onEdit, onDelete, onStock, onNewReassort, onEditReassort, 
         <span>📥 Reçu cette saison : <strong style={{ color: 'var(--text-2)' }}>{t.recuSaison}</strong>{t.derniere ? ` · dernière entrée ${t.derniere}` : ''}</span>
         <span>📝 Stock {t.stockAt ? `mis à jour il y a ${joursDepuis(t.stockAt)} j` : 'jamais saisi'}</span>
       </div>
+
+      {!r && (
+        t.dernierRecu ? (
+          <div style={{ fontSize: 12, padding: '8px 10px', borderRadius: 10, background: '#16a34a14', border: '1px solid #16a34a40', color: 'var(--text-2)' }}>
+            <strong style={{ color: '#16a34a' }}>✅ Dernier réassort reçu le {fmtDate(t.dernierRecu.etapes?.['Reçu'])}</strong>
+            <span style={{ color: 'var(--text-3)' }}> · {sortSizes(Object.keys(t.dernierRecu.sizes || {})).map(s => `${s}×${t.dernierRecu.sizes[s]}`).join('  ')}</span>
+            {t.histo.length > 1 && <span style={{ color: 'var(--text-4)' }}> · {t.histo.length} réassorts au total</span>}
+          </div>
+        ) : (
+          <div style={{ fontSize: 12, padding: '8px 10px', borderRadius: 10, background: 'var(--surface-2)', border: '1px dashed var(--border)', color: 'var(--text-4)' }}>
+            ○ Aucun réassort lancé pour ce modèle
+          </div>
+        )
+      )}
 
       {r && (
         <div onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 10, borderRadius: 10, background: 'var(--surface-2)' }}>
@@ -169,13 +183,13 @@ function TopCard({ t, onEdit, onDelete, onStock, onNewReassort, onEditReassort, 
 
       <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         <button style={smallBtn()} onClick={() => onStock(t)}>📝 Stock</button>
-        <button style={{ ...smallBtn(), marginLeft: 'auto', color: 'var(--text-4)' }} onClick={() => onDelete(t)} title="Supprimer ce top modèle">🗑</button>
         {!r && (
           <button style={t.ruptures > 0 ? { ...smallBtn('#dc2626'), background: '#dc2626', color: '#fff' } : smallBtn('var(--accent)')}
             onClick={() => onNewReassort(t)}>
             🔄 Lancer un réassort{Object.keys(t.prop).length ? ` (${Object.values(t.prop).reduce((a, b) => a + b, 0)} p.)` : ''}
           </button>
         )}
+        <button style={{ ...smallBtn(), marginLeft: 'auto', color: 'var(--text-4)' }} onClick={() => onDelete(t)} title="Supprimer ce top modèle">🗑</button>
       </div>
     </div>
   )
@@ -217,12 +231,13 @@ export default function Reassort({ magasin }) {
       const pointures = t.pointures || []
       const histo = data.reassorts.filter(r => r.topId === t.id).sort((a, b) => b.id - a.id)
       const actif = histo.find(isActif) || null
+      const dernierRecu = histo.find(r => r.statut === 'Reçu') || null
       const enCommande = {}
       histo.filter(isActif).forEach(r => Object.entries(resteParPointure(r)).forEach(([s, q]) => { enCommande[s] = (enCommande[s] || 0) + q }))
       const etats = pointures.map(s => etatPointure(t, s, enCommande))
       const rc = recu[`${t.magasinId}|${t.fournisseurId}|${t.modele}`]
       return {
-        ...t, pointures, histo, actif, enCommande,
+        ...t, pointures, histo, actif, dernierRecu, enCommande,
         marque: fById[t.fournisseurId]?.nom || '—', fournisseurObj: fById[t.fournisseurId],
         magasinNom: magById[t.magasinId] || '—',
         ruptures: etats.filter(e => e === 'rupture').length,
@@ -249,6 +264,8 @@ export default function Reassort({ magasin }) {
       if (filtre === 'rupture' && !(t.ruptures > 0 && !t.actif)) return false
       if (filtre === 'encours' && !t.actif) return false
       if (filtre === 'retard' && !(t.actif && retard(t.actif))) return false
+      if (filtre === 'recu'   && !(!t.actif && t.dernierRecu)) return false
+      if (filtre === 'aucun'  && t.histo.length > 0) return false
       if (search) {
         const q = search.toLowerCase()
         if (![t.marque, t.modele, t.numero, t.note].join(' ').toLowerCase().includes(q)) return false
@@ -265,6 +282,8 @@ export default function Reassort({ magasin }) {
     encours:  mine.filter(t => t.actif).length,
     enroute:  mine.filter(t => t.actif?.statut === 'En route').length,
     retard:   mine.filter(t => t.actif && retard(t.actif)).length,
+    recu:     mine.filter(t => !t.actif && t.dernierRecu).length,
+    aucun:    mine.filter(t => t.histo.length === 0).length,
   }
 
   const salariesMag = (data?.salaries || []).filter(s => !s.magasin || s.magasin === magasin.nom)
@@ -314,6 +333,9 @@ export default function Reassort({ magasin }) {
   if (data === undefined) return <LoadingState />
 
   // Vue « Tous magasins » : réassorts en cours des 3 boutiques, regroupés par marque
+  const recusTous = data.reassorts
+    .filter(r => r.statut === 'Reçu' && joursDepuis(r.etapes?.['Reçu']) <= 30 && topById[r.topId])
+    .sort((a, b) => (b.etapes?.['Reçu'] || '').localeCompare(a.etapes?.['Reçu'] || ''))
   const actifsTous = data.reassorts.filter(isActif).map(r => ({ r, t: topById[r.topId] })).filter(x => x.t)
   const parMarque = {}
   actifsTous.forEach(x => { (parMarque[x.t.marque] ||= []).push(x) })
@@ -363,6 +385,8 @@ export default function Reassort({ magasin }) {
             {chip('rupture', '⚠️ À réassortir', stats.rupture, '#dc2626')}
             {chip('encours', '🔄 En cours', stats.encours, '#3b82f6')}
             {chip('retard', '⏰ En retard', stats.retard, '#f97316')}
+            {chip('recu', '✅ Réassortis', stats.recu, '#16a34a')}
+            {chip('aucun', '○ Sans réassort', stats.aucun, '#64748b')}
           </div>
 
           <div style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--text-3)', marginBottom: 12, flexWrap: 'wrap' }}>
@@ -431,6 +455,36 @@ export default function Reassort({ magasin }) {
               </div>
             </div>
           ))}
+
+          <div style={{ marginTop: 28 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', marginBottom: 6 }}>
+              ✅ Reçus ces 30 derniers jours <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-4)' }}>· {recusTous.length}</span>
+            </div>
+            {recusTous.length === 0 ? (
+              <div style={{ fontSize: 13, color: 'var(--text-4)' }}>Aucun réassort reçu récemment.</div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="data-table">
+                  <thead><tr><th>Reçu le</th><th>Magasin</th><th>Marque</th><th>Modèle</th><th>Pointures</th><th>Par</th></tr></thead>
+                  <tbody>
+                    {recusTous.map(r => {
+                      const t = topById[r.topId]
+                      return (
+                        <tr key={r.id} style={{ opacity: 0.85 }}>
+                          <td style={{ fontSize: 13 }}>{fmtDate(r.etapes?.['Reçu'])}</td>
+                          <td style={{ fontWeight: 600 }}>{t.magasinNom}</td>
+                          <td>{t.marque}</td>
+                          <td>{t.modele}{t.numero && <span style={{ color: 'var(--text-4)', fontSize: 12 }}> N°{t.numero}</span>}</td>
+                          <td style={{ fontSize: 13 }}>{sortSizes(Object.keys(r.sizes || {})).map(s => `${s}×${r.sizes[s]}`).join('  ')}</td>
+                          <td style={{ fontSize: 13 }}>{r.par || '—'}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </>
       )}
     </>
