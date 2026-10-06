@@ -11,7 +11,7 @@ import { SOCIETES, getSociete } from '../data/societes'
 
 function uniq(arr) { return [...new Set(arr.filter(Boolean))].sort() }
 
-const STATUTS = ['', 'Imp. Etiquettes', 'Enregistré', 'Retour']
+const STATUTS = ['', 'Imp. Etiquettes', 'Enregistré', 'Réassort', 'Retour']
 
 function numeroColor(n) {
   const num = parseInt(n)

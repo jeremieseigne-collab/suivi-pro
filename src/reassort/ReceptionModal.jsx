@@ -29,7 +29,7 @@ export default function ReceptionModal({ top, reassort, magasinNom, onClose }) {
       const pht = Math.round(unit * total * 100) / 100
 
       const entreeId = await db.entrees.add({
-        statut: '', magasinId: reassort.magasinId, fournisseurId: reassort.fournisseurId,
+        statut: 'Réassort', magasinId: reassort.magasinId, fournisseurId: reassort.fournisseurId,
         date: todayFr(), modele: reassort.modele, numero: top?.numero || '', categorie: top?.categorie || '',
         typeKey: top?.typeKey || 'F', total, pht, sizes: recuNow, season: reassort.season,
       })
