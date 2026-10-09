@@ -12,7 +12,7 @@
 | À quelle base l'outil se connecte-t-il en local ? | **Base de développement** (`xrxmnblhpcxlefjcvczw`), séparée de la production (`fftfrbpcsazkkvahscbg`). ✅ On peut travailler sans risque pour les vraies données. |
 | Branche Git | Nouvelle branche **`refonte`**, locale, rien n'a été envoyé sur GitHub. ✅ |
 | Base de données | Aucune lecture ni écriture faite pendant l'audit. ✅ |
-| ⚠️ Point d'attention | En local, l'outil **envoie de vrais e-mails** (App Paie : le récap part vraiment chez la comptable). Pendant la refonte, je propose de **couper l'envoi réel en local** (les mails seraient seulement affichés à l'écran). |
+| ✅ Envoi de mails en local | Coupé (correctif I2) : en local les mails sont affichés dans le terminal, jamais envoyés. |
 | ⚠️ Rituel de fin de session | Le fichier `CLAUDE.md` me demande, quand vous dites « c'est fini pour aujourd'hui », de **pousser et déployer automatiquement en production**. Ça contredit vos règles de sécurité : **je ne le ferai pas pendant ce chantier**, sauf demande explicite de votre part. |
 
 Je n'ai **pas** ouvert l'outil dans un navigateur : il se serait connecté à la base de développement et aurait pu déclencher des envois de mails. Je vous pose la question à la fin.
@@ -227,9 +227,9 @@ Effort : **petit** = moins d'une demi-journée · **moyen** = 1 à 2 jours · **
 | **I2** | **Fermer l'envoi de mails ouvert** (seuls les mails prévus, destinataires fixés) | Éviter que votre Gmail serve à envoyer du spam et soit suspendu | Petit |
 | **I3** | **Protéger les suppressions** : supprimer une saison/marque/magasin → code PIN + saisie du nom pour confirmer ; fusion de marques déplacée dans un coin « Maintenance » | Plus de risque d'effacer une saison d'un clic malheureux | Petit |
 | **I4** | **Charte commune** (couleurs, textes, boutons, listes, formulaires, messages) inspirée d'Iris, en sobre, mode sombre complet, icônes au trait à la place des emojis | Outil homogène, moderne, lisible toute la journée | Moyen |
-| **I5** | **Navigation unique** : un seul menu (barre latérale sur ordinateur, barre en bas sur téléphone), un seul en-tête, un seul sélecteur de magasin, plus de boutons flottants | On se repère pareil dans toutes les apps ; rien ne masque l'écran | Moyen |
-| **I6** | **Listes en « cartes » sur téléphone/tablette** à la place des tableaux de 12 colonnes ; boutons de 44 px ; plus aucune action cachée au survol | Utilisable au doigt partout, sans défilement de côté | Moyen (par écran) |
-| **I7** | **Cahier des entrées repensé** : ouverture sur la saisie, bouton « + Entrée » toujours visible, filtres repliés (magasin déjà connu), marque par recherche, grille et marque conservées pour la ligne suivante, bouton « Retour » à grille vide, statut modifiable dans la ligne, recherche par N°, tri par date, plus d'attente de 1,5 s | Saisie ~2× plus rapide pour l'écran le plus utilisé | Moyen |
+| **I5** | **Navigation unique** : un seul menu (barre latérale sur ordinateur, **barre d'onglets en bas sur téléphone, à portée du pouce**), un seul en-tête, un seul sélecteur de magasin, plus de boutons flottants | On se repère pareil dans toutes les apps et sur tous les appareils ; rien ne masque l'écran | Moyen |
+| **I6** | **Chaque écran utilisé en magasin conçu d'abord pour le téléphone** : listes en « cartes » (aucun tableau large), boutons d'au moins 44 px, action principale en bas de l'écran (atteignable d'une main), fenêtres qui s'ouvrent en plein écran depuis le bas, plus aucune action cachée au survol ; **testé aux 3 tailles** (téléphone ~375 px, tablette ~820 px, ordinateur ~1440 px) | Utilisable au doigt et d'une main partout, sans défilement de côté | **Moyen à gros** (par écran) |
+| **I7** | **Cahier des entrées repensé** : ouverture sur la saisie, bouton « + Entrée » toujours visible (en bas sur téléphone), filtres repliés (magasin déjà connu), marque par recherche, grille et marque conservées pour la ligne suivante, bouton « Retour » à grille vide, statut modifiable dans la ligne, recherche par N°, tri par date, plus d'attente de 1,5 s ; **sur téléphone, saisie des pointures « au tapotement »** : on touche la pointure pour ajouter une paire (− pour corriger), au lieu de 47 petites cases à remplir au clavier | Saisie ~2× plus rapide, faisable d'une main en déballant le carton | Moyen à gros |
 | **I8** | **Fusionner les doublons de code** derrière chaque écran refait (un seul formulaire d'entrée, un seul formulaire d'achat, des champs partagés) | Un bug corrigé l'est partout ; refonte plus solide | Moyen (fait au fil de la refonte) |
 | **I9** | **Messages clairs en cas de problème** (« connexion perdue, réessayez » au lieu d'un chargement infini) et enregistrements « en chaîne » sécurisés (pas de doublon si on reclique) | Les équipes savent quand une saisie n'est pas passée | Petit-moyen |
 
@@ -245,7 +245,8 @@ Effort : **petit** = moins d'une demi-journée · **moyen** = 1 à 2 jours · **
 | **U6** | **Commandes** : commandes closes masquées par défaut, dernier salarié mémorisé, bouton « Appeler / SMS le client » | Liste courte, client prévenu en 1 toucher | Petit |
 | **U7** | **Réassorts** : suppression de l'étape « Demandé », boutons d'action sur téléphone | ~15 → ~9 actions | Petit |
 | **U8** | **Répertoire** : appel et mail en un toucher, recherche immédiate | Joindre un fournisseur en 2 secondes | Petit |
-| **U9** | **Lien direct par écran** : le bouton retour du navigateur fonctionne, on peut mettre un écran en favori sur la tablette du magasin | Moins de clics pour arriver au bon endroit | Moyen |
+| **U9** | **Lien direct par écran** : le bouton retour du navigateur (et le geste « retour » du téléphone) fonctionne, on peut mettre un écran en favori sur la tablette du magasin | Moins de clics pour arriver au bon endroit | Moyen |
+| **U14** | **Icône sur l'écran d'accueil du téléphone** : l'outil s'installe comme une application (plein écran, sans barre d'adresse) | On l'ouvre en 1 toucher comme une vraie app | Petit |
 | **U10** | **Outil plus rapide** : chargement en morceaux (chaque app se charge quand on l'ouvre), mises à jour en temps réel ciblées | Ouverture plus rapide, moins de rechargements, tablettes moins sollicitées | Moyen |
 | **U11** | **Paie** : société déduite du magasin, dates limitées au mois | Moins d'erreurs côté salariées | Petit |
 | **U12** | ⚠️ **Saisons partagées** (rangées dans la base au lieu de chaque navigateur) | Un nouvel appareil connaît d'office les saisons | Moyen |
@@ -261,7 +262,7 @@ Effort : **petit** = moins d'une demi-journée · **moyen** = 1 à 2 jours · **
 | **B4** | **Import CSV anti-doublons** (prévient si les lignes existent déjà) | Pas de doubles comptages après un réimport | Petit |
 | **B5** | **Export de sauvegarde** (un fichier Excel de la saison) avant les opérations risquées, et à la demande | Filet de sécurité, archives | Petit-moyen |
 | **B6** | ⚠️ **Vraie protection des données** (connexion par magasin ou par personne, règles d'accès dans la base, paie réellement confidentielle) | Données protégées même si l'adresse du site circule | Gros |
-| **B7** | **Saisie de livraison au scan** (lecture du code-barres de la boîte avec la caméra de la tablette) | Saisie encore plus rapide et sans faute, *si* les étiquettes fournisseurs s'y prêtent | Gros |
+| **B7** | **Saisie de livraison au scan** (lecture du code-barres de la boîte avec la caméra du téléphone ou de la tablette) | Saisie encore plus rapide et sans faute, *si* les étiquettes fournisseurs s'y prêtent — plus pertinent maintenant que le téléphone est utilisé en magasin | Gros |
 
 ---
 
@@ -276,7 +277,19 @@ Effort : **petit** = moins d'une demi-journée · **moyen** = 1 à 2 jours · **
 
 ## 8. Vos réponses (10/10/2026)
 
-- **Appareils** : ordinateur de caisse + tablette en magasin ; vous surtout sur ordinateur. → Priorité au confort **souris + doigt** sur grand et moyen écran ; le téléphone reste correct mais n'est pas la cible n°1.
+- **Appareils** : ordinateur de caisse, tablette **et téléphone** en magasin ; vous surtout sur ordinateur. → *(Corrigé le 10/10/2026)* Chaque écran utilisé en magasin — en priorité le Cahier des entrées — est **conçu et testé aux trois tailles, téléphone compris** : saisie à une main, boutons assez grands pour le doigt, aucun tableau large à faire défiler. Les écrans « bureau » (Achats, Plan de règlement, Paramètres) restent pensés pour l'ordinateur, mais lisibles sur téléphone.
 - **Saisie des livraisons** : au déballage, **carton par carton**, plusieurs saisies d'affilée de la même marque. → Le formulaire d'entrée doit **garder la marque, la grille et la date** d'une saisie à l'autre et enchaîner sans attente (I7).
 - **Urgences I1-I2-I3** : à corriger **en premier**, sur une branche à part, mise en ligne indépendante de la refonte quand vous le décidez.
 - **Lancement local** : autorisé sur la base de **test**, après avoir **coupé l'envoi réel de mails** en local.
+
+### Ce que la correction « téléphone » change dans les propositions (10/10/2026)
+
+| Proposition | Changement |
+|---|---|
+| **I6** | Passe de « cartes sur petit écran » à **conception d'abord pour le téléphone** de tous les écrans magasin, avec test systématique aux 3 tailles. Effort revu à la hausse (moyen → moyen à gros). |
+| **I7** | Ajout de la **saisie des pointures au tapotement** sur téléphone, et de l'action « Enregistrer » fixée en bas d'écran. Effort revu à la hausse. |
+| **I5** | Sur téléphone, la navigation se fait par une **barre d'onglets en bas** (pouce), pas par un menu caché. |
+| **U3 Planning** | Sur téléphone, affichage **jour par jour** (on fait défiler les jours) au lieu de la grille de 7 colonnes. |
+| **U14** (nouveau) | Installation de l'outil comme une **application sur l'écran d'accueil** du téléphone. |
+| **B7** | Le scan à la caméra devient plus intéressant (le téléphone a toujours une caméra), mais reste un bonus. |
+| **Écrans bureau** | Achats, Plan de règlement, Paramètres, Factures : conçus pour l'ordinateur, simplement **lisibles** sur téléphone (pas de saisie optimisée). |
