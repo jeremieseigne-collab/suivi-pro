@@ -30,10 +30,13 @@ function numeroColor(n) {
   return { background: '#d1fae5', color: '#059669' }
 }
 
-// Extrait un tableau de quantités depuis l'objet sizes stocké en DB
-function extractQuantities(sizes, typeKey) {
-  const type = SIZE_TYPES[typeKey] ?? {}
-  return (type.sizes ?? []).map(s => String(sizes?.[s] || ''))
+// Quantités par pointure { [pointure]: texte saisi } depuis l'objet sizes stocké en DB.
+// Gardées par pointure (et non par position dans la grille) pour ne rien perdre quand on change de grille.
+// Les quantités peuvent être négatives (entrées « Retour » créées par le SAV / les défectueux).
+function toSizesMap(sizes) {
+  const m = {}
+  for (const [s, v] of Object.entries(sizes || {})) if (Number(v)) m[s] = String(v)
+  return m
 }
 
 export default function EntreeEditModal({ entry, onClose, onSaved }) {
@@ -50,9 +53,8 @@ export default function EntreeEditModal({ entry, onClose, onSaved }) {
     numero:    entry.numero    || '',
     categorie: entry.categorie || '',
     typeKey:   entry.typeKey   || 'F',
-    pht:       entry.pht       || '',
   })
-  const [quantities, setQuantities] = useState(() => extractQuantities(entry.sizes, entry.typeKey || 'F'))
+  const [sizesMap, setSizesMap] = useState(() => toSizesMap(entry.sizes))
   const [saving,  setSaving]  = useState(false)
   const [saved,   setSaved]   = useState(false)
   const [error,   setError]   = useState('')
@@ -61,13 +63,12 @@ export default function EntreeEditModal({ entry, onClose, onSaved }) {
   const [paramRow, setParamRow] = useState(null)
 
   const type  = SIZE_TYPES[form.typeKey]
+  const gridSizes  = type?.sizes ?? []
+  const quantities = gridSizes.map(s => sizesMap[s] ?? '')
   const total = quantities.reduce((s, v) => s + (parseInt(v) || 0), 0)
+  // Pointures saisies qui n'existent pas dans la grille affichée (ex. après un changement de grille)
+  const horsGrille = Object.entries(sizesMap).filter(([s, v]) => (parseInt(v) || 0) !== 0 && !gridSizes.includes(s))
   const modelesSuggestions = params?.modelesByMarque?.[form.marque] ?? []
-
-  // Quand on change de type de grille, recharger depuis entry.sizes
-  useEffect(() => {
-    setQuantities(extractQuantities(entry.sizes, form.typeKey))
-  }, [form.typeKey, entry.sizes])
 
   // Ligne Achats (paramètres) pour magasin × marque × saison : quantités/prix par modèle (+ PM de secours)
   useEffect(() => {
@@ -85,21 +86,25 @@ export default function EntreeEditModal({ entry, onClose, onSaved }) {
 
   // Prix unitaire HT = prix HT total du modèle (paramètres) ÷ quantité commandée.
   // Plus de repli sur le prix moyen de la marque : 0 si le modèle n'a pas de prix renseigné.
-  const unitPrice = useMemo(() => {
+  // Si le modèle n'a pas de prix (ou pendant le chargement), on garde le prix unitaire d'origine de l'entrée
+  // (import CSV avec prix, retour SAV au prix moyen…) : une correction ne doit jamais remettre le PHT à 0.
+  // (seulement si l'article n'a pas changé : un autre modèle n'a pas forcément le même prix).
+  const sameArticle  = form.marque === (entry.marque || '') && form.modele === (entry.modele || '')
+  const originalUnit = sameArticle && entry.total && entry.pht ? Math.abs(entry.pht / entry.total) : 0
+  const paramUnit = useMemo(() => {
     if (!paramRow) return 0
     const q  = paramRow.modeles?.[form.modele]
     const px = paramRow.prixModeles?.[form.modele]
     if (q > 0 && px > 0) return px / q
     return 0
   }, [paramRow, form.modele])
+  const unitPrice = paramUnit || originalUnit
 
-  // PHT livré = prix unitaire × quantité reçue (toujours auto, non modifiable)
-  useEffect(() => {
-    setForm(f => ({ ...f, pht: (unitPrice > 0 && total > 0) ? Math.round(unitPrice * total * 100) / 100 : '' }))
-  }, [unitPrice, total])
+  // PHT livré = prix unitaire × quantité reçue (toujours auto, non modifiable ; négatif pour un retour)
+  const pht = (unitPrice > 0 && total !== 0) ? Math.round(unitPrice * total * 100) / 100 : 0
 
   function set(field, val) { setForm(f => ({ ...f, [field]: val })) }
-  function setQty(i, val)  { setQuantities(q => { const n = [...q]; n[i] = val; return n }) }
+  function setQty(i, val)  { setSizesMap(m => ({ ...m, [gridSizes[i]]: val })) }
 
   function handleCopy() {
     setClipboard({ typeKey: form.typeKey, quantities: [...quantities] })
@@ -110,12 +115,10 @@ export default function EntreeEditModal({ entry, onClose, onSaved }) {
   function handlePaste() {
     const cb = getClipboard()
     if (!cb) return
-    if (cb.typeKey !== form.typeKey) {
-      set('typeKey', cb.typeKey)
-      setTimeout(() => setQuantities([...cb.quantities]), 50)
-    } else {
-      setQuantities([...cb.quantities])
-    }
+    const m = {}
+    ;(SIZE_TYPES[cb.typeKey]?.sizes ?? []).forEach((s, i) => { if (cb.quantities[i]) m[s] = cb.quantities[i] })
+    set('typeKey', cb.typeKey)
+    setSizesMap(m)
   }
 
   async function handleDelete() {
@@ -137,6 +140,7 @@ export default function EntreeEditModal({ entry, onClose, onSaved }) {
     if (!form.magasin) { setError('Magasin obligatoire'); return }
     if (!form.marque)  { setError('Marque obligatoire');  return }
     if (total === 0)   { setError('Aucune quantité saisie'); return }
+    if (horsGrille.length) { setError(`Pointure(s) ${horsGrille.map(([s]) => s).join(', ')} absente(s) de la grille ${type?.label} : revenez à la grille d'origine ou mettez-les à 0.`); return }
 
     setSaving(true)
     setError('')
@@ -147,9 +151,9 @@ export default function EntreeEditModal({ entry, onClose, onSaved }) {
       if (!fournisseurRow) { setError('Marque introuvable');   return }
 
       const sizes = {}
-      ;(type?.sizes ?? []).forEach((size, i) => {
+      gridSizes.forEach((size, i) => {
         const v = parseInt(quantities[i]) || 0
-        if (v > 0) sizes[size] = v
+        if (v !== 0) sizes[size] = v
       })
 
       await db.entrees.update(entry.id, {
@@ -162,7 +166,7 @@ export default function EntreeEditModal({ entry, onClose, onSaved }) {
         categorie:     form.categorie,
         typeKey:       form.typeKey,
         total,
-        pht:           Number(form.pht) || 0,
+        pht,
         sizes,
       })
 
@@ -280,13 +284,13 @@ export default function EntreeEditModal({ entry, onClose, onSaved }) {
                   padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 8,
                   background: 'var(--surface-2)', fontSize: 14, fontWeight: 700, color: 'var(--text)',
                 }}>
-                  {form.pht
-                    ? Number(form.pht).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })
+                  {pht
+                    ? pht.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })
                     : '—'}
                 </div>
                 <span style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 4 }}>
                   {unitPrice > 0
-                    ? `prix unitaire ${unitPrice.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })} × ${total} u.`
+                    ? `prix unitaire ${unitPrice.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })} × ${total} u.${paramUnit ? '' : ' (prix d\'origine de l\'entrée)'}`
                     : 'Renseigne le prix HT du modèle dans Paramètres → Marques'}
                 </span>
               </div>
@@ -317,12 +321,17 @@ export default function EntreeEditModal({ entry, onClose, onSaved }) {
                   ))}
                 </div>
               </div>
+              {horsGrille.length > 0 && (
+                <div className="form-error" style={{ marginBottom: 10 }}>
+                  ⚠️ Cette grille ne contient pas : {horsGrille.map(([s, v]) => `${s} (${v})`).join(', ')}. Revenez à la grille d'origine pour ne pas perdre ces quantités.
+                </div>
+              )}
               <div className="size-grid">
                 {(type?.sizes ?? []).map((size, i) => (
                   <div key={size} className="size-input-group">
                     <label>{size}</label>
                     <input
-                      type="number" min="0"
+                      type="number" min={entry.total < 0 ? undefined : 0}
                       value={quantities[i] ?? ''}
                       onChange={e => setQty(i, e.target.value)}
                       placeholder="0"

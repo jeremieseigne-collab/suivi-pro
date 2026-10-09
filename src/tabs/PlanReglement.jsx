@@ -7,8 +7,11 @@ import { SOCIETES, getSociete } from '../data/societes'
 import { DEFAULT_NB_CHEQUE, DEFAULT_DELAIS } from '../data/reglement'
 
 // ─── Utilitaires dates ───────────────────────────────────────────────────────
+// Accepte JJ/MM/AAAA (entrées) et AAAA-MM-JJ (plans chèque saisis via <input type="date">)
 function parseDate(str) {
   if (!str) return null
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(str).trim())
+  if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]))
   const parts = String(str).split('/')
   if (parts.length !== 3) return null
   const [d, m, y] = parts
