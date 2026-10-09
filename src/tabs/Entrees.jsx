@@ -30,6 +30,8 @@ export default function Entrees({ defaultMagasin = '' }) {
   const [marque,    setMarque]    = useState('')
   const [categorie, setCategorie] = useState('')
   const [statut,    setStatut]    = useState('')
+  const [fPointe,   setFPointe]   = useState('')   // '' | 'non' | 'oui'
+  const [pointeLocal, setPointeLocal] = useState({}) // affichage immédiat avant le retour temps réel
   const [page,      setPage]      = useState(1)
   const [showForm,   setShowForm]   = useState(false)
   const [showImport, setShowImport] = useState(false)
@@ -64,12 +66,14 @@ export default function Entrees({ defaultMagasin = '' }) {
     if (marque    && r.marque    !== marque)      return false
     if (categorie && r.categorie !== categorie)  return false
     if (statut    && r.statut    !== statut)      return false
+    if (fPointe === 'oui' && !isPointe(r))         return false
+    if (fPointe === 'non' &&  isPointe(r))         return false
     if (search) {
       const q = search.toLowerCase()
       if (!r.marque.toLowerCase().includes(q) && !(r.modele || '').toLowerCase().includes(q)) return false
     }
     return true
-  }), [rows, search, societe, magasin, marque, categorie, statut])
+  }), [rows, search, societe, magasin, marque, categorie, statut, fPointe, pointeLocal])
 
   // Les retours restent affichés mais ne comptent pas dans les unités / la valeur estimée
   const totalUnites = filtered.reduce((s, r) => s + (r.statut === 'Retour' ? 0 : (r.total || 0)), 0)
@@ -84,6 +88,15 @@ export default function Entrees({ defaultMagasin = '' }) {
   const statutList   = useMemo(() => uniq(rows.map(r => r.statut)),    [rows])
 
   function resetPage() { setPage(1) }
+
+  function isPointe(r) { return r.id in pointeLocal ? pointeLocal[r.id] : !!r.pointe }
+  async function setPointe(ids, val) {
+    setPointeLocal(prev => { const n = { ...prev }; ids.forEach(id => { n[id] = val }); return n })
+    for (const id of ids) {
+      try { await db.entrees.update(id, { pointe: val }) }
+      catch (e) { alert('Erreur : ' + (e.message || e)); setPointeLocal(prev => { const n = { ...prev }; delete n[id]; return n }) }
+    }
+  }
 
   function toggleSel(id) { setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n }) }
   const allFilteredSelected = filtered.length > 0 && filtered.every(r => selected.has(r.id))
@@ -155,6 +168,11 @@ export default function Entrees({ defaultMagasin = '' }) {
           <option value="">Tous les statuts</option>
           {statutList.map(s => <option key={s}>{s}</option>)}
         </select>
+        <select value={fPointe} onChange={e => { setFPointe(e.target.value); resetPage() }} className="sel">
+          <option value="">Pointées et non pointées</option>
+          <option value="non">○ Non pointées</option>
+          <option value="oui">✓ Pointées</option>
+        </select>
         <button className="btn-primary" onClick={() => setShowForm(true)}>+ Nouvelle entrée</button>
         <button className="btn-secondary" onClick={() => setShowImport(true)} title="Importer les entrées depuis un fichier CSV">📂 Importer CSV</button>
       </div>
@@ -167,6 +185,9 @@ export default function Entrees({ defaultMagasin = '' }) {
             {STATUTS.map(s => <option key={s} value={s}>{s || '— Vide —'}</option>)}
           </select>
           <button className="btn-primary" onClick={applyBulkStatut}>Appliquer</button>
+          <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--accent-border)' }} />
+          <button className="btn-secondary" onClick={() => { setPointe([...selected], true); setSelected(new Set()) }}>✓ Pointer</button>
+          <button className="btn-secondary" onClick={() => { setPointe([...selected], false); setSelected(new Set()) }}>○ Dépointer</button>
           <button className="btn-secondary" onClick={() => setSelected(new Set())}>Désélectionner</button>
         </div>
       )}
@@ -185,17 +206,18 @@ export default function Entrees({ defaultMagasin = '' }) {
                 <th>Modèle</th><th>N°</th><th>Catégorie</th>
                 <th style={{ textAlign: 'right' }}>Total</th>
                 <th style={{ textAlign: 'right' }}>PHT livré</th>
+                <th style={{ textAlign: 'center' }}>Pointé</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {paginated.length === 0 && (
-                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>
+                <tr><td colSpan={12} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>
                   {rows.length === 0 ? 'Aucune entrée — cliquez sur "+ Nouvelle entrée".' : 'Aucun résultat.'}
                 </td></tr>
               )}
-              {paginated.map(r => (
-                <tr key={r.id} style={{ background: selected.has(r.id) ? 'var(--accent-bg)' : undefined }}>
+              {paginated.map(r => { const pt = isPointe(r); return (
+                <tr key={r.id} className={pt ? 'row-pointe' : undefined} style={{ background: selected.has(r.id) ? 'var(--accent-bg)' : pt ? 'var(--surface-3)' : undefined }}>
                   <td style={{ textAlign: 'center' }}>
                     <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSel(r.id)} style={{ cursor: 'pointer', width: 15, height: 15 }} />
                   </td>
@@ -218,11 +240,18 @@ export default function Entrees({ defaultMagasin = '' }) {
                       ? r.pht.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })
                       : '—'}
                   </td>
+                  <td className="col-pointe" style={{ textAlign: 'center' }}>
+                    <button onClick={() => setPointe([r.id], !pt)} title={pt ? 'Dépointer cette ligne' : 'Pointer cette ligne'}
+                      style={{
+                        width: 28, height: 28, borderRadius: '50%', cursor: 'pointer', fontSize: 14, fontWeight: 800, lineHeight: 1,
+                        border: `2px solid ${pt ? '#16a34a' : 'var(--border)'}`, background: pt ? '#16a34a' : 'var(--surface)', color: pt ? '#fff' : 'var(--text-5)',
+                      }}>✓</button>
+                  </td>
                   <td>
                     <button className="edit-btn" onClick={() => setEditEntry(r)} title="Modifier">✏️</button>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>

@@ -311,6 +311,9 @@ body {
 
 .plan-table thead th { font-size: 10px; }
 
+/* Cahier des entrées : ligne pointée (grisée, la coche reste visible) */
+.data-table tbody tr.row-pointe td:not(.col-pointe) { opacity: 0.45; }
+
 /* Pagination */
 .pagination {
   display: flex;
