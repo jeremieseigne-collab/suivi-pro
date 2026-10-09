@@ -1,4 +1,4 @@
-import { sendMail } from './_send.js'
+import { sendMail, validateMail } from './_send.js'
 
 async function readJson(req) {
   if (req.body && typeof req.body === 'object') return req.body // Vercel parse déjà le JSON
@@ -18,7 +18,14 @@ export default async function handler(req, res) {
     return
   }
   try {
-    const { to, subject, text } = await readJson(req)
+    const { to, subject, text, dryRun } = await readJson(req)
+    // dryRun : vérifie seulement que le mail serait accepté, sans l'envoyer (contrôle après mise en ligne)
+    if (dryRun === true) {
+      validateMail({ to, subject, text })
+      res.statusCode = 200
+      res.end(JSON.stringify({ ok: true, dryRun: true }))
+      return
+    }
     await sendMail({ to, subject, text })
     res.statusCode = 200
     res.end(JSON.stringify({ ok: true }))
