@@ -15,6 +15,7 @@ import Factures         from './factures/Factures'
 import Reassort         from './reassort/Reassort'
 import StoreSelect      from './components/StoreSelect'
 import HomeScreen       from './home/HomeScreen'
+import { confirmDanger } from './components/DangerConfirm'
 import Sidebar          from './home/Sidebar'
 import { useAlerts }    from './home/useAlerts'
 import { useMediaQuery, TABLET } from './lib/useMediaQuery'
@@ -131,14 +132,12 @@ function SeasonBadge() {
   const [open,        setOpen]        = useState(false)
   const [adding,      setAdding]      = useState(false)
   const [newName,     setNewName]     = useState('')
-  const [confirmDel,  setConfirmDel]  = useState(null) // id de la saison à confirmer
   const [deleting,    setDeleting]    = useState(false)
   const inputRef = useRef(null)
 
   function openAdd(e) {
     e.stopPropagation()
     setAdding(true)
-    setConfirmDel(null)
     setNewName('')
     setTimeout(() => inputRef.current?.focus(), 50)
   }
@@ -149,26 +148,39 @@ function SeasonBadge() {
     if (id) { setSeason(id); setOpen(false); setAdding(false) }
   }
 
+  // Suppression d'une saison : efface toutes ses entrées et lignes d'achats → confirmation renforcée (nom + PIN)
   async function handleDelete(id) {
+    const s = seasons.find(x => x.id === id)
     setDeleting(true)
     try {
-      await Promise.all([
-        db.parametres.where('season').equals(id).delete(),
-        db.entrees.where('season').equals(id).delete(),
+      const [nbEntrees, nbAchats] = await Promise.all([
+        db.entrees.where('season').equals(id).toArray().then(r => r.length),
+        db.parametres.where('season').equals(id).toArray().then(r => r.length),
       ])
+      setOpen(false)
+      const ok = await confirmDanger({
+        title: `Supprimer la saison « ${s.label} » ?`,
+        message: `Seront effacées pour tous les magasins et tous les appareils :\n• ${nbEntrees} entrée(s) du Cahier\n• ${nbAchats} ligne(s) d'achats et de modèles`,
+        word: s.label,
+        pin: PIN_CODE,
+      })
+      if (!ok) return
+      await db.entrees.where('season').equals(id).delete()
+      await db.parametres.where('season').equals(id).delete()
       removeSeason(id)
+    } catch (err) {
+      alert('La suppression a échoué : ' + (err.message || err) + '\nRien n\'a été retiré de la liste des saisons.')
     } finally {
       setDeleting(false)
-      setConfirmDel(null)
     }
   }
 
-  function close() { setOpen(false); setAdding(false); setConfirmDel(null) }
+  function close() { setOpen(false); setAdding(false) }
 
   return (
     <div style={{ position: 'relative' }}>
       <button
-        onClick={() => { setOpen(o => !o); setAdding(false); setConfirmDel(null) }}
+        onClick={() => { setOpen(o => !o); setAdding(false) }}
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
           padding: '5px 12px', borderRadius: 20, border: '2px solid',
@@ -191,23 +203,6 @@ function SeasonBadge() {
           }}>
             {seasons.map(s => (
               <div key={s.id}>
-                {confirmDel === s.id ? (
-                  <div style={{ padding: '8px 12px', background: '#fef2f2', borderBottom: '1px solid #fecaca' }}>
-                    <p style={{ margin: '0 0 6px', fontSize: 12, color: '#dc2626', fontWeight: 600 }}>
-                      Supprimer « {s.label} » et toutes ses données ?
-                    </p>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => handleDelete(s.id)} disabled={deleting}
-                        style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: '#dc2626', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                        {deleting ? '⏳' : 'Supprimer'}
-                      </button>
-                      <button onClick={() => setConfirmDel(null)}
-                        style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 12 }}>
-                        Annuler
-                      </button>
-                    </div>
-                  </div>
-                ) : (
                   <div style={{ display: 'flex', alignItems: 'center' }}>
                     <button onClick={() => { setSeason(s.id); close() }}
                       style={{
@@ -225,7 +220,7 @@ function SeasonBadge() {
                     </button>
                     {seasons.length > 1 && (
                       <button
-                        onClick={e => { e.stopPropagation(); setConfirmDel(s.id); setAdding(false) }}
+                        onClick={e => { e.stopPropagation(); setAdding(false); handleDelete(s.id) }} disabled={deleting}
                         title="Supprimer cette saison"
                         style={{ padding: '10px 12px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#cbd5e1', fontSize: 14, lineHeight: 1 }}
                         onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
@@ -233,7 +228,6 @@ function SeasonBadge() {
                       >🗑</button>
                     )}
                   </div>
-                )}
               </div>
             ))}
 

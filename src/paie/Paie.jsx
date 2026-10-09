@@ -6,6 +6,7 @@ import { currentPeriode, periodeLabel, shiftPeriode, isGerant } from './constant
 import { sendPaieRecap, buildRecapText, sendModificationRequest, modificationGmailUrl } from './mail'
 import PaieForm from './PaieForm'
 
+// ⚠️ Ces adresses doivent aussi figurer dans la liste autorisée du serveur (api/_send.js → ALLOWED)
 const RECAP_EMAIL = 'marion.fouquereau@lecussan.fr'   // récap mensuel → comptable
 const ADMIN_EMAIL = 'jeremie.seigne@gmail.com'        // demandes de modification → direction
 const PIN_CODE = '2201'

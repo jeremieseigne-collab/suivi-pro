@@ -21,13 +21,20 @@ export default defineConfig(({ mode }) => {
             req.on('end', async () => {
               res.setHeader('Content-Type', 'application/json')
               try {
-                const { sendMail } = await import('./api/_send.js')
-                const { to, subject, text, replyTo } = body ? JSON.parse(body) : {}
-                await sendMail({ to, subject, text, replyTo })
+                const { sendMail, validateMail } = await import('./api/_send.js')
+                const mail = body ? JSON.parse(body) : {}
+                // En local, les mails sont seulement affichés dans le terminal (aucun envoi réel),
+                // sauf si SEND_REAL_MAIL=1 est défini dans .env.local.
+                if (process.env.SEND_REAL_MAIL === '1') {
+                  await sendMail(mail)
+                } else {
+                  const { to, subject, text } = validateMail(mail)
+                  console.log(`\n[mail NON envoyé — local]\nÀ : ${to}\nObjet : ${subject}\n\n${text}\n`)
+                }
                 res.statusCode = 200
                 res.end(JSON.stringify({ ok: true }))
               } catch (e) {
-                res.statusCode = 500
+                res.statusCode = e.status || 500
                 res.end(JSON.stringify({ ok: false, error: String(e.message || e) }))
               }
             })
