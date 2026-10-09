@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Maquette Suivi Pro</title>
+<style>
+/* ─── Charte : jetons ───────────────────────────────────────────── */
+:root{
+  --fond:#f5f5f7; --surface:#ffffff; --surface-2:#f0f0f4; --side:#ededf1;
+  --trait:rgba(60,60,67,.14); --texte:#1d1d1f; --doux:#6e6e73; --discret:#8e8e93;
+  --accent:#0a66d9; --accent-texte:#0062cc; --accent-teinte:rgba(0,122,255,.10);
+  --ok:#1f7a4d; --ok-teinte:rgba(52,199,89,.15);
+  --att:#a54a00; --att-teinte:rgba(255,149,0,.16);
+  --err:#c4000f; --err-teinte:rgba(255,59,48,.12);
+  --neutre-teinte:rgba(120,120,128,.12);
+  --ombre:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.06);
+  --rayon:14px; --rayon-champ:10px;
+  --t-meta:13px; --t-corps:15px; --t-titre:17px; --t-page:26px;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --fond:#111113; --surface:#1c1c1e; --surface-2:#2c2c2e; --side:#18181a;
+  --trait:rgba(255,255,255,.12); --texte:#f5f5f7; --doux:#a1a1a6; --discret:#8e8e93;
+  --accent:#1a6fe0; --accent-texte:#5aa9ff; --accent-teinte:rgba(10,132,255,.18);
+  --ok:#4cc38a; --ok-teinte:rgba(48,209,88,.18);
+  --att:#ffb340; --att-teinte:rgba(255,159,10,.18);
+  --err:#ff6961; --err-teinte:rgba(255,69,58,.18);
+  --neutre-teinte:rgba(160,160,170,.16);
+  --ombre:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4);
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --fond:#111113; --surface:#1c1c1e; --surface-2:#2c2c2e; --side:#18181a;
+  --trait:rgba(255,255,255,.12); --texte:#f5f5f7; --doux:#a1a1a6; --discret:#8e8e93;
+  --accent:#1a6fe0; --accent-texte:#5aa9ff; --accent-teinte:rgba(10,132,255,.18);
+  --ok:#4cc38a; --ok-teinte:rgba(48,209,88,.18); --att:#ffb340; --att-teinte:rgba(255,159,10,.18);
+  --err:#ff6961; --err-teinte:rgba(255,69,58,.18); --neutre-teinte:rgba(160,160,170,.16);
+  --ombre:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4); color-scheme:dark;
+}}
+
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font:var(--t-corps)/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;background:var(--fond);color:var(--texte)}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+input,select{font:inherit;color:inherit}
+svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ─── Composants ────────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:999px;
+  font-weight:600;background:var(--surface-2);color:var(--texte);transition:background .12s}
+.btn:hover{background:color-mix(in srgb,var(--texte) 9%,var(--surface-2))}
+.btn-prim{background:var(--accent);color:#fff}
+.btn-prim:hover{background:color-mix(in srgb,#000 12%,var(--accent))}
+.btn-ghost{background:transparent;color:var(--accent-texte)}
+.btn-ghost:hover{background:var(--accent-teinte)}
+.btn-danger{background:var(--err-teinte);color:var(--err)}
+.btn-bloc{width:100%}
+.btn:disabled{opacity:.4;cursor:default}
+.icone-btn{width:44px;height:44px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;color:var(--doux)}
+.icone-btn:hover{background:var(--surface-2);color:var(--texte)}
+
+.champ{width:100%;min-height:44px;padding:10px 14px;border-radius:var(--rayon-champ);border:1px solid transparent;background:var(--surface-2);outline:none}
+.champ:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-teinte);background:var(--surface)}
+.etiquette{display:block;font-size:var(--t-meta);color:var(--doux);margin:0 0 6px;font-weight:500}
+
+.puce{display:inline-flex;align-items:center;gap:6px;font-size:var(--t-meta);color:var(--doux);white-space:nowrap}
+.puce::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--discret)}
+.puce.ok::before{background:var(--ok)} .puce.att::before{background:#ff9500} .puce.err::before{background:#ff3b30} .puce.info::before{background:#007aff}
+
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 0}
+.chips::-webkit-scrollbar{display:none}
+.chip{min-height:36px;padding:0 14px;border-radius:999px;background:var(--surface-2);font-size:14px;font-weight:500;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed="true"]{background:var(--texte);color:var(--fond)}
+.chip .n{opacity:.6;font-variant-numeric:tabular-nums}
+
+.segment{display:inline-flex;background:var(--surface-2);border-radius:999px;padding:3px;gap:2px}
+.segment button{min-height:36px;padding:0 16px;border-radius:999px;font-size:14px;font-weight:600;color:var(--doux)}
+.segment button[aria-pressed="true"]{background:var(--surface);color:var(--texte);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+.liste{background:var(--surface);border-radius:var(--rayon);overflow:hidden}
+.ligne{display:flex;align-items:center;gap:12px;min-height:64px;padding:10px 8px 10px 16px;position:relative;width:100%;text-align:left}
+.ligne + .ligne::before{content:"";position:absolute;top:0;left:16px;right:0;border-top:1px solid var(--trait)}
+button.ligne:hover,.ligne.cliquable:hover{background:color-mix(in srgb,var(--texte) 3%,transparent)}
+.ligne[aria-current="true"]{background:var(--accent-teinte)}
+.ligne .txt{flex:1;min-width:0}
+.ligne .t1{font-weight:600;overflow-wrap:anywhere}
+@media (min-width:768px){.ligne .t1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.ligne .t1 span{font-weight:400;color:var(--doux)}
+.ligne .t2{font-size:var(--t-meta);color:var(--doux);margin-top:2px;font-variant-numeric:tabular-nums}
+.groupe-titre{font-size:var(--t-meta);font-weight:600;color:var(--doux);margin:22px 4px 8px;text-transform:none}
+
+.pointer{width:44px;height:44px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.pointer span{width:26px;height:26px;border-radius:50%;border:2px solid var(--trait);display:flex;align-items:center;justify-content:center}
+.pointer[aria-pressed="true"] span{background:var(--ok);border-color:var(--ok);color:#fff}
+.pointer svg{width:16px;height:16px;stroke-width:2.6;opacity:0}
+.pointer[aria-pressed="true"] svg{opacity:1}
+
+.barre{height:6px;border-radius:3px;background:var(--neutre-teinte);overflow:hidden}
+.barre i{display:block;height:100%;background:#007aff;border-radius:3px}
+.barre i.ok{background:var(--ok)}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));background:var(--texte);color:var(--fond);
+  border-radius:14px;padding:12px 8px 12px 16px;display:none;align-items:center;gap:12px;max-width:min(520px,calc(100% - 24px));font-size:14px;z-index:60;box-shadow:var(--ombre)}
+.toast.visible{display:flex}
+.toast button{color:#4da3ff;font-weight:600;min-height:36px;padding:0 10px;border-radius:8px}
+:root[data-theme="dark"] .toast button{color:#0062cc}
+
+.encart{border-radius:12px;padding:12px 14px;font-size:14px;display:flex;gap:10px;align-items:flex-start}
+.encart.att{background:var(--att-teinte);color:var(--att)}
+.encart.info{background:var(--accent-teinte);color:var(--accent-texte)}
+.encart.err{background:var(--err-teinte);color:var(--err)}
+.vide{text-align:center;color:var(--doux);padding:48px 16px}
+
+/* ─── Structure : barre latérale (≥ 768 px) / barre d'onglets (téléphone) ── */
+.app{display:flex;min-height:100%}
+.side{display:none}
+.principal{flex:1;min-width:0;display:flex;flex-direction:column}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(16px);
+  border-top:1px solid var(--trait);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 6px;font-size:11px;font-weight:500;color:var(--discret);min-height:56px}
+.tabbar button[aria-current="page"]{color:var(--accent-texte)}
+.tabbar svg.i{width:24px;height:24px}
+.page{padding:12px 16px calc(96px + env(safe-area-inset-bottom));max-width:980px;width:100%;margin:0 auto}
+.entete{display:flex;align-items:center;gap:8px;min-height:52px;margin-bottom:8px}
+.entete h1{font-size:var(--t-page);font-weight:700;letter-spacing:-.02em;margin:0;flex:1;line-height:1.15}
+.entete .sous{font-size:var(--t-meta);color:var(--doux)}
+
+@media (min-width:768px){
+  .side{display:flex;flex-direction:column;width:248px;flex-shrink:0;background:var(--side);border-right:1px solid var(--trait);
+    position:sticky;top:0;height:100vh;padding:14px 10px;overflow-y:auto}
+  .tabbar{display:none}
+  .page{padding:20px 28px 40px}
+  .toast{bottom:24px}
+  .action-flottante{display:none !important}
+}
+.marque-app{display:flex;align-items:center;gap:10px;padding:4px 8px 14px;font-weight:700;font-size:16px}
+.marque-app b{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px}
+.magasin-btn{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:0 12px;border-radius:10px;background:var(--surface);font-weight:600;font-size:14px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.magasin-btn .flex{flex:1;text-align:left}
+.nav-titre{font-size:12px;font-weight:600;color:var(--discret);padding:14px 12px 4px}
+.nav{display:flex;align-items:center;gap:12px;width:100%;min-height:40px;padding:0 12px;border-radius:9px;font-size:15px;color:var(--texte);text-align:left}
+.nav svg.i{width:20px;height:20px;color:var(--accent-texte)}
+.nav:hover{background:color-mix(in srgb,var(--texte) 6%,transparent)}
+.nav[aria-current="page"]{background:color-mix(in srgb,var(--texte) 10%,transparent);font-weight:600}
+.nav .badge{margin-left:auto;font-size:12px;color:var(--doux);font-variant-numeric:tabular-nums}
+.side .bas{margin-top:auto;padding-top:12px;border-top:1px solid var(--trait);display:flex;align-items:center;gap:10px;font-size:13px;color:var(--doux);padding-left:8px}
+
+/* Action principale sur téléphone : en bas à droite, au-dessus des onglets (pouce) */
+.action-flottante{position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:41;box-shadow:0 6px 18px rgba(0,98,204,.35)}
+
+/* ─── Cahier : liste + panneau (direction A, grand écran) ───────── */
+.cahier{display:flex;gap:20px;align-items:flex-start}
+.cahier .col-liste{flex:1;min-width:0}
+.panneau{display:none}
+@media (min-width:1100px){
+  body[data-dir="A"] .panneau.ouvert{display:block;width:400px;flex-shrink:0;position:sticky;top:20px;background:var(--surface);border-radius:var(--rayon);
+    box-shadow:var(--ombre);max-height:calc(100vh - 40px);overflow-y:auto}
+  body[data-dir="A"] .page.large{max-width:1320px}
+}
+.feuille-fond{position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:50;display:none}
+.feuille-fond.ouvert{display:block}
+.feuille{position:fixed;z-index:51;background:var(--surface);display:none;flex-direction:column;inset:0}
+.feuille.ouvert{display:flex}
+@media (min-width:768px){
+  .feuille{inset:auto;left:50%;top:50%;transform:translate(-50%,-50%);width:min(640px,calc(100% - 48px));max-height:calc(100% - 48px);border-radius:18px;box-shadow:var(--ombre)}
+}
+.feuille-entete{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 16px;border-bottom:1px solid var(--trait);min-height:56px}
+.feuille-entete h2{flex:1;margin:0;font-size:var(--t-titre);font-weight:700}
+.feuille-corps{flex:1;overflow-y:auto;padding:16px}
+.feuille-pied{border-top:1px solid var(--trait);padding:12px 16px calc(12px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:12px;background:var(--surface)}
+.feuille-pied .total{flex:1;font-size:14px;color:var(--doux);line-height:1.3}
+.feuille-pied .total b{display:block;color:var(--texte);font-size:var(--t-titre)}
+
+/* Grille de pointures « au tapotement » */
+.pointures{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:8px}
+.pt{position:relative;min-height:64px;border-radius:12px;background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-weight:600;font-size:16px;user-select:none;-webkit-user-select:none;touch-action:manipulation;border:2px solid transparent}
+.pt small{font-size:11px;font-weight:500;color:var(--discret);margin-top:1px}
+.pt .qte{position:absolute;top:-6px;right:-6px;min-width:24px;height:24px;border-radius:12px;background:var(--accent);color:#fff;font-size:13px;display:none;align-items:center;justify-content:center;padding:0 6px}
+.pt.plein{background:var(--accent-teinte);border-color:var(--accent)}
+.pt.plein .qte{display:flex}
+.pt.retour.plein{background:var(--att-teinte);border-color:#ff9500}
+.pt.retour .qte{background:#d97706}
+
+.resume{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:14px;color:var(--doux);align-items:center}
+.resume b{color:var(--texte);font-weight:600}
+.lien{color:var(--accent-texte);font-weight:600;font-size:14px;min-height:36px;padding:0 4px}
+
+.carte{background:var(--surface);border-radius:var(--rayon);padding:16px}
+.grille-accueil{display:grid;gap:20px}
+@media (min-width:1000px){.grille-accueil{grid-template-columns:1.4fr 1fr}}
+.action-rapide{display:flex;gap:10px;flex-wrap:wrap}
+
+.connexion{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.connexion .carte{width:100%;max-width:380px;padding:28px 24px;box-shadow:var(--ombre)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-accueil" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-entrees" viewBox="0 0 24 24"><path d="M21 8v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8"/><path d="M1.5 8h21L19 3H5z"/><path d="M10 12h4"/></symbol>
+  <symbol id="i-clients" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6"/><path d="M16 4a4 4 0 0 1 0 8M19 15c2 .8 3 2.6 3 6"/></symbol>
+  <symbol id="i-reassort" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+  <symbol id="i-sav" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></symbol>
+  <symbol id="i-commande" viewBox="0 0 24 24"><path d="M6 2h12l2 5H4z"/><path d="M4 7h16v14H4z"/><path d="M9 11a3 3 0 0 0 6 0"/></symbol>
+  <symbol id="i-repertoire" viewBox="0 0 24 24"><path d="M5 3h13a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5z"/><circle cx="12" cy="10" r="3"/><path d="M7.5 17c.8-2 2.4-3 4.5-3s3.7 1 4.5 3M3 7h3M3 12h3M3 17h3"/></symbol>
+  <symbol id="i-planning" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></symbol>
+  <symbol id="i-paie" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h5"/></symbol>
+  <symbol id="i-achats" viewBox="0 0 24 24"><path d="M3 3h2l2.5 12h11L21 7H6.2"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/></symbol>
+  <symbol id="i-reglement" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></symbol>
+  <symbol id="i-facture" viewBox="0 0 24 24"><path d="M5 2h14v20l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h3"/></symbol>
+  <symbol id="i-reglages" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-bas" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-retour" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-fermer" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-ajout" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
+  <symbol id="i-cherche" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-filtre" viewBox="0 0 24 24"><path d="M3 5h18M6 12h12M10 19h4"/></symbol>
+  <symbol id="i-magasin" viewBox="0 0 24 24"><path d="M3 9 5 3h14l2 6"/><path d="M3 9h18v1a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"/><path d="M5 13v8h14v-8"/></symbol>
+  <symbol id="i-cadenas" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+</svg>
+
+<div id="racine"></div>
+<div class="toast" id="toast" role="status"><span id="toast-txt"></span><button id="toast-annuler">Annuler</button></div>
+
+<script>
+// ─── Données fictives (réalistes) ────────────────────────────────
+const SIZES = {
+  F: ['35','35.5','36','36.5','37','37.5','38','38.5','39','39.5','40','40.5','41','42'],
+  H: ['39','40','40.5','41','41.5','42','42.5','43','43.5','44','45','46'],
+  DP:['35-36','37-38','39-40','41-42','43-44','45-46'],
+}
+const GRILLE_NOM = { F:'Femme', H:'Homme', DP:'Double pointure' }
+const MARQUES = {
+  'Palladium': { modeles: {
+    'PAMPA HI, Mojave desert': { grille:'F', attendu:{'36':1,'37':1,'38':2,'39':2,'40':1,'41':1}, recu:{'36':1,'38':1}, prix:34.15 },
+    'PALLA ACE CVS, Star white': { grille:'F', attendu:{'36':1,'37':1,'38':2,'39':2,'40':1,'41':1}, recu:{}, prix:31.60 },
+    'PAMPA OX WILD, Leopard': { grille:'H', attendu:{'41':1,'42':2,'43':2,'44':1}, recu:{}, prix:36.90 },
+  }},
+  'Sebago': { modeles: {
+    'Docksides, Brown honey': { grille:'H', attendu:{'40':1,'41':1,'42':2,'43':2,'44':1,'45':1}, recu:{}, prix:62.50 },
+    'Jacklyn, Pink white': { grille:'F', attendu:{'36':1,'37':1,'38':2,'39':1,'40':1}, recu:{'37':1}, prix:58.00 },
+  }},
+  'Crocs': { modeles: {
+    'Classic Clog, Black': { grille:'DP', attendu:{'37-38':2,'39-40':3,'41-42':3,'43-44':2}, recu:{}, prix:21.40 },
+  }},
+  'Fluchos': { modeles: {
+    'F0047, Burdeos': { grille:'H', attendu:{'41':1,'42':1,'43':1,'44':1,'45':1}, recu:{'41':1,'42':1,'43':1,'44':1,'45':1}, prix:49.86 },
+  }},
+}
+const AUJ = '10/10/2026'
+let ENTREES = [
+  { id:7, date:'10/10/2026', marque:'Palladium', modele:'PAMPA HI, Mojave desert', numero:'3', paires:2, montant:68.30, statut:'Enregistré', pointe:false, sizes:{'36':1,'38':1}, grille:'F' },
+  { id:6, date:'10/10/2026', marque:'Sebago', modele:'Jacklyn, Pink white', numero:'2', paires:1, montant:58.00, statut:'Imp. étiquettes', pointe:false, sizes:{'37':1}, grille:'F' },
+  { id:5, date:'09/10/2026', marque:'Fluchos', modele:'F0047, Burdeos', numero:'3', paires:5, montant:249.30, statut:'Enregistré', pointe:true, sizes:{'41':1,'42':1,'43':1,'44':1,'45':1}, grille:'H' },
+  { id:4, date:'09/10/2026', marque:'Miss Elastic', modele:'75050-67-05, Negro', numero:'', paires:-1, montant:-29.90, statut:'Retour', pointe:false, sizes:{'38':-1}, grille:'F' },
+  { id:3, date:'08/10/2026', marque:'Birkenstock', modele:'Arizona, Taupe', numero:'3', paires:6, montant:212.40, statut:'Réassort', pointe:true, sizes:{'38':2,'39':2,'40':2}, grille:'F' },
+  { id:2, date:'08/10/2026', marque:'Rains', modele:'Hilo weekend bag, Navy', numero:'1', paires:2, montant:53.00, statut:'Enregistré', pointe:true, sizes:{'TU':2}, grille:'F' },
+]
+const LIVRAISONS = [
+  { marque:'Palladium', recu:2, attendu:22, modeles:[['PAMPA HI, Mojave desert',2,8],['PALLA ACE CVS, Star white',0,8],['PAMPA OX WILD, Leopard',0,6]] },
+  { marque:'Sebago', recu:1, attendu:14, modeles:[['Docksides, Brown honey',0,8],['Jacklyn, Pink white',1,6]] },
+  { marque:'Fluchos', recu:5, attendu:5, modeles:[['F0047, Burdeos',5,5]] },
+  { marque:'Crocs', recu:0, attendu:10, modeles:[['Classic Clog, Black',0,10]] },
+  { marque:'Birkenstock', recu:30, attendu:36, modeles:[['Arizona, Taupe',18,20],['Boston, Mocha',12,16]] },
+]
+const STATUTS = ['Imp. étiquettes','Enregistré','Réassort','Retour']
+const STATUT_CLASSE = { 'Imp. étiquettes':'att', 'Enregistré':'ok', 'Réassort':'info', 'Retour':'err', '':'' }
+
+// ─── État ────────────────────────────────────────────────────────
+const P = new URLSearchParams(location.search)
+const etat = {
+  ecran: P.get('screen') || 'accueil',
+  dir: P.get('dir') || 'A',
+  onglet: 'entrees',            // entrees | livraisons
+  filtre: 'toutes',             // toutes | apointer | retours
+  recherche: '',
+  selection: null,              // id entrée affichée dans le panneau
+  saisieOuverte: P.get('screen') === 'saisie',
+  livOuverte: null,
+  plusOuvert: false,
+}
+if (etat.ecran === 'saisie') etat.ecran = 'entrees'
+document.body.dataset.dir = etat.dir
+if (P.get('theme')) document.documentElement.dataset.theme = P.get('theme')
+
+let form = nouveauForm('Palladium')
+if (P.get('demo')) { form.modele = 'PAMPA HI, Mojave desert'; form.qte = { '38':1, '39':2, '40':1 } }  // pour les captures
+function nouveauForm(marque, garder = {}) {
+  return { mode:'reception', marque, modele:null, grille: garder.grille || 'F', numero: garder.numero ?? '3', date: AUJ, qte:{}, retirer:false, choixMarque:false }
+}
+
+const fmtEur = n => n.toLocaleString('fr-FR', { style:'currency', currency:'EUR' })
+const ic = (id, extra='') => `<svg class="i" ${extra}><use href="#i-${id}"/></svg>`
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
+
+// ─── Rendu ───────────────────────────────────────────────────────
+function rendu() {
+  const r = document.getElementById('racine')
+  if (etat.ecran === 'login') { r.innerHTML = vueConnexion(); return }
+  r.innerHTML = `
+  <div class="app">
+    ${barreLaterale()}
+    <div class="principal">
+      ${etat.ecran === 'accueil' ? vueAccueil() : etat.ecran === 'entrees' ? vueCahier() : vueAutre()}
+    </div>
+  </div>
+  ${barreOnglets()}
+  ${etat.ecran === 'entrees' && etat.onglet === 'entrees' ? `<button class="btn btn-prim action-flottante" data-act="nouvelle">${ic('ajout')} Entrée</button>` : ''}
+  ${vueSaisie()}
+  ${vuePlus()}`
+  // Détail ouvert en feuille (téléphone / direction B) : on le tient à jour
+  const fd = document.querySelector('.feuille.detail')
+  if (fd) { if (etat.selection) fd.innerHTML = contenuDetail(); else document.querySelectorAll('.feuille.detail,.feuille-fond.detail').forEach(x => x.remove()) }
+}
+
+const NAV = [
+  { id:'accueil', label:'Accueil', icone:'accueil' },
+  { id:'entrees', label:'Cahier des entrées', icone:'entrees', badge:() => ENTREES.filter(e => !e.pointe).length || '' },
+  { id:'reassorts', label:'Réassorts', icone:'reassort' },
+  { id:'commandes', label:'Commandes clients', icone:'commande' },
+  { id:'sav', label:'SAV & défectueux', icone:'sav' },
+  { id:'repertoire', label:'Répertoire', icone:'repertoire' },
+  { titre:'Équipe' },
+  { id:'planning', label:'Planning', icone:'planning' },
+  { id:'paie', label:'Éléments de paie', icone:'paie' },
+  { titre:'Direction' },
+  { id:'achats', label:'Achats & assortiment', icone:'achats' },
+  { id:'reglement', label:'Plan de règlement', icone:'reglement' },
+  { id:'factures', label:'Factures', icone:'facture' },
+  { id:'reglages', label:'Réglages', icone:'reglages' },
+]
+function barreLaterale() {
+  return `<nav class="side" aria-label="Menu">
+    <div class="marque-app"><b>S</b> Suivi Pro</div>
+    <button class="magasin-btn">${ic('magasin','style="width:18px;height:18px;color:var(--doux)"')}<span class="flex">Bailly Albi</span>${ic('bas','style="width:16px;height:16px;color:var(--doux)"')}</button>
+    ${NAV.map(n => n.titre ? `<div class="nav-titre">${n.titre}</div>` :
+      `<button class="nav" data-nav="${n.id}" ${etat.ecran === n.id ? 'aria-current="page"' : ''}>${ic(n.icone)}<span>${n.label}</span>${n.badge && n.badge() ? `<span class="badge" title="à pointer">${n.badge()}</span>` : ''}</button>`).join('')}
+    <div class="bas"><span style="flex:1">Bailly Albi</span><button class="lien" data-nav="login">Se déconnecter</button></div>
+  </nav>`
+}
+function barreOnglets() {
+  const T = [['accueil','Accueil','accueil'],['entrees','Entrées','entrees'],['clients','Clients','clients'],['reassorts','Réassorts','reassort'],['plus','Plus','plus']]
+  return `<nav class="tabbar" aria-label="Onglets">${T.map(([id,l,i]) =>
+    `<button data-nav="${id}" ${etat.ecran === id || (id==='plus' && etat.plusOuvert) ? 'aria-current="page"' : ''}>${ic(i)}<span>${l}</span></button>`).join('')}</nav>`
+}
+function vuePlus() {
+  if (!etat.plusOuvert) return ''
+  const items = NAV.filter(n => n.id && !['accueil','entrees','reassorts','commandes','sav'].includes(n.id))
+  return `<div class="feuille-fond ouvert" data-act="fermer-plus"></div>
+  <div class="feuille ouvert" role="dialog" aria-label="Plus" style="top:auto;max-height:80%;border-radius:18px 18px 0 0">
+    <div class="feuille-entete"><h2>Plus</h2><button class="icone-btn" data-act="fermer-plus" aria-label="Fermer">${ic('fermer')}</button></div>
+    <div class="feuille-corps"><div class="liste">${items.map(n => `<button class="ligne" data-nav="${n.id}">${ic(n.icone,'style="color:var(--accent-texte)"')}<span class="txt"><span class="t1">${n.label}</span></span>${ic('chevron','style="color:var(--discret)"')}</button>`).join('')}
+      <button class="ligne" data-nav="login">${ic('magasin','style="color:var(--accent-texte)"')}<span class="txt"><span class="t1">Bailly Albi</span><div class="t2">Changer de magasin · Se déconnecter</div></span></button></div></div>
+  </div>`
+}
+
+function vueConnexion() {
+  return `<div class="connexion"><form class="carte" onsubmit="event.preventDefault();aller('accueil')">
+    <div class="marque-app" style="justify-content:center;padding-bottom:6px"><b>S</b> Suivi Pro</div>
+    <p style="text-align:center;color:var(--doux);margin:0 0 22px;font-size:14px">Connectez cet appareil avec le compte du magasin. Il restera connecté.</p>
+    <label class="etiquette" for="mail">Adresse du magasin</label>
+    <input class="champ" id="mail" type="email" value="bshoes.albi@gmail.com" autocomplete="username">
+    <label class="etiquette" for="mdp" style="margin-top:14px">Mot de passe</label>
+    <input class="champ" id="mdp" type="password" value="motdepasse" autocomplete="current-password">
+    <button class="btn btn-prim btn-bloc" style="margin-top:22px">Se connecter</button>
+    <div style="text-align:center;margin-top:10px"><button type="button" class="lien">Mot de passe oublié ?</button></div>
+  </form></div>`
+}
+
+function vueAccueil() {
+  const aFaire = [
+    ['commande','3 commandes clients reçues','Clients à prévenir', 'att'],
+    ['sav','2 dossiers SAV sans réponse','Mail envoyé il y a plus de 7 jours','att'],
+    ['reassort','1 réassort en retard','Palladium · demandé il y a 16 jours','err'],
+    ['entrees','2 entrées à pointer','Reçues aujourd\'hui','info'],
+  ]
+  return `<main class="page">
+    <div class="entete"><div style="flex:1"><div class="sous">Samedi 10 octobre · Bailly Albi</div><h1>Bonjour</h1></div></div>
+    <div class="action-rapide" style="margin:4px 0 6px">
+      <button class="btn btn-prim" data-act="nouvelle-depuis-accueil">${ic('ajout')} Saisir une entrée</button>
+      <button class="btn">${ic('commande','style="width:20px;height:20px"')} Commande client</button>
+      <button class="btn">${ic('sav','style="width:20px;height:20px"')} Dossier SAV</button>
+    </div>
+    <div class="grille-accueil">
+      <section>
+        <h2 class="groupe-titre">À faire aujourd'hui</h2>
+        <div class="liste">${aFaire.map(([i,t,s,c]) => `<button class="ligne" ${i==='entrees'?'data-nav="entrees"':''}>
+          <span style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--${c==='info'?'accent':c}-teinte);color:var(--${c==='info'?'accent-texte':c})">${ic(i,'style="width:20px;height:20px"')}</span>
+          <span class="txt"><span class="t1">${t}</span><div class="t2">${s}</div></span>${ic('chevron','style="color:var(--discret)"')}</button>`).join('')}</div>
+        <h2 class="groupe-titre">Livraisons attendues cette semaine</h2>
+        <div class="liste">
+          <div class="ligne"><span class="txt"><span class="t1">Crocs</span><div class="t2">10 paires · attendues mardi</div></span></div>
+          <div class="ligne"><span class="txt"><span class="t1">Sebago <span>· reliquat</span></span><div class="t2">13 paires restantes</div></span></div>
+        </div>
+      </section>
+      <section>
+        <h2 class="groupe-titre">Agenda du jour</h2>
+        <div class="liste">
+          <div class="ligne"><span style="width:4px;align-self:stretch;border-radius:2px;background:#007aff"></span><span class="txt"><span class="t1">Passage représentant Clarks</span><div class="t2">10:30 · Bailly Albi</div></span></div>
+          <div class="ligne"><span style="width:4px;align-self:stretch;border-radius:2px;background:#af52de"></span><span class="txt"><span class="t1">Inventaire sandales</span><div class="t2">Toute la journée · 3 magasins</div></span></div>
+        </div>
+        <div style="text-align:right;margin-top:6px"><button class="lien">Voir l'agenda</button></div>
+      </section>
+    </div>
+  </main>`
+}
+
+function vueAutre() {
+  const n = NAV.find(x => x.id === etat.ecran) || { label: etat.ecran === 'clients' ? 'Clients' : 'Écran' }
+  return `<main class="page"><div class="entete"><h1>${n.label}</h1></div>
+    <div class="carte vide">Écran non maquetté à cette étape.<br>Il suivra la même charte (en-tête, listes, boutons).</div></main>`
+}
+
+// ─── Cahier des entrées ─────────────────────────────────────────
+function filtrees() {
+  const q = etat.recherche.trim().toLowerCase()
+  return ENTREES.filter(e =>
+    (etat.filtre === 'toutes' || (etat.filtre === 'apointer' && !e.pointe) || (etat.filtre === 'retours' && e.statut === 'Retour')) &&
+    (!q || `${e.marque} ${e.modele} ${e.numero}`.toLowerCase().includes(q)))
+}
+function vueCahier() {
+  const aPointer = ENTREES.filter(e => !e.pointe).length
+  const panneauOuvert = etat.dir === 'A' && (etat.selection || etat.saisieOuverte) && etat.onglet === 'entrees'
+  return `<main class="page large">
+    <div class="entete">
+      <h1>Cahier des entrées</h1>
+      <button class="btn btn-prim" data-act="nouvelle" style="display:var(--btn-entete,none)">${ic('ajout')} Nouvelle entrée</button>
+    </div>
+    <style>@media(min-width:768px){:root{--btn-entete:inline-flex}}</style>
+    <div class="segment" role="group" aria-label="Vue" style="margin-bottom:14px">
+      <button data-onglet="entrees" aria-pressed="${etat.onglet==='entrees'}">Entrées</button>
+      <button data-onglet="livraisons" aria-pressed="${etat.onglet==='livraisons'}">Suivi des livraisons</button>
+    </div>
+    ${etat.onglet === 'entrees' ? `
+    <div class="cahier">
+      <div class="col-liste">
+        <div style="position:relative;margin-bottom:10px">
+          <span style="position:absolute;left:12px;top:11px;color:var(--discret)">${ic('cherche','style="width:20px;height:20px"')}</span>
+          <input class="champ" id="recherche" placeholder="Marque, modèle ou N°" value="${esc(etat.recherche)}" style="padding-left:40px" aria-label="Rechercher">
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="chips" style="flex:1">
+            <button class="chip" data-filtre="toutes" aria-pressed="${etat.filtre==='toutes'}">Toutes</button>
+            <button class="chip" data-filtre="apointer" aria-pressed="${etat.filtre==='apointer'}">À pointer <span class="n">${aPointer}</span></button>
+            <button class="chip" data-filtre="retours" aria-pressed="${etat.filtre==='retours'}">Retours</button>
+          </div>
+          <button class="chip" title="Filtres">${ic('filtre','style="width:18px;height:18px"')} Filtres</button>
+        </div>
+        ${listeEntrees()}
+      </div>
+      <aside class="panneau ${panneauOuvert ? 'ouvert' : ''}" aria-label="Détail">${panneauOuvert ? (etat.saisieOuverte ? contenuSaisie(true) : contenuDetail()) : ''}</aside>
+    </div>` : vueLivraisons()}
+  </main>`
+}
+function listeEntrees() {
+  const rows = filtrees()
+  if (!rows.length) return `<div class="vide">Aucune entrée ne correspond.<br><button class="lien" data-filtre="toutes">Tout afficher</button></div>`
+  const parJour = {}
+  rows.forEach(e => (parJour[e.date] ||= []).push(e))
+  return Object.entries(parJour).map(([d, es]) => `
+    <h2 class="groupe-titre">${d === AUJ ? "Aujourd'hui" : d === '09/10/2026' ? 'Hier' : 'Jeudi 8 octobre'}</h2>
+    <div class="liste">${es.map(e => `
+      <div class="ligne cliquable" data-ouvrir="${e.id}" ${etat.selection === e.id ? 'aria-current="true"' : ''} style="cursor:pointer">
+        <div class="txt">
+          <div class="t1">${esc(e.marque)} <span>· ${esc(e.modele)}</span></div>
+          <div class="t2">${e.numero ? 'N° ' + e.numero + ' · ' : ''}${e.paires} paire${Math.abs(e.paires) > 1 ? 's' : ''} · ${fmtEur(e.montant)}</div>
+        </div>
+        <span class="puce ${STATUT_CLASSE[e.statut]}">${e.statut || 'Sans statut'}</span>
+        <button class="pointer" data-pointer="${e.id}" aria-pressed="${e.pointe}" aria-label="${e.pointe ? 'Pointée' : 'Pointer'}"><span>${ic('check')}</span></button>
+      </div>`).join('')}
+    </div>`).join('')
+}
+function contenuDetail() {
+  const e = ENTREES.find(x => x.id === etat.selection); if (!e) return ''
+  const tailles = Object.entries(e.sizes)
+  return `<div class="feuille-entete"><h2>${esc(e.marque)}</h2><button class="icone-btn" data-act="fermer-detail" aria-label="Fermer">${ic('fermer')}</button></div>
+  <div class="feuille-corps">
+    <div style="font-weight:600">${esc(e.modele)}</div>
+    <div class="resume" style="margin:6px 0 16px">${e.date}${e.numero ? ' · N° ' + e.numero : ''} · <b>${e.paires} paire${Math.abs(e.paires)>1?'s':''}</b> · <b>${fmtEur(e.montant)}</b></div>
+    <span class="etiquette">Statut</span>
+    <div class="chips" style="flex-wrap:wrap;margin-bottom:18px">${STATUTS.map(s => `<button class="chip" data-statut="${s}" aria-pressed="${e.statut===s}">${s}</button>`).join('')}</div>
+    <span class="etiquette">Pointures (${GRILLE_NOM[e.grille]})</span>
+    <div class="pointures" style="margin-bottom:18px">${tailles.map(([t,q]) => `<div class="pt plein ${q<0?'retour':''}" style="min-height:52px">${t}<span class="qte">${q}</span></div>`).join('')}</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn" data-pointer="${e.id}">${e.pointe ? 'Dépointer' : ic('check','style="width:18px;height:18px"') + ' Pointer'}</button>
+      <button class="btn">Modifier</button>
+      <button class="btn btn-ghost" style="color:var(--err)">Supprimer</button>
+    </div>
+  </div>`
+}
+function vueLivraisons() {
+  return `<div class="chips" style="margin-bottom:4px"><button class="chip" aria-pressed="true">En cours</button><button class="chip">Complètes</button><button class="chip">Non reçues</button></div>
+  <h2 class="groupe-titre">Bailly Albi · Hiver 2026</h2>
+  <div class="liste">${LIVRAISONS.map((l, i) => {
+    const pc = Math.round(l.recu / l.attendu * 100), ouvert = etat.livOuverte === i
+    return `<button class="ligne" data-liv="${i}" aria-expanded="${ouvert}">
+      <span class="txt"><span class="t1">${l.marque}</span>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:6px"><div class="barre" style="flex:1"><i class="${pc>=100?'ok':''}" style="width:${pc}%"></i></div>
+        <span class="t2" style="margin:0;min-width:110px;text-align:right">${l.recu} / ${l.attendu} paires · ${pc} %</span></div></span>
+      ${ic(ouvert ? 'bas' : 'chevron','style="color:var(--discret)"')}</button>
+      ${ouvert ? l.modeles.map(([m, r, a]) => `<div class="ligne" style="padding-left:32px;min-height:52px"><span class="txt"><span class="t1" style="font-weight:500">${m}</span>
+        <div class="t2">${r} / ${a} reçues${r < a ? ' · reste ' + (a - r) : ' · complet'}</div></span></div>`).join('') : ''}`
+  }).join('')}</div>`
+}
+
+// ─── Saisie d'une entrée ────────────────────────────────────────
+function vueSaisie() {
+  if (!etat.saisieOuverte) return ''
+  if (etat.dir === 'A' && window.innerWidth >= 1100 && etat.ecran === 'entrees' && etat.onglet === 'entrees') return ''  // affichée dans le panneau
+  return `<div class="feuille-fond ouvert" data-act="fermer-saisie"></div><div class="feuille ouvert" role="dialog" aria-label="Nouvelle entrée">${contenuSaisie(false)}</div>`
+}
+function contenuSaisie(dansPanneau) {
+  const m = MARQUES[form.marque]
+  const mod = form.modele ? m.modeles[form.modele] : null
+  const grille = SIZES[form.grille]
+  const total = Object.values(form.qte).reduce((s, v) => s + v, 0)
+  const prix = mod ? mod.prix : 0
+  const retour = form.mode === 'retour'
+  const reste = t => mod ? Math.max(0, (mod.attendu[t] || 0) - (mod.recu[t] || 0)) : 0
+  return `
+  <div class="feuille-entete">
+    <h2>Nouvelle entrée</h2>
+    <button class="icone-btn" data-act="fermer-saisie" aria-label="Fermer">${ic('fermer')}</button>
+  </div>
+  <div class="feuille-corps">
+    <div class="segment" role="group" aria-label="Type" style="margin-bottom:16px">
+      <button data-mode="reception" aria-pressed="${!retour}">Réception</button>
+      <button data-mode="retour" aria-pressed="${retour}">Retour</button>
+    </div>
+    ${retour ? `<div class="encart att" style="margin-bottom:14px">Retour : les paires seront déduites du reçu et un avoir sera attendu.</div>` : ''}
+
+    <span class="etiquette">Marque</span>
+    ${form.choixMarque ? `<div class="liste" style="background:var(--surface-2);margin-bottom:14px">${Object.keys(MARQUES).map(k => `<button class="ligne" data-marque="${k}" style="min-height:48px"><span class="txt"><span class="t1">${k}</span></span>${k===form.marque?ic('check','style="color:var(--accent-texte)"'):''}</button>`).join('')}</div>`
+      : `<button class="champ" data-act="choisir-marque" style="display:flex;align-items:center;justify-content:space-between;text-align:left;margin-bottom:14px;font-weight:600">${form.marque}${ic('bas','style="width:18px;height:18px;color:var(--discret)"')}</button>`}
+
+    <span class="etiquette">Modèle ${mod ? '' : '— touchez le modèle reçu'}</span>
+    ${mod ? `<button class="champ" data-act="changer-modele" style="display:flex;align-items:center;justify-content:space-between;text-align:left;margin-bottom:10px"><span><b>${esc(form.modele)}</b></span><span class="lien" style="min-height:0">Changer</span></button>`
+      : `<div class="liste" style="background:var(--surface-2);margin-bottom:14px">${Object.entries(m.modeles).map(([k, v]) => {
+          const att = Object.values(v.attendu).reduce((s,x)=>s+x,0), rec = Object.values(v.recu).reduce((s,x)=>s+x,0)
+          return `<button class="ligne" data-modele="${esc(k)}" style="min-height:56px"><span class="txt"><span class="t1">${esc(k)}</span><div class="t2">${GRILLE_NOM[v.grille]} · reste à recevoir ${att - rec} / ${att}</div></span>${ic('chevron','style="color:var(--discret)"')}</button>` }).join('')}</div>`}
+
+    ${mod ? `
+    <div class="resume" style="margin-bottom:14px">
+      <span>Date <b>${form.date === AUJ ? "aujourd'hui" : form.date}</b></span>
+      <span>N° <b>${form.numero || '—'}</b></span>
+      <span>Grille <b>${GRILLE_NOM[form.grille]}</b></span>
+      <button class="lien">Modifier</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+      <span class="etiquette" style="margin:0">Touchez une pointure pour ${form.retirer ? 'retirer' : 'ajouter'} une paire</span>
+      <div class="segment" role="group" aria-label="Ajouter ou retirer">
+        <button data-act="mode-ajout" aria-pressed="${!form.retirer}" aria-label="Ajouter">+</button>
+        <button data-act="mode-retrait" aria-pressed="${form.retirer}" aria-label="Retirer">−</button>
+      </div>
+    </div>
+    <div class="pointures">${grille.map(t => {
+      const q = form.qte[t] || 0, r = reste(t)
+      const info = retour || !mod ? '&nbsp;' : r - q > 0 ? 'reste ' + (r - q) : q > r ? (r ? '+' + (q - r) + ' en plus' : 'non attendu') : '&nbsp;'
+      return `<button class="pt ${q ? 'plein' : ''} ${retour ? 'retour' : ''}" data-pt="${t}">${t}<small>${info}</small><span class="qte">${retour ? '−' : ''}${q}</span></button>`
+    }).join('')}</div>
+    ${!retour ? `<div style="margin-top:10px"><button class="lien" data-act="tout-reste">Tout le reste à recevoir</button>${total ? ` · <button class="lien" data-act="vider">Vider</button>` : ''}</div>` : ''}` : ''}
+  </div>
+  <div class="feuille-pied">
+    <div class="total"><b>${retour ? '−' : ''}${total} paire${total > 1 ? 's' : ''}</b>${prix ? (retour ? 'avoir ' : '') + fmtEur(prix * total) : 'Choisissez un modèle'}</div>
+    <button class="btn btn-prim" data-act="enregistrer" ${total && mod ? '' : 'disabled'}>Enregistrer</button>
+  </div>`
+}
+
+// ─── Actions ────────────────────────────────────────────────────
+function aller(e) {
+  if (e === 'plus') { etat.plusOuvert = true; rendu(); return }
+  if (e === 'clients') e = 'commandes'
+  etat.ecran = e; etat.plusOuvert = false; etat.saisieOuverte = false; etat.selection = null; rendu(); window.scrollTo(0, 0)
+}
+let dernierAjout = null
+function toast(txt, annuler) {
+  const t = document.getElementById('toast')
+  document.getElementById('toast-txt').textContent = txt
+  const b = document.getElementById('toast-annuler')
+  b.style.display = annuler ? '' : 'none'
+  b.onclick = () => { annuler(); t.classList.remove('visible') }
+  t.classList.add('visible')
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('visible'), 5000)
+}
+document.addEventListener('click', ev => {
+  const el = ev.target.closest('[data-nav],[data-act],[data-onglet],[data-filtre],[data-pointer],[data-ouvrir],[data-liv],[data-mode],[data-marque],[data-modele],[data-pt],[data-statut]')
+  if (!el) return
+  const d = el.dataset
+  if (d.nav) return aller(d.nav)
+  if (d.pointer) { ev.stopPropagation(); const e = ENTREES.find(x => x.id == d.pointer); e.pointe = !e.pointe; rendu(); return toast(e.pointe ? 'Entrée pointée' : 'Entrée dépointée', () => { e.pointe = !e.pointe; rendu() }) }
+  if (d.onglet) { etat.onglet = d.onglet; return rendu() }
+  if (d.filtre) { etat.filtre = d.filtre; return rendu() }
+  if (d.ouvrir) {
+    etat.selection = +d.ouvrir; etat.saisieOuverte = false
+    if (!(etat.dir === 'A' && window.innerWidth >= 1100)) return ouvrirDetailFeuille()
+    return rendu()
+  }
+  if (d.liv) { etat.livOuverte = etat.livOuverte === +d.liv ? null : +d.liv; return rendu() }
+  if (d.statut) { const e = ENTREES.find(x => x.id === etat.selection); e.statut = d.statut; rendu(); if (document.querySelector('.feuille.detail')) ouvrirDetailFeuille(); return toast('Statut : ' + d.statut) }
+  if (d.mode) { form.mode = d.mode; form.qte = {}; return rendu() }
+  if (d.marque) { form = nouveauForm(d.marque, { numero: form.numero }); return rendu() }
+  if (d.modele) { form.modele = d.modele; form.grille = MARQUES[form.marque].modeles[d.modele].grille; form.qte = {}; return rendu() }
+  if (d.pt) { const q = form.qte[d.pt] || 0; const n = form.retirer ? Math.max(0, q - 1) : q + 1; if (n) form.qte[d.pt] = n; else delete form.qte[d.pt]; return rendu() }
+  switch (d.act) {
+    case 'nouvelle': case 'nouvelle-depuis-accueil':
+      etat.ecran = 'entrees'; etat.onglet = 'entrees'; etat.selection = null; etat.saisieOuverte = true; return rendu()
+    case 'fermer-saisie': etat.saisieOuverte = false; return rendu()
+    case 'fermer-detail': etat.selection = null; document.querySelectorAll('.feuille.detail,.feuille-fond.detail').forEach(x => x.remove()); return rendu()
+    case 'fermer-plus': etat.plusOuvert = false; return rendu()
+    case 'choisir-marque': form.choixMarque = true; return rendu()
+    case 'changer-modele': form.modele = null; form.qte = {}; return rendu()
+    case 'mode-ajout': form.retirer = false; return rendu()
+    case 'mode-retrait': form.retirer = true; return rendu()
+    case 'vider': form.qte = {}; return rendu()
+    case 'tout-reste': { const mod = MARQUES[form.marque].modeles[form.modele]; form.qte = {}; Object.keys(mod.attendu).forEach(t => { const r = (mod.attendu[t]||0) - (mod.recu[t]||0); if (r > 0) form.qte[t] = r }); return rendu() }
+    case 'enregistrer': {
+      const mod = MARQUES[form.marque].modeles[form.modele], retour = form.mode === 'retour'
+      const tot = Object.values(form.qte).reduce((s, v) => s + v, 0) * (retour ? -1 : 1)
+      const sizes = Object.fromEntries(Object.entries(form.qte).map(([k, v]) => [k, retour ? -v : v]))
+      const e = { id: Date.now(), date: AUJ, marque: form.marque, modele: form.modele, numero: form.numero, paires: tot, montant: Math.round(mod.prix * tot * 100) / 100, statut: retour ? 'Retour' : '', pointe: false, sizes, grille: form.grille }
+      ENTREES.unshift(e)
+      if (!retour) Object.entries(form.qte).forEach(([k, v]) => mod.recu[k] = (mod.recu[k] || 0) + v)
+      form = nouveauForm(form.marque, { numero: form.numero, grille: form.grille })   // on garde marque, N°, date et grille : carton suivant
+      rendu()
+      return toast(`Enregistrée : ${e.marque} · ${e.modele}, ${e.paires} paire${Math.abs(e.paires) > 1 ? 's' : ''}`, () => { ENTREES = ENTREES.filter(x => x.id !== e.id); rendu() })
+    }
+  }
+})
+function ouvrirDetailFeuille() {
+  document.querySelectorAll('.feuille.detail,.feuille-fond.detail').forEach(x => x.remove())
+  const fond = document.createElement('div'); fond.className = 'feuille-fond ouvert detail'; fond.dataset.act = 'fermer-detail'
+  const f = document.createElement('div'); f.className = 'feuille ouvert detail'; f.setAttribute('role', 'dialog'); f.innerHTML = contenuDetail()
+  document.body.append(fond, f)
+}
+document.addEventListener('input', ev => {
+  if (ev.target.id === 'recherche') {
+    etat.recherche = ev.target.value
+    const pos = ev.target.selectionStart; rendu()
+    const r = document.getElementById('recherche'); r.focus(); r.setSelectionRange(pos, pos)
+  }
+})
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape') { etat.saisieOuverte = false; etat.plusOuvert = false; etat.selection = null; document.querySelectorAll('.feuille.detail,.feuille-fond.detail').forEach(x => x.remove()); rendu() } })
+window.addEventListener('resize', () => rendu())
+rendu()
+</script>
+</body>
+</html>

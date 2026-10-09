@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Charte Suivi Pro</title>
+<style>
+:root{
+  --fond:#f5f5f7; --surface:#ffffff; --surface-2:#f0f0f4; --side:#ededf1;
+  --trait:rgba(60,60,67,.14); --texte:#1d1d1f; --doux:#6e6e73; --discret:#8e8e93;
+  --accent:#0a66d9; --accent-texte:#0062cc; --accent-teinte:rgba(0,122,255,.10);
+  --ok:#1f7a4d; --ok-teinte:rgba(52,199,89,.15); --att:#a54a00; --att-teinte:rgba(255,149,0,.16);
+  --err:#c4000f; --err-teinte:rgba(255,59,48,.12); --neutre-teinte:rgba(120,120,128,.12);
+  --ombre:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.06); color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --fond:#111113; --surface:#1c1c1e; --surface-2:#2c2c2e; --side:#18181a;
+  --trait:rgba(255,255,255,.12); --texte:#f5f5f7; --doux:#a1a1a6; --discret:#8e8e93;
+  --accent:#1a6fe0; --accent-texte:#5aa9ff; --accent-teinte:rgba(10,132,255,.18);
+  --ok:#4cc38a; --ok-teinte:rgba(48,209,88,.18); --att:#ffb340; --att-teinte:rgba(255,159,10,.18);
+  --err:#ff6961; --err-teinte:rgba(255,69,58,.18); --neutre-teinte:rgba(160,160,170,.16);
+  --ombre:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4); color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:var(--fond);color:var(--texte)}
+main{max-width:980px;margin:0 auto;padding:24px 16px 60px}
+h1{font-size:26px;letter-spacing:-.02em;margin:0 0 4px}
+h2{font-size:17px;margin:36px 0 12px}
+p.doux,.doux{color:var(--doux)}
+.bloc{background:var(--surface);border-radius:14px;padding:18px}
+.rangee{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.nuancier{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.nuance{border-radius:12px;overflow:hidden;background:var(--surface);border:1px solid var(--trait);font-size:13px}
+.nuance i{display:block;height:56px}
+.nuance div{padding:8px 10px}
+.nuance b{display:block;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td{padding:10px 8px;border-bottom:1px solid var(--trait);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td:first-child{width:34%;color:var(--doux)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:999px;font:inherit;font-weight:600;border:0;cursor:pointer;background:var(--surface-2);color:var(--texte)}
+.btn-prim{background:var(--accent);color:#fff}.btn-ghost{background:transparent;color:var(--accent-texte)}.btn-danger{background:var(--err-teinte);color:var(--err)}
+.btn:disabled{opacity:.4}
+.champ{width:100%;min-height:44px;padding:10px 14px;border-radius:10px;border:1px solid transparent;background:var(--surface-2);font:inherit;color:inherit;outline:none}
+.champ.focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-teinte);background:var(--surface)}
+.champ.erreur{border-color:var(--err)}
+.etiquette{display:block;font-size:13px;color:var(--doux);margin:0 0 6px;font-weight:500}
+.aide-err{color:var(--err);font-size:13px;margin-top:6px}
+.puce{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--doux)}
+.puce::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--discret)}
+.puce.ok::before{background:var(--ok)}.puce.att::before{background:#ff9500}.puce.err::before{background:#ff3b30}.puce.info::before{background:#007aff}
+.chip{min-height:36px;padding:0 14px;border-radius:999px;background:var(--surface-2);font:inherit;font-size:14px;font-weight:500;border:0;color:inherit}
+.chip.on{background:var(--texte);color:var(--fond)}
+.segment{display:inline-flex;background:var(--surface-2);border-radius:999px;padding:3px}
+.segment span{min-height:36px;padding:0 16px;border-radius:999px;font-size:14px;font-weight:600;color:var(--doux);display:flex;align-items:center}
+.segment span.on{background:var(--surface);color:var(--texte);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.liste{background:var(--surface);border-radius:14px;overflow:hidden;border:1px solid var(--trait)}
+.ligne{display:flex;align-items:center;gap:12px;min-height:64px;padding:10px 16px;position:relative}
+.ligne+.ligne::before{content:"";position:absolute;top:0;left:16px;right:0;border-top:1px solid var(--trait)}
+.ligne .txt{flex:1;min-width:0}.t1{font-weight:600}.t1 span{font-weight:400;color:var(--doux)}.t2{font-size:13px;color:var(--doux)}
+.encart{border-radius:12px;padding:12px 14px;font-size:14px}
+.encart.att{background:var(--att-teinte);color:var(--att)}.encart.info{background:var(--accent-teinte);color:var(--accent-texte)}.encart.err{background:var(--err-teinte);color:var(--err)}.encart.ok{background:var(--ok-teinte);color:var(--ok)}
+.toast{display:inline-flex;align-items:center;gap:12px;background:var(--texte);color:var(--fond);border-radius:14px;padding:12px 8px 12px 16px;font-size:14px}
+.toast b{color:#4da3ff}
+.cols{display:grid;gap:16px}
+@media(min-width:760px){.cols{grid-template-columns:1fr 1fr}}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div><h1>Charte de l'outil</h1><p class="doux" style="margin:0">Sobre, lisible toute la journée, utilisable au doigt. Inspirée d'Iris (palette Mail / Fichiers), sans effets.</p></div>
+  <div class="rangee"><button class="btn" id="theme">Voir en sombre</button><a class="btn btn-ghost" href="index.html">← Maquettes</a></div>
+</header>
+
+<h2>Principes</h2>
+<div class="bloc"><table>
+  <tr><td>Un écran = une tâche</td><td>Une seule action principale (bouton bleu) par écran. Le reste en boutons gris ou en liens.</td></tr>
+  <tr><td>Au doigt</td><td>Toute zone cliquable fait au moins 44 px de haut. Rien ne dépend du survol de la souris.</td></tr>
+  <tr><td>Téléphone d'abord</td><td>Chaque écran magasin est conçu à 390 px de large, puis élargi. Jamais de tableau à faire défiler de côté : des listes.</td></tr>
+  <tr><td>Une main</td><td>Sur téléphone, l'action principale et la navigation sont en bas de l'écran, à portée du pouce.</td></tr>
+  <tr><td>Pas d'animation</td><td>Seulement un léger changement de couleur au toucher. Pas de mouvements, de fondus ni de rebonds.</td></tr>
+  <tr><td>Clair / sombre</td><td>L'outil suit le réglage de l'appareil. Toutes les couleurs passent par la charte (aucune couleur « en dur »).</td></tr>
+  <tr><td>Icônes</td><td>Icônes au trait, toujours accompagnées d'un texte dans les menus (plus d'emojis).</td></tr>
+</table></div>
+
+<h2>Couleurs</h2>
+<div class="nuancier">
+  <div class="nuance"><i style="background:var(--fond)"></i><div><b>Fond</b>arrière-plan des pages</div></div>
+  <div class="nuance"><i style="background:var(--surface)"></i><div><b>Surface</b>listes, fenêtres</div></div>
+  <div class="nuance"><i style="background:var(--surface-2)"></i><div><b>Surface 2</b>champs, boutons gris</div></div>
+  <div class="nuance"><i style="background:var(--side)"></i><div><b>Menu</b>barre latérale</div></div>
+  <div class="nuance"><i style="background:var(--texte)"></i><div><b>Texte</b>principal</div></div>
+  <div class="nuance"><i style="background:var(--doux)"></i><div><b>Texte doux</b>infos secondaires</div></div>
+  <div class="nuance"><i style="background:var(--accent)"></i><div><b>Bleu action</b>bouton principal, liens</div></div>
+  <div class="nuance"><i style="background:var(--ok)"></i><div><b>Vert</b>fait, pointé, complet</div></div>
+  <div class="nuance"><i style="background:#ff9500"></i><div><b>Orange</b>à faire, en attente</div></div>
+  <div class="nuance"><i style="background:#ff3b30"></i><div><b>Rouge</b>problème, retour, suppression</div></div>
+</div>
+<p class="doux" style="font-size:13px">Les couleurs d'état ont toujours la même signification dans toutes les apps (fin des « Clôturé » vert ici et violet là).</p>
+
+<h2>Typographie</h2>
+<div class="bloc">
+  <div style="font-size:26px;font-weight:700;letter-spacing:-.02em">Titre de page — 26</div>
+  <div style="font-size:17px;font-weight:700;margin-top:8px">Titre de fenêtre / section — 17</div>
+  <div style="font-size:15px;margin-top:8px">Texte courant — 15. Police système de l'appareil (San Francisco sur Apple, Segoe sur Windows).</div>
+  <div style="font-size:13px;color:var(--doux);margin-top:8px">Information secondaire, dates, quantités — 13</div>
+  <p class="doux" style="font-size:13px;margin:12px 0 0">Trois tailles seulement (+ le titre de page). Chiffres alignés dans les listes.</p>
+</div>
+
+<h2>Boutons</h2>
+<div class="bloc rangee">
+  <button class="btn btn-prim">Enregistrer</button>
+  <button class="btn">Annuler</button>
+  <button class="btn btn-ghost">Modifier</button>
+  <button class="btn btn-danger">Supprimer</button>
+  <button class="btn btn-prim" disabled>Inactif</button>
+</div>
+<p class="doux" style="font-size:13px">Bleu = l'action principale (une par écran). Gris = action secondaire. Lien bleu = action discrète. Rouge pâle = destructive, toujours confirmée.</p>
+
+<h2>Listes (à la place des tableaux)</h2>
+<div class="liste">
+  <div class="ligne"><div class="txt"><div class="t1">Palladium <span>· PAMPA HI, Mojave desert</span></div><div class="t2">N° 3 · 8 paires · 273,20 €</div></div><span class="puce ok">Enregistré</span></div>
+  <div class="ligne"><div class="txt"><div class="t1">Sebago <span>· Jacklyn, Pink white</span></div><div class="t2">N° 2 · 1 paire · 58,00 €</div></div><span class="puce att">Imp. étiquettes</span></div>
+  <div class="ligne"><div class="txt"><div class="t1">Miss Elastic <span>· 75050, Negro</span></div><div class="t2">−1 paire · −29,90 €</div></div><span class="puce err">Retour</span></div>
+</div>
+<p class="doux" style="font-size:13px">Ligne : titre en gras, détail en gris dessous, état à droite (point de couleur + mot). Sur ordinateur, les colonnes s'alignent mais la liste reste lisible à toutes les tailles.</p>
+
+<h2>Filtres et choix</h2>
+<div class="bloc">
+  <div class="rangee"><button class="chip on">Toutes</button><button class="chip">À pointer 2</button><button class="chip">Retours</button></div>
+  <div style="margin-top:14px"><div class="segment"><span class="on">Entrées</span><span>Suivi des livraisons</span></div></div>
+  <p class="doux" style="font-size:13px;margin:12px 0 0">Pastilles = filtres rapides (2 ou 3 maximum visibles, les autres dans « Filtres »). Bascule = changer de vue dans un même écran.</p>
+</div>
+
+<h2>Formulaires</h2>
+<div class="bloc cols">
+  <div><label class="etiquette">Marque</label><input class="champ" value="Palladium"></div>
+  <div><label class="etiquette">Recherche (actif)</label><input class="champ focus" placeholder="Marque, modèle ou N°"></div>
+  <div><label class="etiquette">N° de commande</label><input class="champ erreur" value="3a"><div class="aide-err">Le N° ne doit contenir que des chiffres.</div></div>
+  <div><label class="etiquette">Champ facultatif</label><input class="champ" placeholder="Note (facultatif)"></div>
+</div>
+<p class="doux" style="font-size:13px">Étiquette au-dessus du champ, erreur expliquée juste dessous, en français simple. Les champs déjà connus (magasin, date du jour, salarié habituel) sont pré-remplis et repliés.</p>
+
+<h2>Messages</h2>
+<div class="cols">
+  <div class="encart ok">Entrée enregistrée.</div>
+  <div class="encart info">Astuce : touchez une pointure pour ajouter une paire.</div>
+  <div class="encart att">Retour : les paires seront déduites du reçu.</div>
+  <div class="encart err">Connexion perdue. Vos saisies ne sont pas enregistrées : réessayez.</div>
+</div>
+<div style="margin-top:14px"><span class="toast">Entrée pointée <b>Annuler</b></span></div>
+<p class="doux" style="font-size:13px">Confirmation courte en bas de l'écran pendant 5 s, avec « Annuler » quand c'est possible (au lieu de « Êtes-vous sûr ? » à chaque action). Les vraies suppressions gardent une confirmation.</p>
+
+<h2>Navigation</h2>
+<div class="bloc"><table>
+  <tr><td>Ordinateur et tablette</td><td>Barre latérale à gauche : magasin en haut, puis Accueil, Cahier des entrées, Réassorts, Commandes clients, SAV & défectueux, Répertoire ; « Équipe » (Planning, Paie) ; « Direction » (Achats & assortiment, Plan de règlement, Factures, Réglages).</td></tr>
+  <tr><td>Téléphone</td><td>5 onglets en bas : Accueil, Entrées, Clients, Réassorts, Plus.</td></tr>
+  <tr><td>Retour</td><td>Le bouton « retour » du navigateur et le geste retour du téléphone fonctionnent.</td></tr>
+</table></div>
+</main>
+<script>
+const b = document.getElementById('theme'), r = document.documentElement
+if (matchMedia('(prefers-color-scheme: dark)').matches) { r.dataset.theme = 'dark'; b.textContent = 'Voir en clair' }
+b.onclick = () => { const d = r.dataset.theme !== 'dark'; r.dataset.theme = d ? 'dark' : 'light'; b.textContent = d ? 'Voir en clair' : 'Voir en sombre' }
+</script>
+</body>
+</html>

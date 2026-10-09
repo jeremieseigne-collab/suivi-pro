@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquettes refonte</title>
+<style>
+:root{--fond:#e9e9ee;--surface:#fff;--texte:#1d1d1f;--doux:#6e6e73;--trait:rgba(60,60,67,.16);--accent:#0a66d9;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--fond:#0b0b0d;--surface:#1c1c1e;--texte:#f5f5f7;--doux:#a1a1a6;--trait:rgba(255,255,255,.14);--accent:#1a6fe0;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;background:var(--fond);color:var(--texte)}
+header{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--trait);padding:10px 16px;display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
+header h1{font-size:16px;margin:0 8px 0 0}
+.grp{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.grp > span{color:var(--doux);font-size:12px;font-weight:600;margin-right:2px}
+.grp button{font:inherit;border:0;border-radius:999px;padding:7px 12px;background:rgba(120,120,128,.14);color:var(--texte);cursor:pointer;min-height:34px}
+.grp button[aria-pressed="true"]{background:var(--accent);color:#fff}
+a{color:var(--accent);font-weight:600;text-decoration:none}
+.scene{display:flex;justify-content:center;padding:24px 16px 40px}
+.cadre{background:var(--surface);border-radius:28px;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden;border:8px solid #1d1d1f;transform-origin:top center}
+.cadre.ordi{border-radius:12px;border-width:4px}
+iframe{display:block;border:0;background:#fff}
+.note{max-width:900px;margin:0 auto 0;padding:14px 16px 0;color:var(--doux);font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Maquettes — refonte</h1>
+  <div class="grp" id="g-ecran"><span>Écran</span>
+    <button data-v="login">Connexion</button><button data-v="accueil">Accueil</button><button data-v="entrees">Cahier des entrées</button><button data-v="saisie">Saisie d'une entrée</button></div>
+  <div class="grp" id="g-app"><span>Appareil</span>
+    <button data-v="tel">Téléphone</button><button data-v="tab">Tablette</button><button data-v="ordi">Ordinateur</button></div>
+  <div class="grp" id="g-dir"><span>Direction</span>
+    <button data-v="A" title="Liste à gauche, détail et saisie dans un panneau à droite (comme Mail)">A · Liste + panneau</button><button data-v="B" title="Liste pleine largeur, détail et saisie dans une fenêtre">B · Liste + fenêtre</button></div>
+  <div class="grp" id="g-theme"><span>Thème</span><button data-v="light">Clair</button><button data-v="dark">Sombre</button></div>
+  <a href="charte.html">Voir la charte →</a>
+</header>
+<p class="note" id="note"></p>
+<div class="scene"><div class="cadre" id="cadre"><iframe id="f" title="Maquette"></iframe></div></div>
+<script>
+const APP = { tel:[390,844], tab:[820,1180], ordi:[1440,900] }
+const NOTES = {
+  login:"Connexion : une seule fois par appareil, avec le compte du magasin. L'appareil reste ensuite connecté.",
+  accueil:"Accueil « ma journée » : seulement ce qui demande une action aujourd'hui, et les 3 actions les plus fréquentes en un toucher.",
+  entrees:"Cahier des entrées : liste groupée par jour, recherche par marque/modèle/N°, pointage en un toucher (rond à droite). Touchez une ligne pour le détail et le statut.",
+  saisie:"Saisie : on touche la pointure pour ajouter une paire (« − » pour corriger). Après « Enregistrer », la marque, le N°, la date et la grille restent : on enchaîne le carton suivant.",
+}
+const s = { ecran:'entrees', app:'tel', dir:'A', theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light' }
+try { Object.assign(s, JSON.parse(localStorage.getItem('maquettes') || '{}')) } catch {}
+function maj() {
+  try { localStorage.setItem('maquettes', JSON.stringify(s)) } catch {}
+  for (const [g, k] of [['g-ecran','ecran'],['g-app','app'],['g-dir','dir'],['g-theme','theme']])
+    document.querySelectorAll('#' + g + ' button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === s[k]))
+  const [w, h] = APP[s.app], f = document.getElementById('f'), c = document.getElementById('cadre')
+  f.width = w; f.height = h
+  c.className = 'cadre' + (s.app === 'ordi' ? ' ordi' : '')
+  const dispo = document.documentElement.clientWidth - 48
+  const echelle = Math.min(1, dispo / (w + 16))
+  c.style.transform = `scale(${echelle})`
+  c.style.marginBottom = `${-(h + 16) * (1 - echelle)}px`
+  f.src = `app.html?screen=${s.ecran}&dir=${s.dir}&theme=${s.theme}`
+  document.getElementById('note').textContent = NOTES[s.ecran] + (s.app === 'ordi' ? (s.dir === 'A' ? ' — Direction A : le détail et la saisie s\'ouvrent dans un panneau à droite, la liste reste visible.' : ' — Direction B : le détail et la saisie s\'ouvrent dans une fenêtre au centre.') : '')
+}
+document.querySelector('header').addEventListener('click', e => {
+  const b = e.target.closest('.grp button'); if (!b) return
+  s[{ 'g-ecran':'ecran','g-app':'app','g-dir':'dir','g-theme':'theme' }[b.parentElement.id]] = b.dataset.v
+  maj()
+})
+addEventListener('resize', maj)
+maj()
+</script>
+</body>
+</html>
