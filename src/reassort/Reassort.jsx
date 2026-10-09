@@ -121,7 +121,7 @@ function TopRow({ t, onOpen, onAdvance, onReception, onNewReassort }) {
   else if (t.dernierRecu) pointures = <span style={{ color: 'var(--text-4)' }}>reçu {fmtTailles(t.dernierRecu.sizes)}</span>
   const stop = fn => e => { e.stopPropagation(); fn() }
   return (
-    <tr onClick={() => onOpen(t)} style={{ cursor: 'pointer', opacity: t.archive ? 0.55 : 1 }} title="Voir le détail">
+    <tr onClick={() => onOpen(t)} style={{ cursor: 'pointer', opacity: t.archive || t.termine ? 0.5 : 1 }} title="Voir le détail">
       <td style={{ whiteSpace: 'nowrap', fontSize: 13, color: 'var(--text-3)', boxShadow: `inset 4px 0 0 ${couleurLigne(t)}` }}>{fmtDate(t.dateActivite)}</td>
       <td><strong>{t.marque}</strong></td>
       <td>{t.modele}{t.numero && <span style={{ color: 'var(--text-4)', fontSize: 12 }}> N°{t.numero}</span>}</td>
@@ -153,7 +153,7 @@ function TopRowMobile({ t, onOpen }) {
   return (
     <div onClick={() => onOpen(t)} style={{
       padding: '10px 12px', borderBottom: '1px solid var(--surface-3)', cursor: 'pointer',
-      boxShadow: `inset 4px 0 0 ${couleurLigne(t)}`, opacity: t.archive ? 0.55 : 1,
+      boxShadow: `inset 4px 0 0 ${couleurLigne(t)}`, opacity: t.archive || t.termine ? 0.5 : 1,
       display: 'flex', flexDirection: 'column', gap: 4,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
