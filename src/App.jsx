@@ -39,7 +39,7 @@ function ThemeToggle() {
   return (
     <button onClick={toggle} title={dark ? 'Passer en mode clair' : 'Passer en mode sombre'}
       style={{
-        position: 'fixed', bottom: 20, right: 20, zIndex: 3000,
+        position: 'fixed', bottom: 20, right: 20, zIndex: 90,
         width: 46, height: 46, borderRadius: '50%', cursor: 'pointer',
         border: '1px solid var(--border)', background: 'var(--surface)',
         fontSize: 20, boxShadow: '0 4px 14px var(--shadow-lg)',
@@ -422,7 +422,7 @@ function Root() {
       {tablet && view !== 'home' && !drawer && (
         <button onClick={() => setDrawer(true)} aria-label="Menu" title="Menu"
           style={{
-            position: 'fixed', bottom: 20, left: 16, zIndex: 3000, width: 46, height: 46, borderRadius: '50%', cursor: 'pointer',
+            position: 'fixed', bottom: 20, left: 16, zIndex: 90, width: 46, height: 46, borderRadius: '50%', cursor: 'pointer',
             border: '1px solid var(--border)', background: 'var(--surface)', fontSize: 20, color: 'var(--text-2)', boxShadow: '0 4px 14px var(--shadow-lg)',
           }}>☰</button>
       )}
