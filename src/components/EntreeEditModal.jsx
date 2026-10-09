@@ -140,7 +140,7 @@ export default function EntreeEditModal({ entry, onClose, onSaved }) {
     if (!form.magasin) { setError('Magasin obligatoire'); return }
     if (!form.marque)  { setError('Marque obligatoire');  return }
     if (total === 0)   { setError('Aucune quantité saisie'); return }
-    if (horsGrille.length) { setError(`Pointure(s) ${horsGrille.map(([s]) => s).join(', ')} absente(s) de la grille ${type?.label} : revenez à la grille d'origine ou mettez-les à 0.`); return }
+    if (horsGrille.length) { setError(`Pointure(s) ${horsGrille.map(([s]) => s).join(', ')} absente(s) de la grille ${type?.label} : revenez à la grille d'origine ou retirez-les (bouton au-dessus de la grille).`); return }
 
     setSaving(true)
     setError('')
@@ -323,7 +323,18 @@ export default function EntreeEditModal({ entry, onClose, onSaved }) {
               </div>
               {horsGrille.length > 0 && (
                 <div className="form-error" style={{ marginBottom: 10 }}>
-                  ⚠️ Cette grille ne contient pas : {horsGrille.map(([s, v]) => `${s} (${v})`).join(', ')}. Revenez à la grille d'origine pour ne pas perdre ces quantités.
+                  ⚠️ La grille {type?.label} ne contient pas : {horsGrille.map(([s, v]) => `${s} (${v} paire${Math.abs(v) > 1 ? 's' : ''})`).join(', ')}.
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                    {SIZE_TYPES[entry.typeKey || 'F'] && form.typeKey !== (entry.typeKey || 'F') && (
+                      <button type="button" className="btn-secondary" onClick={() => set('typeKey', entry.typeKey || 'F')}>
+                        ↩ Revenir à la grille {SIZE_TYPES[entry.typeKey || 'F'].label}
+                      </button>
+                    )}
+                    <button type="button" className="btn-secondary"
+                      onClick={() => setSizesMap(m => Object.fromEntries(Object.entries(m).filter(([sz]) => gridSizes.includes(sz))))}>
+                      Retirer ces pointures (puis ressaisir ci-dessous)
+                    </button>
+                  </div>
                 </div>
               )}
               <div className="size-grid">
