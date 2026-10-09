@@ -12,12 +12,13 @@ const MAX_SUBJECT = 200
 const MAX_TEXT    = 20000
 
 // Vérifie la demande ; lève une erreur avec status 400 si elle n'est pas autorisée.
+// Même message quel que soit le motif, pour ne rien révéler des destinataires autorisés.
 export function validateMail({ to, subject, text } = {}) {
   const fail = msg => { const e = new Error(msg); e.status = 400; throw e }
-  if (typeof to !== 'string' || typeof subject !== 'string' || typeof text !== 'string') fail('Demande invalide')
-  if (subject.length > MAX_SUBJECT || text.length > MAX_TEXT || /[\r\n]/.test(subject)) fail('Demande invalide')
+  if (typeof to !== 'string' || typeof subject !== 'string' || typeof text !== 'string') fail('Demande refusée')
+  if (subject.length > MAX_SUBJECT || text.length > MAX_TEXT || /[\r\n]/.test(subject)) fail('Demande refusée')
   const rule = ALLOWED.find(r => r.to === to.trim().toLowerCase() && subject.startsWith(r.subjectPrefix))
-  if (!rule) fail('Envoi non autorisé')
+  if (!rule) fail('Demande refusée')
   return { to: rule.to, subject, text }
 }
 
