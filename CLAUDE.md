@@ -77,7 +77,8 @@ Schémas Postgres (à exécuter dans le SQL Editor Supabase) : `supabase-schema.
 
 Conséquences importantes :
 - **Mapping camelCase ↔ snake_case** : le code JS utilise `fournisseurId`, `magasinId`, `modelesBySeason`, `typeKey`, `recuN1`, `objectifN`, `reelN`, `modeReglement` ; la base utilise les colonnes snake_case. La conversion se fait **uniquement** dans `db/index.js` via `FIELD_TO_DB`. Si tu ajoutes une colonne dont le nom JS diffère du nom SQL, **ajoute-la à `FIELD_TO_DB`**.
-- Beaucoup de filtres composés (`.and(fn)`, `.filter(fn)`, `where({...}).filter(fn)`) **chargent les lignes puis filtrent en JS** — ce ne sont pas des requêtes SQL pures. Les requêtes sont plafonnées à `.limit(50000)`.
+- Beaucoup de filtres composés (`.and(fn)`, `.filter(fn)`, `where({...}).filter(fn)`) **chargent les lignes puis filtrent en JS** — ce ne sont pas des requêtes SQL pures.
+- ⚠️ **Supabase plafonne chaque réponse à 1000 lignes** (`max-rows`), quel que soit `.limit()`. Toutes les lectures multi-lignes passent donc par `fetchAll()` (pagination `.range()` par 1000, tri stable `.order('id')`). Ne jamais réintroduire un `select` multi-lignes direct sans pagination (bug constaté : une saison > 1000 entrées → nouvelles entrées absentes du Suivi livraisons).
 - `toCollection().modify()` est un no-op (vestige des migrations Dexie).
 
 ### Temps réel via `useLiveQuery`

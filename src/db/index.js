@@ -47,6 +47,19 @@ function dbf(table, field) {
   return FIELD_TO_DB[table]?.[field] || field
 }
 
+// Supabase/PostgREST plafonne chaque réponse à 1000 lignes (max-rows) : on lit par pages.
+// build() doit renvoyer une requête triée (ordre stable entre les pages).
+const PAGE = 1000
+async function fetchAll(build) {
+  const out = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await build().range(from, from + PAGE - 1)
+    if (error) throw error
+    out.push(...(data || []))
+    if (!data || data.length < PAGE) return out
+  }
+}
+
 // ─── Classe de compatibilité Dexie → Supabase ─────────────────────────────────
 class SupabaseTable {
   constructor(name) { this.name = name }
@@ -57,8 +70,7 @@ class SupabaseTable {
   _f(field) { return dbf(this.name, field) }
 
   async toArray() {
-    const { data, error } = await supabase.from(this.name).select('*').limit(50000)
-    if (error) throw error
+    const data = await fetchAll(() => supabase.from(this.name).select('*').order('id'))
     return this._fromAll(data)
   }
 
@@ -72,8 +84,7 @@ class SupabaseTable {
     const self = this
     return {
       toArray: async () => {
-        const { data, error } = await supabase.from(self.name).select('*').order(self._f(field)).limit(50000)
-        if (error) throw error
+        const data = await fetchAll(() => supabase.from(self.name).select('*').order(self._f(field)).order('id'))
         return self._fromAll(data)
       }
     }
@@ -88,17 +99,19 @@ class SupabaseTable {
       return {
         filter: (fn) => ({
           first: async () => {
-            let q = supabase.from(self.name).select('*').limit(50000)
-            for (const [k, v] of Object.entries(conditions)) q = q.eq(self._f(k), v)
-            const { data, error } = await q
-            if (error) throw error
+            const data = await fetchAll(() => {
+              let q = supabase.from(self.name).select('*').order('id')
+              for (const [k, v] of Object.entries(conditions)) q = q.eq(self._f(k), v)
+              return q
+            })
             return self._fromAll(data).find(fn)
           },
           toArray: async () => {
-            let q = supabase.from(self.name).select('*').limit(50000)
-            for (const [k, v] of Object.entries(conditions)) q = q.eq(self._f(k), v)
-            const { data, error } = await q
-            if (error) throw error
+            const data = await fetchAll(() => {
+              let q = supabase.from(self.name).select('*').order('id')
+              for (const [k, v] of Object.entries(conditions)) q = q.eq(self._f(k), v)
+              return q
+            })
             return self._fromAll(data).filter(fn)
           }
         })
@@ -111,8 +124,7 @@ class SupabaseTable {
     return {
       equals: (value) => ({
         toArray: async () => {
-          const { data, error } = await supabase.from(self.name).select('*').eq(dbField, value).limit(50000)
-          if (error) throw error
+          const data = await fetchAll(() => supabase.from(self.name).select('*').eq(dbField, value).order('id'))
           return self._fromAll(data)
         },
         first: async () => {
@@ -127,24 +139,21 @@ class SupabaseTable {
         // .where('f').equals(v).and(fn).first() — fetch matching rows, filter in JS
         and: (fn) => ({
           first: async () => {
-            const { data, error } = await supabase.from(self.name).select('*').eq(dbField, value).limit(50000)
-            if (error) throw error
+            const data = await fetchAll(() => supabase.from(self.name).select('*').eq(dbField, value).order('id'))
             return self._fromAll(data).find(fn)
           },
           toArray: async () => {
-            const { data, error } = await supabase.from(self.name).select('*').eq(dbField, value).limit(50000)
-            if (error) throw error
+            const data = await fetchAll(() => supabase.from(self.name).select('*').eq(dbField, value).order('id'))
             return self._fromAll(data).filter(fn)
           }
         }),
         // .where('f').equals(v).reverse().sortBy('field') — sorted descending
         reverse: () => ({
           sortBy: async (sortField) => {
-            const { data, error } = await supabase.from(self.name).select('*')
+            const data = await fetchAll(() => supabase.from(self.name).select('*')
               .eq(dbField, value)
               .order(self._f(sortField), { ascending: false })
-              .limit(50000)
-            if (error) throw error
+              .order('id', { ascending: false }))
             return self._fromAll(data)
           }
         }),
@@ -156,13 +165,11 @@ class SupabaseTable {
     const self = this
     return {
       first: async () => {
-        const { data, error } = await supabase.from(self.name).select('*').limit(50000)
-        if (error) throw error
+        const data = await fetchAll(() => supabase.from(self.name).select('*').order('id'))
         return self._fromAll(data).find(fn)
       },
       toArray: async () => {
-        const { data, error } = await supabase.from(self.name).select('*').limit(50000)
-        if (error) throw error
+        const data = await fetchAll(() => supabase.from(self.name).select('*').order('id'))
         return self._fromAll(data).filter(fn)
       }
     }
