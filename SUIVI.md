@@ -1,6 +1,7 @@
 # Suivi du chantier de refonte
 
-> Mis à jour à chaque étape. Branches : `refonte` (dossier `Projets/suivi-pro-refonte`), `securite` (dossier `Projets/suivi-pro`).
+> Mis à jour à chaque étape — **dernière mise à jour : samedi 10 octobre 2026, veille de la mise en ligne de la protection**.
+> Branches : `refonte` (dossier `Projets/suivi-pro-refonte`), `securite` (dossier `Projets/suivi-pro`). En production : `main` = correctifs I1-I3 (b3a7ab6).
 
 ## Où on en est
 
@@ -8,7 +9,7 @@
 |---|---|
 | 1. Audit (`AUDIT.md`) | ✅ fait, propositions triées |
 | Correctifs urgents I1-I2-I3 | ✅ **en ligne** depuis le 10/10/2026 01h13 (5 commits, vérifiés ensemble) |
-| Sécurité B6 étape 1 + plafond mails (`SECURITE.md`, branche `securite`) | ⏳ **S1, S2, S2 bis, S3 faits et testés sur la base de test** ; reste : fermer les inscriptions (tableau de bord), puis **nouvel accord écrit** pour la production |
+| Sécurité B6 étape 1 + plafond mails (`SECURITE.md`, branche `securite`) | ✅ **testé sur la base de test** (inscriptions fermées, essai local validé par vous) · ✅ **accord écrit pour la production** (10/10) · 📅 **mise en ligne dimanche 11 octobre**, lancée **par vous** avec le message « on met en ligne » — **ne rien toucher à la production avant** |
 | **Sécurité B6 étape 2** — paie réservée au compte Direction, PIN vérifié côté serveur | à faire **juste après l'étape 1**, avant la refonte — effort **moyen à gros (2 à 3 jours)** |
 | 2. Plan, charte, maquettes (`PLAN-REFONTE.md`, `maquettes/`) | ⏳ à valider |
 | 3. Construction écran par écran | à venir |
@@ -32,6 +33,44 @@
 - Écarts de structure base de test / production : colonne inutilisée `commandes.type` (test seulement) ; `sav.id` numéroté différemment. Sans effet sur l'outil.
 - À reprendre par vous : 13 retours à 0 €, 57 entrées à 0 € (liste dans `VERIFICATIONS-PROD.md`, local) ; chèque Reqins Albi daté du 15/09 à vérifier ; mot de passe d'application « Suivi Pro local » sur bshoes.albi à supprimer s'il ne sert plus.
 
+## 📅 JOUR J — dimanche 11 octobre : mise en ligne de la protection
+
+> **Déclencheur** : vous écrivez « **on met en ligne** ». Rien ne se fait avant, même dans une nouvelle conversation.
+> Accord écrit déjà donné (10/10) pour S1, S2, S2 bis, S3 en production. Magasins fermés.
+
+### Où sont les choses
+- Code : branche **`securite`** (dossier `Projets/suivi-pro`), partie de la version en ligne (`main`) + 8 commits : connexion, déconnexion, mails réservés aux appareils connectés, plafond, `SECURITE.md`, `supabase-securite.sql`.
+- Instructions de base testées : **`supabase-securite.sql`** (S2, S2 bis, puis S1 en dernier ; retour arrière en bas du fichier).
+- Mots de passe de production : `~/.suivi-pro/comptes-production.txt` (privé, hors projet). Messages équipes : `~/.suivi-pro/messages-equipes.txt`.
+- Production : projet Supabase `fftfrbpcsazkkvahscbg` (`.prod-db-url.local`), site `https://suivi-pro-app.vercel.app`.
+
+### Déroulé (dans cet ordre)
+1. **Contrôles** : `git fetch` — rien de nouveau sur `origin/main` / `origin/dev` (sinon s'arrêter et en parler) ; `securite` part bien de `origin/main`.
+2. **Sauvegarde fraîche de la production** dans `~/Sauvegardes/suivi-pro/prod-AAAA-MM-JJ_HHhMM-avant-protection/` (+ copie de `LISEZMOI.txt`), vérifiée (17 tables).
+3. **Vous** : fermer les inscriptions de la production — Supabase → projet `fftfrbpcsazkkvahscbg` → Authentication → Sign In / Providers → désactiver « Allow new users to sign up » → Save. **Claude vérifie** (`/auth/v1/settings` → `disable_signup: true`). ⛔ Ne pas aller plus loin tant que ce n'est pas fermé.
+4. **Claude crée les 5 comptes** de production (même méthode que sur la base de test, mots de passe du fichier privé) et teste une connexion.
+5. **Claude applique S2 + S2 bis** (journal + fonction de plafond) sur la production. Sans effet sur l'outil actuel.
+6. **Mise en ligne du code** : `main` avancé sur `securite` (avance simple), envoi sur GitHub → Vercel. Attendre que le site en ligne contienne « Connectez cet appareil ». À partir d'ici, tout appareil non connecté voit l'écran de connexion.
+7. **Vous** : vous connecter sur le site en ligne avec le compte Direction 1, vérifier que tout s'affiche.
+8. **Claude active S1 (filtrage) immédiatement** — fenêtre d'exposition limitée aux étapes 6 → 8.
+9. **Vérifications ensemble** :
+   - accès anonyme direct à la base : 0 ligne visible, écriture refusée ;
+   - outil connecté : lecture, saisie, mise à jour en temps réel (2 appareils ou 2 onglets) ;
+   - mail sans connexion : refusé ; appel anonyme du plafond : refusé ;
+   - une vraie « demande de modification paie » envoyée à vous depuis l'outil connecté : reçue, et notée dans le journal.
+10. **Synchroniser `dev`** sur `main` et l'envoyer (pour l'autre ordinateur). Fusionner aussi dans `refonte`.
+11. Les équipes se connectent lundi à l'ouverture avec le message reçu samedi.
+
+### En cas de problème
+- **Désactiver S1** (bloc « RETOUR ARRIÈRE » en bas de `supabase-securite.sql`) : effet immédiat, aucune donnée touchée.
+- **Vercel → Deployments → déploiement précédent → « Instant Rollback »** : l'ancienne version (sans connexion) revient.
+- Les comptes, le journal et la fonction de plafond peuvent rester en place : ils n'ont aucun effet sur l'ancienne version.
+- Restauration complète : voir `LISEZMOI.txt` de la sauvegarde (⚠️ étape des autorisations).
+
+### Après le jour J
+- Sécurité étape 2 (paie réservée aux 2 comptes Direction, PIN vérifié par la base) — 2 à 3 jours, accord écrit à demander.
+- Puis reprise de la refonte : validation du plan et des maquettes (direction A recommandée).
+
 ## Sécurité B6 étape 2 (prévue juste après l'étape 1)
 
 - **Deux comptes Direction** : Jérémie (jeremie.seigne@gmail.com) et Raphaël (raphaelseigne04@gmail.com, gère Rouffiac), reconnus par la base (marque « direction » sur le compte) : les règles d'accès distinguent comptes magasin et Direction.
@@ -46,7 +85,10 @@
 
 - [x] Accord écrit (base de test) et construction de la protection étape 1 sur la base de test
 - [x] Choix du plafond (option B), vraies adresses (5 comptes)
-- [ ] Fermer les inscriptions (base de test), puis nouvel accord écrit pour la production
+- [x] Inscriptions fermées sur la base de test (vérifié le 10/10)
+- [x] Accord écrit pour la production : S1, S2, S2 bis, S3 (10/10)
+- [x] Messages aux équipes datés du dimanche 11 octobre (à envoyer le samedi 10 par vous)
+- [ ] **Jour J — dimanche 11 octobre** : voir le déroulé ci-dessous
 - [ ] Sécurité étape 2 (paie Direction, PIN côté serveur)
 - [ ] Validation du plan et des maquettes (direction A ou B)
 - [ ] Étape 3 : socle, puis les écrans dans l'ordre du plan
