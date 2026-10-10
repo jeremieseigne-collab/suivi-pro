@@ -1,6 +1,6 @@
 # Plan — Protection des données (B6 étape 1) et plafond d'envoi de mails
 
-> Statut (10/10/2026) : **accord écrit pour S1, S2, S3 sur la base de TEST uniquement** — fait et testé sur la base de test.
+> Statut (10/10/2026) : **accord écrit pour S1, S2, S2 bis, S3 sur la base de TEST uniquement** — faits et testés sur la base de test (instructions : `supabase-securite.sql`).
 > La production demandera un **nouvel accord écrit**.
 > Décisions prises le 10/10/2026 : avant la refonte · un compte par magasin + un compte direction · journal + plafond pour les mails.
 
@@ -68,7 +68,7 @@ Tout est fait **d'abord sur la base de test**, testé en local, puis sur la prod
 ## 5. Ce que vous aurez à faire (je vous guide pas à pas)
 
 1. ~~Choisir les identifiants~~ ✅ fait (voir §2). Me laisser définir les mots de passe des 5 comptes, que vous noterez et transmettrez à chaque magasin.
-2. *(Seulement si option A, voir §9)* **Dans Vercel**, ajouter une variable `SUPABASE_SERVICE_ROLE_KEY` (copiée depuis Supabase → Project Settings → API), environnement Production. Elle permet à la fonction d'envoi d'écrire dans le journal. *(Je n'ai pas la clé Vercel sur cet ordinateur.)*
+2. ~~*(Seulement si option A)* **Dans Vercel**~~ *(option B choisie : rien à faire dans Vercel)*, ajouter une variable `SUPABASE_SERVICE_ROLE_KEY` (copiée depuis Supabase → Project Settings → API), environnement Production. Elle permet à la fonction d'envoi d'écrire dans le journal. *(Je n'ai pas la clé Vercel sur cet ordinateur.)*
 3. **Le jour J**, connecter chaque appareil des magasins (ou laisser les équipes le faire avec le message que je préparerai).
 
 ---
@@ -120,6 +120,6 @@ Deux façons de faire fonctionner le journal des mails :
 | Principe | La fonction d'envoi écrit dans le journal avec la clé secrète | Une petite fonction dans la base (« noter l'envoi et vérifier le plafond ») est appelée avec la connexion de l'appareil |
 | Clé secrète | Dans Vercel uniquement (variable `SUPABASE_SERVICE_ROLE_KEY`, Production) ; en local, rangée **hors du projet** (`~/.suivi-pro/`) | **Aucune clé secrète nécessaire**, rien à ajouter dans Vercel |
 | Inconvénient | Une clé toute-puissante de plus à protéger | Un compte connecté pourrait « consommer » le plafond du jour (bloquer l'envoi), sans pouvoir envoyer de mail par ce biais |
-| Accord | déjà couvert par S2 | **nouvel élément de structure (S2 bis) : demande votre accord écrit** |
+| Accord | déjà couvert par S2 | **✅ CHOISIE — accord écrit du 10/10 (base de test uniquement)** |
 
-État sur la base de test : S1 (filtrage), S2 (table du journal), S3 (5 comptes de test) faits et testés ; **inscriptions encore ouvertes** (à fermer dans le tableau de bord) ; plafond des mails en attente du choix A / B.
+État sur la base de test : S1 (filtrage), S2 (journal), **S2 bis (plafond : 10ᵉ envoi accepté, 11ᵉ refusé vers la direction ; 3ᵉ accepté, 4ᵉ refusé vers la comptable)**, S3 (5 comptes de test) faits et testés ; **inscriptions encore ouvertes** (à fermer dans le tableau de bord). **Plus aucune variable à ajouter dans Vercel.**
