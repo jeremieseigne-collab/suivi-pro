@@ -1,6 +1,7 @@
 # Plan — Protection des données (B6 étape 1) et plafond d'envoi de mails
 
-> Statut : **proposition, en attente de votre accord écrit**. Rien n'a été modifié dans les bases.
+> Statut (10/10/2026) : **accord écrit pour S1, S2, S3 sur la base de TEST uniquement** — fait et testé sur la base de test.
+> La production demandera un **nouvel accord écrit**.
 > Décisions prises le 10/10/2026 : avant la refonte · un compte par magasin + un compte direction · journal + plafond pour les mails.
 
 ---
@@ -58,22 +59,58 @@ Tout est fait **d'abord sur la base de test**, testé en local, puis sur la prod
 ## 5. Ce que vous aurez à faire (je vous guide pas à pas)
 
 1. **Choisir les identifiants** des 4 comptes (une adresse mail par compte — voir question ci-dessous) et me laisser définir des mots de passe que vous noterez.
-2. **Dans Vercel**, ajouter une variable `SUPABASE_SERVICE_ROLE_KEY` (copiée depuis Supabase → Project Settings → API), environnement Production. Elle permet à la fonction d'envoi d'écrire dans le journal. *(Je n'ai pas la clé Vercel sur cet ordinateur.)*
+2. *(Seulement si option A, voir §9)* **Dans Vercel**, ajouter une variable `SUPABASE_SERVICE_ROLE_KEY` (copiée depuis Supabase → Project Settings → API), environnement Production. Elle permet à la fonction d'envoi d'écrire dans le journal. *(Je n'ai pas la clé Vercel sur cet ordinateur.)*
 3. **Le jour J**, connecter chaque appareil des magasins (ou laisser les équipes le faire avec le message que je préparerai).
 
 ---
 
-## 6. Mise en ligne — l'ordre compte
+## 6. Mise en ligne — ordre révisé (données ouvertes le moins longtemps possible)
 
-Si on active le filtrage **avant** que l'écran de connexion soit en ligne et que les appareils soient connectés, l'outil n'affiche plus rien. D'où l'ordre :
+**Oui, on peut activer le filtrage dès que vous êtes connecté avec un compte**, sans attendre les appareils des magasins. Raison : le nouveau code affiche l'écran de connexion à **tout** appareil non connecté, avec ou sans filtrage. Le filtrage ne change donc rien pour les appareils pas encore connectés ; il ferme seulement l'accès direct à la base.
 
 1. Sauvegarde fraîche de la production.
-2. Création des comptes + fermeture des inscriptions (S3) et table `mail_envois` (S2).
-3. Mise en ligne du nouveau code (l'outil marche déjà avec ou sans filtrage).
-4. Connexion des appareils des magasins (magasins fermés, ou au fil de la journée).
-5. **Activation du filtrage (S1)** — instantanée.
-6. Vérifications ensemble : l'outil fonctionne une fois connecté ; un accès anonyme direct à la base est refusé ; un envoi de mail sans connexion est refusé ; le plafond fonctionne.
+2. Création des 4 comptes + **fermeture des inscriptions** (S3) ; table du journal (S2).
+3. Mise en ligne du nouveau code.
+4. Vous vous connectez avec le compte Direction et vérifiez que tout s'affiche.
+5. **Activation du filtrage (S1) immédiatement** — la fenêtre d'exposition se limite à quelques minutes (entre 3 et 5).
+6. Vérifications ensemble (accès anonyme refusé, envoi de mail sans connexion refusé, plafond).
+7. Les appareils des magasins se connectent au fil de l'eau.
+
+La vraie contrainte n'est pas le filtrage mais **la connexion des appareils** : dès l'étape 3, un appareil non connecté ne montre plus que l'écran de connexion. Il faut donc que les équipes aient **le mot de passe de leur magasin avant l'étape 3** (message prêt), et le faire magasins fermés. Un appareil resté ouvert sur l'ancienne page affichera des erreurs jusqu'à ce qu'on le recharge.
 
 **Retour arrière** : désactiver le filtrage (1 commande, effet immédiat) et, si besoin, « Instant Rollback » dans Vercel. Aucune donnée n'est touchée dans un sens comme dans l'autre.
 
-Effort : 1 à 2 jours, test complet sur la base de test compris.
+---
+
+## 7. Déconnecter un appareil à distance (salarié qui part, téléphone perdu)
+
+**Changer le mot de passe du magasin ne suffit pas à coup sûr** : un appareil déjà connecté garde sa session. Procédure complète :
+1. Changer le mot de passe du compte du magasin (Supabase → Authentication → Users).
+2. **Révoquer toutes les sessions de ce compte** (une commande que je lance, ou le tableau de bord Supabase).
+3. Les appareils concernés sont déconnectés **au plus tard 1 heure après** (durée de validité d'une session ; réglable plus courte, par ex. 15 min).
+4. Reconnecter les appareils légitimes avec le nouveau mot de passe.
+
+Avec un compte par magasin, on ne peut pas viser **un seul** appareil : tous les appareils de ce magasin devront se reconnecter. Un bouton « Déconnecter tous les appareils de ce magasin » sera ajouté dans Réglages avec l'étape 2 (compte Direction).
+
+---
+
+## 8. Ce que le test a révélé : les inscriptions libres sont ouvertes
+
+Sur la base de test (et très probablement en production), **n'importe qui peut se créer un compte** avec sa propre adresse. Avec la règle « tout compte connecté peut tout faire », ce serait une porte d'entrée complète. **La fermeture des inscriptions (S3) est donc indispensable** et doit être faite **avant** l'activation du filtrage. Ce réglage se change uniquement dans le tableau de bord Supabase : Authentication → Sign In / Providers → désactiver « Allow new users to sign up ». *(À faire par vous sur la base de test maintenant, puis sur la production le jour J — je vous guide.)*
+
+---
+
+## 9. La clé secrète `SUPABASE_SERVICE_ROLE_KEY`
+
+Engagement : cette clé ne sera **jamais** dans le code, **jamais** dans un fichier du projet (même ignoré par Git), **jamais** dans une variable commençant par `VITE_` (ces variables sont copiées dans le site public).
+
+Deux façons de faire fonctionner le journal des mails :
+
+| | **Option A — clé secrète** (prévue) | **Option B — fonction en base** (recommandée) |
+|---|---|---|
+| Principe | La fonction d'envoi écrit dans le journal avec la clé secrète | Une petite fonction dans la base (« noter l'envoi et vérifier le plafond ») est appelée avec la connexion de l'appareil |
+| Clé secrète | Dans Vercel uniquement (variable `SUPABASE_SERVICE_ROLE_KEY`, Production) ; en local, rangée **hors du projet** (`~/.suivi-pro/`) | **Aucune clé secrète nécessaire**, rien à ajouter dans Vercel |
+| Inconvénient | Une clé toute-puissante de plus à protéger | Un compte connecté pourrait « consommer » le plafond du jour (bloquer l'envoi), sans pouvoir envoyer de mail par ce biais |
+| Accord | déjà couvert par S2 | **nouvel élément de structure (S2 bis) : demande votre accord écrit** |
+
+État sur la base de test : S1 (filtrage), S2 (table du journal), S3 (4 comptes de test) faits et testés ; **inscriptions encore ouvertes** (à fermer dans le tableau de bord) ; plafond des mails en attente du choix A / B.
