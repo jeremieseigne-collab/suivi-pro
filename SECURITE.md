@@ -67,7 +67,7 @@ Tout est fait **d'abord sur la base de test**, testé en local, puis sur la prod
 
 ## 5. Ce que vous aurez à faire (je vous guide pas à pas)
 
-1. **Choisir les identifiants** des 5 comptes (une adresse mail par compte — voir question ci-dessous) et me laisser définir des mots de passe que vous noterez.
+1. ~~Choisir les identifiants~~ ✅ fait (voir §2). Me laisser définir les mots de passe des 5 comptes, que vous noterez et transmettrez à chaque magasin.
 2. *(Seulement si option A, voir §9)* **Dans Vercel**, ajouter une variable `SUPABASE_SERVICE_ROLE_KEY` (copiée depuis Supabase → Project Settings → API), environnement Production. Elle permet à la fonction d'envoi d'écrire dans le journal. *(Je n'ai pas la clé Vercel sur cet ordinateur.)*
 3. **Le jour J**, connecter chaque appareil des magasins (ou laisser les équipes le faire avec le message que je préparerai).
 
