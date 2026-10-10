@@ -1,4 +1,4 @@
-import { sendMail, verifierConnexion } from './_send.js'
+import { sendMail, validateMail, verifierConnexion, noterEnvoi } from './_send.js'
 
 async function readJson(req) {
   if (req.body && typeof req.body === 'object') return req.body // Vercel parse déjà le JSON
@@ -18,14 +18,15 @@ export default async function handler(req, res) {
     return
   }
   try {
-    await verifierConnexion(req.headers.authorization)
-    const { to, subject, text } = await readJson(req)
-    await sendMail({ to, subject, text })
+    const jeton = await verifierConnexion(req.headers.authorization)
+    const mail = validateMail(await readJson(req))
+    await noterEnvoi(jeton, mail)
+    await sendMail(mail)
     res.statusCode = 200
     res.end(JSON.stringify({ ok: true }))
   } catch (e) {
     // Refus (400) : on renvoie le motif. Échec d'envoi : message générique, détail dans les logs Vercel.
-    if (e.status === 400 || e.status === 401) {
+    if (e.status === 400 || e.status === 401 || e.status === 429) {
       res.statusCode = e.status
       res.end(JSON.stringify({ ok: false, error: e.message }))
     } else {

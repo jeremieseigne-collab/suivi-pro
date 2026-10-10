@@ -32,7 +32,21 @@ export async function verifierConnexion(authorization) {
   if (!url || !cle) throw new Error('VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY non configurées')
   const r = await fetch(`${url}/auth/v1/user`, { headers: { apikey: cle, Authorization: `Bearer ${jeton}` } })
   if (!r.ok) refus()
-  return r.json()
+  return jeton
+}
+
+// Plafond d'envoi : la base note l'envoi et refuse au-delà de 3 récaps / 24 h vers la comptable
+// et 10 demandes / 24 h vers la direction (fonction noter_envoi_mail, appelée avec la connexion de l'appareil).
+// Lève une erreur 429 si le plafond est atteint.
+export async function noterEnvoi(jeton, { to, subject }) {
+  const url = process.env.VITE_SUPABASE_URL, cle = process.env.VITE_SUPABASE_ANON_KEY
+  const r = await fetch(`${url}/rest/v1/rpc/noter_envoi_mail`, {
+    method: 'POST',
+    headers: { apikey: cle, Authorization: `Bearer ${jeton}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ destinataire: to, objet: subject }),
+  })
+  if (!r.ok) throw new Error(`Journal des mails indisponible (${r.status})`)
+  if ((await r.json()) !== true) { const e = new Error('Plafond d\'envoi atteint pour aujourd\'hui'); e.status = 429; throw e }
 }
 
 let transporter
