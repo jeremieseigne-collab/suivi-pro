@@ -1,12 +1,16 @@
+import { supabase } from '../lib/supabase'
 import { HOUR_SECTIONS, RANGE_SECTIONS, periodeLabel } from './constants'
 
 // Appel de la fonction serveur d'envoi (Vercel api/send-mail.js, ou middleware Vite en dev)
 async function postMail({ to, subject, text }) {
+  // Le serveur n'accepte que les appareils connectés : on joint le jeton de session
+  const { data: auth } = await supabase.auth.getSession()
+  const jeton = auth.session?.access_token
   let res
   try {
     res = await fetch('/api/send-mail', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(jeton ? { Authorization: `Bearer ${jeton}` } : {}) },
       body: JSON.stringify({ to, subject, text }),
     })
   } catch {

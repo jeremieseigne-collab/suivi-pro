@@ -1,3 +1,4 @@
+import { supabase } from '../lib/supabase'
 import { useState } from 'react'
 import { db } from '../db'
 import { useLiveQuery } from '../lib/useLiveQuery'
@@ -107,6 +108,11 @@ function NavItem({ item, active, badge, note, collapsed, onOpen }) {
   )
 }
 
+// Déconnexion de l'appareil (l'appareil devra ressaisir le mot de passe du magasin)
+function seDeconnecter() {
+  if (window.confirm('Se déconnecter de cet appareil ?\nIl faudra ressaisir l\'adresse et le mot de passe du magasin pour revenir.')) supabase.auth.signOut()
+}
+
 export default function Sidebar({ view, magasin, setMagasin, alerts, onOpen, collapsed = false, onToggleCollapse }) {
   const jour = new Date().getDate()
   const badges = {
@@ -142,9 +148,13 @@ export default function Sidebar({ view, magasin, setMagasin, alerts, onOpen, col
           </div>
         </div>
       ))}
+      <button onClick={seDeconnecter} title="Se déconnecter de cet appareil"
+        style={{ marginTop: 'auto', alignSelf: collapsed ? 'center' : 'stretch', minHeight: 40, padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-3)', cursor: 'pointer', fontSize: 13 }}>
+        {collapsed ? '⎋' : 'Se déconnecter'}
+      </button>
       {onToggleCollapse && (
         <button onClick={onToggleCollapse} title={collapsed ? 'Déplier le menu' : 'Replier le menu'}
-          style={{ marginTop: 'auto', alignSelf: collapsed ? 'center' : 'flex-start', padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-3)', cursor: 'pointer', fontSize: 13 }}>
+          style={{ alignSelf: collapsed ? 'center' : 'flex-start', padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-3)', cursor: 'pointer', fontSize: 13 }}>
           {collapsed ? '»' : '« Replier'}
         </button>
       )}

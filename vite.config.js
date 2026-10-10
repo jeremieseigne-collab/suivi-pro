@@ -21,7 +21,8 @@ export default defineConfig(({ mode }) => {
             req.on('end', async () => {
               res.setHeader('Content-Type', 'application/json')
               try {
-                const { sendMail, validateMail } = await import('./api/_send.js')
+                const { sendMail, validateMail, verifierConnexion } = await import('./api/_send.js')
+                await verifierConnexion(req.headers.authorization)
                 const mail = body ? JSON.parse(body) : {}
                 // En local, les mails sont seulement affichés dans le terminal (aucun envoi réel),
                 // sauf si SEND_REAL_MAIL=1 est défini dans .env.local.

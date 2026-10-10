@@ -22,6 +22,19 @@ export function validateMail({ to, subject, text } = {}) {
   return { to: rule.to, subject, text }
 }
 
+// Vérifie que la demande vient d'un appareil connecté à l'outil (jeton de session Supabase valide).
+// Lève une erreur 401 sinon. Utilise l'adresse et la clé publique déjà connues (pas de clé secrète).
+export async function verifierConnexion(authorization) {
+  const refus = () => { const e = new Error('Connexion requise'); e.status = 401; throw e }
+  const jeton = /^Bearer\s+(.+)$/i.exec(authorization || '')?.[1]
+  if (!jeton) refus()
+  const url = process.env.VITE_SUPABASE_URL, cle = process.env.VITE_SUPABASE_ANON_KEY
+  if (!url || !cle) throw new Error('VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY non configurées')
+  const r = await fetch(`${url}/auth/v1/user`, { headers: { apikey: cle, Authorization: `Bearer ${jeton}` } })
+  if (!r.ok) refus()
+  return r.json()
+}
+
 let transporter
 
 function getTransporter() {
