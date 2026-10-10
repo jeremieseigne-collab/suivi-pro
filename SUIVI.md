@@ -19,7 +19,7 @@
 - 10/10 — Retenu : I1-I9, U1, U2, U3, U5, U6, U7, U8, U14, B2. Écarté pour l'instant : U12, U13. B6 : étape 1 avancée **avant** la refonte.
 - 10/10 — Équipes sur ordinateur de caisse, tablette **et téléphone** : écrans magasin conçus d'abord pour le téléphone, testés aux 3 tailles.
 - 10/10 — Saisie des livraisons au déballage, carton par carton → garder marque / N° / date / grille entre deux saisies.
-- 10/10 — Comptes de connexion : un par magasin + un compte direction, identifiants = vraies adresses mail.
+- 10/10 — Comptes de connexion : **5 comptes** — un par magasin (contact.baillyalbi@, contact.baillyrouffiac@, contact.les2zebres@gmail.com) + **2 comptes Direction** (Jérémie, Raphaël).
 - 10/10 — Mails : journal + plafond (3 récaps/jour vers Marion, 10 demandes/jour vers vous).
 - 10/10 — Le rituel de fin de session du `CLAUDE.md` (déploiement automatique) est **suspendu** pendant le chantier.
 - 10/10 — En local, les mails ne partent jamais (affichés dans le terminal) ; `SEND_REAL_MAIL=1` pour réactiver.
@@ -32,7 +32,10 @@
 
 ## Sécurité B6 étape 2 (prévue juste après l'étape 1)
 
-- **Compte Direction reconnu par la base** (marque « direction » sur le compte) : les règles d'accès distinguent comptes magasin et Direction.
+- **Deux comptes Direction** : Jérémie (jeremie.seigne@gmail.com) et Raphaël (raphaelseigne04@gmail.com, gère Rouffiac), reconnus par la base (marque « direction » sur le compte) : les règles d'accès distinguent comptes magasin et Direction.
+- **Périmètre du compte de Raphaël : ⚠️ À CONFIRMER** (le message du 10/10 contenait encore les deux choix) :
+  - *« tout, comme Jérémie »* → mêmes règles pour les deux comptes Direction, effort inchangé ;
+  - *« uniquement Rouffiac et JR Shoes »* → paie, plan de règlement et réglages filtrés par magasin / société pour ce compte ; **+1 jour environ** (règles par société, tests croisés).
 - **Paie** : les comptes magasin peuvent **déposer** une saisie mais **pas relire** celles des autres ; la liste « rempli / à remplir » passe par une vue sans le contenu ; récap, corrections et envoi réservés à la Direction ; l'envoi automatique du récap se fait côté serveur.
 - **Code PIN supprimé du site** : Plan de règlement, Réglages (et ce qu'on décidera de réserver) ne s'ouvrent qu'avec le compte Direction, **vérifié par la base** et non plus à l'écran.
 - **Bouton « Déconnecter tous les appareils d'un magasin »** dans Réglages.
