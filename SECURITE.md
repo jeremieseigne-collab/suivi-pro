@@ -24,10 +24,19 @@ Ce qui **ne change pas encore** (étapes suivantes, plus tard) : le code PIN res
 - Un bouton **« Se déconnecter »** dans le menu.
 - Rien d'autre ne change dans l'utilisation.
 
-4 comptes :
+5 comptes (identifiants = vraies adresses, en production uniquement ; la base de test utilise des adresses fictives) :
 
-| Compte | Pour |
-|---|---|
+| Compte | Identifiant | Pour |
+|---|---|---|
+| Bailly Albi | contact.baillyalbi@gmail.com | appareils du magasin d'Albi |
+| Bailly Rouffiac | contact.baillyrouffiac@gmail.com | appareils de Rouffiac |
+| Les 2 Zèbres | contact.les2zebres@gmail.com | appareils des 2 Zèbres |
+| Direction 1 — Jérémie Seigné | jeremie.seigne@gmail.com | vous |
+| Direction 2 — Raphaël Seigné | raphaelseigne04@gmail.com | Raphaël (gère Rouffiac) |
+
+Pour cette étape 1, les 5 comptes ont exactement les mêmes droits (tout compte connecté). La distinction magasin / Direction arrive à l'étape 2.
+
+---|---|
 | Bailly Albi | appareils du magasin d'Albi |
 | Bailly Rouffiac | appareils de Rouffiac |
 | Les 2 Zèbres | appareils des 2 Zèbres |
@@ -41,7 +50,7 @@ Ce qui **ne change pas encore** (étapes suivantes, plus tard) : le code PIN res
 |---|---|---|---|
 | S1 | **Activer le filtrage** (« RLS ») sur les 17 tables existantes, avec une seule règle : *un compte connecté peut tout faire, un visiteur anonyme rien* | La clé publique seule ne donne plus accès à rien. **Aucune donnée n'est modifiée ni supprimée.** | Une commande désactive le filtrage sur les 17 tables (retour exact à aujourd'hui) |
 | S2 | **Nouvelle table `mail_envois`** (date, destinataire, objet) — ajout seul | Sert à compter les envois. Filtrage activé **sans aucune règle** : illisible et non modifiable depuis l'extérieur, seule la fonction d'envoi y accède | Supprimer la table (elle ne contient que le journal des mails) |
-| S3 | **Création des 4 comptes** + **fermeture des inscriptions publiques** dans Supabase | Personne ne peut se créer un compte soi-même | Supprimer les comptes / rouvrir les inscriptions |
+| S3 | **Création des 5 comptes** + **fermeture des inscriptions publiques** dans Supabase | Personne ne peut se créer un compte soi-même | Supprimer les comptes / rouvrir les inscriptions |
 
 Tout est fait **d'abord sur la base de test**, testé en local, puis sur la production après votre feu vert.
 
@@ -58,7 +67,7 @@ Tout est fait **d'abord sur la base de test**, testé en local, puis sur la prod
 
 ## 5. Ce que vous aurez à faire (je vous guide pas à pas)
 
-1. **Choisir les identifiants** des 4 comptes (une adresse mail par compte — voir question ci-dessous) et me laisser définir des mots de passe que vous noterez.
+1. **Choisir les identifiants** des 5 comptes (une adresse mail par compte — voir question ci-dessous) et me laisser définir des mots de passe que vous noterez.
 2. *(Seulement si option A, voir §9)* **Dans Vercel**, ajouter une variable `SUPABASE_SERVICE_ROLE_KEY` (copiée depuis Supabase → Project Settings → API), environnement Production. Elle permet à la fonction d'envoi d'écrire dans le journal. *(Je n'ai pas la clé Vercel sur cet ordinateur.)*
 3. **Le jour J**, connecter chaque appareil des magasins (ou laisser les équipes le faire avec le message que je préparerai).
 
@@ -69,7 +78,7 @@ Tout est fait **d'abord sur la base de test**, testé en local, puis sur la prod
 **Oui, on peut activer le filtrage dès que vous êtes connecté avec un compte**, sans attendre les appareils des magasins. Raison : le nouveau code affiche l'écran de connexion à **tout** appareil non connecté, avec ou sans filtrage. Le filtrage ne change donc rien pour les appareils pas encore connectés ; il ferme seulement l'accès direct à la base.
 
 1. Sauvegarde fraîche de la production.
-2. Création des 4 comptes + **fermeture des inscriptions** (S3) ; table du journal (S2).
+2. Création des 5 comptes + **fermeture des inscriptions** (S3) ; table du journal (S2).
 3. Mise en ligne du nouveau code.
 4. Vous vous connectez avec le compte Direction et vérifiez que tout s'affiche.
 5. **Activation du filtrage (S1) immédiatement** — la fenêtre d'exposition se limite à quelques minutes (entre 3 et 5).
@@ -113,4 +122,4 @@ Deux façons de faire fonctionner le journal des mails :
 | Inconvénient | Une clé toute-puissante de plus à protéger | Un compte connecté pourrait « consommer » le plafond du jour (bloquer l'envoi), sans pouvoir envoyer de mail par ce biais |
 | Accord | déjà couvert par S2 | **nouvel élément de structure (S2 bis) : demande votre accord écrit** |
 
-État sur la base de test : S1 (filtrage), S2 (table du journal), S3 (4 comptes de test) faits et testés ; **inscriptions encore ouvertes** (à fermer dans le tableau de bord) ; plafond des mails en attente du choix A / B.
+État sur la base de test : S1 (filtrage), S2 (table du journal), S3 (5 comptes de test) faits et testés ; **inscriptions encore ouvertes** (à fermer dans le tableau de bord) ; plafond des mails en attente du choix A / B.
