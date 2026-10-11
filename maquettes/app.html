@@ -75,13 +75,9 @@ svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stro
 .statut-creux .puce::before{background:transparent !important;border:2px solid var(--discret);width:9px;height:9px;box-sizing:border-box}
 .statut-creux .puce.ok::before{border-color:var(--ok)} .statut-creux .puce.att::before{border-color:#ff9500} .statut-creux .puce.err::before{border-color:#ff3b30} .statut-creux .puce.info::before{border-color:#007aff}
 /* Accueil sobre : la couleur ne sert qu'aux repères (petit point) et à l'urgence ; chiffres et icônes en neutre */
-.sobre .compteur::before{display:none}
-.sobre .compteur{padding-left:14px}
-.sobre .compteur b{color:var(--texte)}
-.sobre .compteur span{display:flex;align-items:center;gap:6px}
-.sobre .compteur span::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c);flex-shrink:0}
+.sobre .compteur b{color:var(--texte)}   /* chiffre en noir ; le trait de couleur à gauche reste le repère */
 .sobre .icone-tache{background:var(--surface-2) !important;color:var(--doux) !important}
-.sobre .barre-agenda{width:8px !important;height:8px;align-self:center !important;border-radius:50% !important}
+.agenda-point .barre-agenda{width:8px !important;height:8px;align-self:center !important;border-radius:50% !important}   /* variante pour la page Comparaisons */
 .sobre .jour-agenda{color:var(--texte)}
 .sobre .nav svg.i{color:var(--doux)} .sobre .nav[aria-current="page"] svg.i{color:var(--accent-texte)}
 .sobre .feuille .ligne svg.i[style*="accent-texte"]{color:var(--doux) !important}
@@ -121,8 +117,9 @@ button.ligne:hover,.ligne.cliquable:hover{background:color-mix(in srgb,var(--tex
 .barre i.ok{background:var(--ok)}
 .barre i.orange{background:#ff9500} .barre i.bleu{background:#007aff} .barre i.zero{width:0 !important}
 .pc{font-weight:600} .pc.ok{color:var(--ok)} .pc.bleu{color:var(--accent-texte)} .pc.orange{color:var(--att)} .pc.zero{color:var(--discret)}
-.num{display:inline-block;padding:0 7px;border-radius:6px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.5}
+.num{white-space:nowrap;display:inline-block;padding:0 7px;border-radius:6px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.5}
 .num.n1{background:var(--num1-fond);color:var(--num1)} .num.n2{background:var(--num2-fond);color:var(--num2)} .num.n3{background:var(--num3-fond);color:var(--num3)}
+.ligne .t1 .num{font-weight:700;margin-left:2px} .ligne .t1 .num.n1{color:var(--num1)} .ligne .t1 .num.n2{color:var(--num2)} .ligne .t1 .num.n3{color:var(--num3)}
 .ligne.faible .txt,.ligne.faible .puce{opacity:.5}
 
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));background:var(--texte);color:var(--fond);
@@ -416,6 +413,7 @@ if (etat.ecran === 'saisie') etat.ecran = 'entrees'
 document.body.dataset.dir = etat.dir
 if (P.get('theme')) document.documentElement.dataset.theme = P.get('theme')
 if (P.get('style') !== 'vif') document.body.classList.add('sobre')         // principe retenu le 11/10 : couleur réservée aux repères et à l'urgence
+if (P.get('agenda_style') === 'point') document.body.classList.add('agenda-point')
 if (P.get('statut') === 'creux') document.body.classList.add('statut-creux') // variante : point de statut creux
 
 let form = nouveauForm('Palladium')
@@ -633,8 +631,8 @@ function listeEntrees() {
     <div class="liste">${es.map(e => `
       <div class="ligne cliquable ${DIRECTION && e.pointe ? 'faible' : ''}" data-ouvrir="${e.id}" ${etat.selection === e.id ? 'aria-current="true"' : ''} style="cursor:pointer">
         <div class="txt">
-          <div class="t1">${esc(e.marque)} <span>· ${esc(e.modele)}</span></div>
-          <div class="t2">${DIRECTION ? esc(e.magasin) + ' · ' : ''}${e.numero ? numHtml(e.numero) + ' · ' : ''}${e.paires} paire${Math.abs(e.paires) > 1 ? 's' : ''} · ${fmtEur(e.montant)}</div>
+          <div class="t1">${esc(e.marque)} <span>· ${esc(e.modele)}</span> ${numHtml(e.numero)}</div>
+          <div class="t2">${DIRECTION ? esc(e.magasin) + ' · ' : ''}${e.paires} paire${Math.abs(e.paires) > 1 ? 's' : ''} · ${fmtEur(e.montant)}</div>
         </div>
         <span class="puce ${STATUT_CLASSE[e.statut]}">${e.statut || 'Sans statut'}</span>
         ${DIRECTION ? `<button class="pointer" data-pointer="${e.id}" aria-pressed="${e.pointe}" aria-label="${e.pointe ? 'Pointée' : 'Pointer'}"><span>${ic('check')}</span></button>` : ''}
@@ -646,8 +644,8 @@ function contenuDetail() {
   const tailles = Object.entries(e.sizes)
   return `<div class="feuille-entete"><h2>${esc(e.marque)}</h2><button class="icone-btn" data-act="fermer-detail" aria-label="Fermer">${ic('fermer')}</button></div>
   <div class="feuille-corps">
-    <div style="font-weight:600">${esc(e.modele)}</div>
-    <div class="resume" style="margin:6px 0 16px">${e.date}${e.numero ? ' · ' + numHtml(e.numero) : ''} · <b>${e.paires} paire${Math.abs(e.paires)>1?'s':''}</b> · <b>${fmtEur(e.montant)}</b></div>
+    <div style="font-weight:600">${esc(e.modele)} ${numHtml(e.numero)}</div>
+    <div class="resume" style="margin:6px 0 16px">${e.date} · <b>${e.paires} paire${Math.abs(e.paires)>1?'s':''}</b> · <b>${fmtEur(e.montant)}</b></div>
     <div class="resume" style="margin:-8px 0 16px"><span>Catégorie <b>${esc(e.categorie || '—')}</b></span>${DIRECTION ? `<span>Magasin <b>${esc(e.magasin)}</b></span>` : ''}</div>
     <span class="etiquette">Statut</span>
     <div class="chips" style="flex-wrap:wrap;margin-bottom:18px">${STATUTS.map(s => `<button class="chip" data-statut="${s}" aria-pressed="${e.statut===s}">${s}</button>`).join('')}</div>
@@ -737,8 +735,8 @@ function rappelDernieres() {
   if (!der.length) return ''
   return `<details class="rappel" ${der.length ? 'open' : ''}><summary>Déjà enregistré aujourd'hui (${entreesDuJour().length})</summary>
     <div class="liste" style="background:var(--surface-2);margin-top:8px">${der.map(e => `<div class="ligne" style="min-height:44px;padding:6px 12px">
-      <span class="txt"><span class="t1" style="font-size:14px">${esc(e.marque)} <span>· ${esc(e.modele)}</span></span>
-      <div class="t2">${e.heure || ''} · ${e.numero ? numHtml(e.numero) + ' · ' : ''}${e.paires} paire${Math.abs(e.paires) > 1 ? 's' : ''}</div></span></div>`).join('')}</div></details>`
+      <span class="txt"><span class="t1" style="font-size:14px">${esc(e.marque)} <span>· ${esc(e.modele)}</span> ${numHtml(e.numero)}</span>
+      <div class="t2">${e.heure || ''} · ${e.paires} paire${Math.abs(e.paires) > 1 ? 's' : ''}</div></span></div>`).join('')}</div></details>`
 }
 function avertissementDoublon() {
   const d = doublonDuJour(); if (!d) return ''
@@ -773,7 +771,7 @@ function contenuSaisie(dansPanneau) {
       : `<button class="champ" data-act="choisir-marque" style="display:flex;align-items:center;justify-content:space-between;text-align:left;margin-bottom:14px;font-weight:600">${form.marque}${ic('bas','style="width:18px;height:18px;color:var(--discret)"')}</button>`}
 
     <span class="etiquette">Modèle ${mod ? '' : '— touchez le modèle reçu'}</span>
-    ${mod ? `<button class="champ" data-act="changer-modele" style="display:flex;align-items:center;justify-content:space-between;text-align:left;margin-bottom:10px"><span><b>${esc(form.modele)}</b></span><span class="lien" style="min-height:0">Changer</span></button>`
+    ${mod ? `<button class="champ" data-act="changer-modele" style="display:flex;align-items:center;justify-content:space-between;text-align:left;margin-bottom:10px"><span><b>${esc(form.modele)}</b> ${numHtml(form.numero)}</span><span class="lien" style="min-height:0">Changer</span></button>`
       : `<div class="liste" style="background:var(--surface-2);margin-bottom:14px">${Object.entries(m.modeles).map(([k, v]) => {
           const att = Object.values(v.attendu).reduce((s,x)=>s+x,0), rec = Object.values(v.recu).reduce((s,x)=>s+x,0)
           return `<button class="ligne" data-modele="${esc(k)}" style="min-height:56px"><span class="txt"><span class="t1">${esc(k)}</span><div class="t2">${GRILLE_NOM[v.grille]} · reste à recevoir ${att - rec} / ${att}</div></span>${ic('chevron','style="color:var(--discret)"')}</button>` }).join('')}</div>`}
@@ -781,7 +779,6 @@ function contenuSaisie(dansPanneau) {
     ${mod ? `
     <div class="resume" style="margin-bottom:14px">
       <span>Date <b>${form.date === AUJ ? "aujourd'hui" : form.date}</b></span>
-      <span>${form.numero ? numHtml(form.numero) : 'N° <b>—</b>'}</span>
       <span>Grille <b>${GRILLE_NOM[form.grille]}</b></span>
       <button class="lien">Modifier</button>
     </div>

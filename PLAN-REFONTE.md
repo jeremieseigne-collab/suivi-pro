@@ -112,15 +112,16 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 
 | Code couleur | Règle | Où |
 |---|---|---|
-| **N° de commande** | Même logique que l'outil actuel : nombre du N°, (N° − 1) modulo 3 → **1 rouge, 2 bleu, 3 vert**, 4 rouge… ; pas de nombre = pas de couleur. Teintes de la charte, lisibles en clair et en sombre | **Partout** où un N° apparaît : saisie, liste et détail des entrées, suivi des livraisons, écrans à venir |
+| **N° de commande** | Juste **après le nom du modèle**, même ligne. Même logique que l'outil actuel : nombre du N°, (N° − 1) modulo 3 → **1 rouge, 2 bleu, 3 vert**, 4 rouge… ; pas de nombre = pas de couleur. Teintes de la charte, lisibles en clair et en sombre | **Partout** où un N° apparaît : saisie, liste et détail des entrées, suivi des livraisons, écrans à venir |
 | Jauges de livraison et % | 0 % gris · < 50 % orange · ≥ 50 % bleu · 100 % vert | Suivi des livraisons |
 | Rien reçu | Ligne de marque / modèle atténuée | Suivi des livraisons |
 | Détail par pointure | Vert complet · bleu partiel · gris rien reçu | Suivi des livraisons |
 | Entrée pointée | Ligne grisée (comptes Direction) | Liste des entrées |
 | Pointure saisie | Case verte (orange pour un retour) | Saisie d'une entrée |
 | Couleur par saison | Pastille du sélecteur de saison | En-tête (à dessiner) |
-| Couleurs des compteurs et pastilles de menu | Une couleur par type (réassorts, défectueux, commandes, SAV) | Accueil, menu (à dessiner) |
-| Couleurs d'agenda | Une couleur par magasin | Agenda |
+| Couleurs des compteurs | **Trait de couleur** à gauche de chaque compteur (chiffre en noir) — une couleur par type | Accueil |
+| Pastilles de comptage du menu | Une couleur par type (réassorts, défectueux, commandes) | Menu (à dessiner) |
+| Couleurs d'agenda | Une couleur par magasin — **barre** (ou point : choix en attente, voir `maquettes/comparaisons.html` §3) | Agenda, bloc « À venir » |
 
 **Statuts des entrées** (décisions du 11/10) :
 - **Ordre des étapes, partout** (saisie, filtres, détail) : **Aucun → Enregistré → Imp. étiquettes** (dernière étape), puis Réassort et Retour. ⚠️ L'outil actuel affiche « Imp. Etiquettes » **avant** « Enregistré » dans ses listes : à corriger dans la refonte.
@@ -154,7 +155,9 @@ Au téléphone, les deux directions sont identiques. Elles diffèrent sur ordina
 
 - **Couleurs** : fond gris très clair, surfaces blanches, texte noir doux, **un seul bleu d'action** ; vert = fait, orange = à faire, rouge = problème/retour, **même sens partout**. Mode sombre complet.
 - **Typographie** : police système de l'appareil, 3 tailles (13 / 15 / 17) + titre de page (26).
-- **Sobriété (11/10)** : la couleur est **réservée aux repères** (N°, statuts, jauges, magasins, types de compteur) **et à l'urgence** (retard, doublon, erreur) ; chiffres, icônes et titres en noir ou gris ; un seul bleu pour l'action principale ; repères en petits points ou pastilles, jamais en grands aplats. Appliquée à **tous les écrans**.
+- **Sobriété (11/10)** : la couleur est **réservée aux repères** (N°, statuts, jauges, magasins, types de compteur) **et à l'urgence** (retard, doublon, erreur) ; chiffres, icônes et titres en noir ou gris ; un seul bleu pour l'action principale ; repères sous forme de **traits** (compteurs, agenda) ou de **pastilles** (N°), jamais en grands aplats. Appliquée à **tous les écrans**.
+- **Point de couleur réservé au statut des entrées** (11/10) : il n'est utilisé nulle part ailleurs comme repère.
+- **Position du N°** (11/10) : toujours **juste après le nom du modèle, sur la même ligne**, comme dans l'outil actuel — liste et détail des entrées, saisie, suivi des livraisons, « Déjà enregistré aujourd'hui ».
 - **N° de commande** : couleur qui tourne sur 3 teintes (1 rouge, 2 bleu, 3 vert…), logique identique à l'outil actuel, partout (voir §2 ter).
 - **Boutons** : arrondis, 44 px minimum ; bleu = action principale (une par écran), gris = secondaire, lien = discret, rouge pâle = destructif.
 - **Listes au lieu des tableaux** : titre en gras, détail en gris dessous, état à droite (point + mot).

@@ -39,6 +39,8 @@
 - 11/10 — Couleurs de statut de la maquette gardées ; distinction N° / statut à valider (point plein ou creux) ; accueil « sobre » proposé (comparaison dans `maquettes/comparaisons.html`).
 - 11/10 — Statuts : ordre Aucun → Enregistré → Imp. étiquettes partout ; couleurs Enregistré orange, Imp. étiquettes vert, Réassort bleu, Retour rouge ; point plein (pas de point creux). Valeur en base inchangée (« Imp. Etiquettes »). L'outil actuel a l'ordre inversé : à corriger dans la refonte.
 - 11/10 — **Sobriété retenue** pour tous les écrans : couleur réservée aux repères et à l'urgence ; N° et statuts gardent leurs couleurs. Prévention des doublons validée.
+- 11/10 — Compteurs : trait de couleur rétabli (chiffre en noir). Point de couleur réservé au statut des entrées. N° toujours juste après le nom du modèle. Agenda : barre ou point, choix en attente (Comparaisons §3).
+- 11/10 — Ordre des statuts corrigé dans l'outil actuel (Aucun → Enregistré → Imp. Etiquettes), testé en local, **part avec l'étape 2**.
 - 10/10 — Les ~65 suppressions de marques en production depuis juin sont bien de vous (nettoyage et fusion de doublons) : pas d'activité suspecte.
 - 10/10 — Le rituel de fin de session du `CLAUDE.md` (déploiement automatique) est **suspendu** pendant le chantier.
 - 10/10 — En local, les mails ne partent jamais (affichés dans le terminal) ; `SEND_REAL_MAIL=1` pour réactiver.
