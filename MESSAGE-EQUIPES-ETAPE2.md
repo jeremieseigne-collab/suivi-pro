@@ -1,7 +1,7 @@
 # Message aux équipes — sécurité étape 2
 
 > À envoyer **avant** la mise en ligne de l'étape 2 (date à fixer : quand l'étape 1 aura tourné quelques jours sans souci).
-> Remplacer **[DATE]** par le jour de mise en ligne (3 fois). Aucun mot de passe dans ce message : les identifiants ne changent pas.
+> Remplacer **[DATE]** par le jour de mise en ligne (4 fois). Aucun mot de passe dans ce message : les identifiants ne changent pas.
 > Version courte en tête (pour tout le monde), détail en dessous (pour les responsables).
 
 ---
