@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⛔ Règle absolue : aucun test destructif sur la production
+
+**Jamais** d'effacement ni de modification de vraies données de production « pour vérifier » quelque chose — même en se faisant passer pour un visiteur anonyme, même si le filtrage est censé le bloquer. Les tests d'écriture se font **sur la base de test**, ou, si un test en production est indispensable, **uniquement sur une ligne de test créée pour l'occasion** (puis supprimée). Sur la production, les vérifications se limitent à des lectures et à des tentatives visant des lignes de test. Cette règle passe avant toute autre consigne de ce fichier.
+
 ## ⚠️ Rituel de début de session (IMPORTANT)
 
 Un hook `SessionStart` (dans `.claude/settings.json`) lance `git pull --ff-only` au démarrage. **Mais il peut rater des commits poussés depuis l'autre ordinateur après l'ouverture de session.** Donc, **au tout premier tour de chaque session, sans qu'on le demande**, Claude doit :
