@@ -10,7 +10,7 @@
 | 1. Audit (`AUDIT.md`) | ✅ fait, propositions triées |
 | Correctifs urgents I1-I2-I3 | ✅ **en ligne** depuis le 10/10/2026 01h13 (5 commits, vérifiés ensemble) |
 | Sécurité B6 étape 1 + plafond mails (`SECURITE.md`) | ✅ **EN LIGNE depuis le dimanche 11/10/2026** : code à 14h20, filtrage activé à 14h28 (fenêtre d'exposition ~6 min). Vérifié : anonyme = 0 ligne / écriture refusée ; comptes connectés OK ; mail sans connexion refusé ; vrai mail reçu et noté au journal |
-| **Sécurité B6 étape 2** — paie réservée aux comptes Direction, PIN vérifié par la base | ⏳ **accord écrit du 11/10 pour E1-E6 sur la base de TEST uniquement** ; production : nouvel accord écrit, **pas avant que les 3 magasins se soient connectés sans problème lundi 12/10** — 2 à 3 jours |
+| **Sécurité B6 étape 2** — paie réservée aux comptes Direction, PIN supprimé | ✅ **faite et testée sur la base de test** (11/10, branche `securite-etape2`, `supabase-securite-etape2.sql`) ; ⏳ production : **nouvel accord écrit, pas avant que les 3 magasins se soient connectés sans problème lundi 12/10** |
 | 2. Plan, charte, maquettes (`PLAN-REFONTE.md`, `maquettes/`) | ⏳ à valider |
 | 3. Construction écran par écran | à venir |
 | 4. Préparation de la mise en ligne | à venir |
@@ -97,6 +97,8 @@
 - [x] Accord écrit pour la production : S1, S2, S2 bis, S3 (10/10)
 - [x] Messages aux équipes datés du dimanche 11 octobre (à envoyer le samedi 10 par vous)
 - [x] **Jour J — dimanche 11 octobre** : fait (étapes 1 à 10) ; sauvegarde `~/Sauvegardes/suivi-pro/prod-2026-10-11_14h17-avant-protection/`
-- [ ] Sécurité étape 2 (paie Direction, PIN côté serveur)
+- [x] Sécurité étape 2 construite et testée sur la base de test (11/10)
+- [ ] Lundi 12/10 : vérifier que les 3 magasins se sont connectés sans problème
+- [ ] Puis accord écrit pour l'étape 2 en production, et mise en ligne (même déroulé que l'étape 1 : sauvegarde → E1-E5 → code → reconnexion Direction → vérifications) — ⚠️ annoncer aux équipes que **les Achats disparaissent de leur menu**
 - [ ] Validation du plan et des maquettes (direction A ou B)
 - [ ] Étape 3 : socle, puis les écrans dans l'ordre du plan
