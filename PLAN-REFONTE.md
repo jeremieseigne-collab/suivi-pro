@@ -86,8 +86,8 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Partout — compte magasin | Pointage des entrées (rond, filtre « À pointer », compteur, rappel sur l'accueil) | ✅ masqué (11/10, sécurité étape 2 / E7) |
 | Accueil | Ligne en double « Aujourd'hui · magasin » | ✅ retirée |
 | Accueil | Compteurs à zéro | ✅ masqués |
-| Accueil | Agenda en 4 vues (Jour / Semaine / Mois / Année) | ↔ ✅ l'accueil montre un bloc **« À venir »** façon widget Calendrier de l'iPhone : les rendez-vous restants d'aujourd'hui ; s'il n'y en a pas (ou plus), les **prochains** avec leur jour (« Demain », « Jeudi 15 »…) ; jamais vide tant qu'un événement est à venir ; **4 lignes max** ; lien « Voir l'agenda » vers l'agenda complet (11/10) |
-| Accueil | Compteurs « Réassorts en route » et « Dossiers SAV en cours » | **gardés** (11/10) ; on **ajoute** les tâches en retard |
+| Accueil | Agenda en 4 vues (Jour / Semaine / Mois / Année) | ↔ ✅ l'accueil montre un bloc **« À venir »** façon widget Calendrier de l'iPhone : les rendez-vous restants d'aujourd'hui ; s'il n'y en a pas (ou plus), les **prochains** avec leur jour (« Demain », « Jeudi 15 »…) ; les lignes libres sont **complétées avec les jours suivants** (comme le widget) ; jamais vide tant qu'un événement est à venir ; **4 lignes max** ; position sur téléphone à revoir sur un vrai téléphone ; lien « Voir l'agenda » vers l'agenda complet (11/10) |
+| Accueil | Les 5 compteurs : Réassorts à commander, Réassorts en route (« dont X en retard »), Clients à prévenir, Défectueux à traiter, Dossiers SAV en cours | **tous gardés et dessinés** (11/10), avec leurs couleurs actuelles ; un compteur à zéro reste masqué ; on **ajoute** un bloc « En retard » |
 | Cahier — Entrées | 4 compteurs en haut (lignes totales, lignes filtrées, unités, valeur estimée) | ✅ retirés |
 | Cahier — Entrées | 6 menus de filtres toujours visibles | ↔ ✅ repliés : pastilles + bouton « Filtres » (catégorie, statut, marque ; magasin et pointage pour la Direction) |
 | Cahier — Entrées | Colonne magasin | ✅ affichée sur chaque ligne **pour les comptes Direction seulement** (11/10) |
@@ -101,11 +101,11 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | SAV | Champ magasin à la création | ⏸ à décider sur la maquette de l'écran |
 | Planning | 4 lignes vides ajoutées d'office | ⏸ à décider sur la maquette de l'écran |
 | Achats, Paie, Factures, Répertoire, Plan de règlement | — | rien de retiré prévu à ce jour |
-| Accueil | Compteurs « Réassorts à commander », « Clients à prévenir », « Défectueux à traiter » (avec leur couleur) | ⚠️ **absents de la maquette, gardés par défaut** — à confirmer (la maquette n'a dessiné que « en route » et « SAV en cours ») |
 | Menu | Pastilles de comptage colorées (Réassorts, Défectueux, Commandes) et rappel orange « À remplir avant le 25 » sur la paie | ⚠️ absents de la maquette — **gardés**, à dessiner |
 | Partout | **Sélecteur de saison** (pastille de couleur par saison) | ⚠️ absent de la maquette — **gardé**, à dessiner |
 | Cahier — Entrées | Bouton « Importer CSV » ; sélection multiple + changement de statut groupé | ⚠️ absents de la maquette — **gardés**, à dessiner |
-| Saisie d'une entrée | **Copier / Coller** une grille de pointures ; champs **Catégorie** et **Statut** à la création | ⚠️ absents de la maquette (catégorie déduite de la grille, statut vide) — **gardés par défaut**, à confirmer |
+| Saisie d'une entrée | Champs **Catégorie** et **Statut** à la création | ✅ **gardés** (11/10) : pré-remplis quand l'outil peut les déduire (catégorie depuis la grille), **toujours visibles et modifiables d'un toucher** ; jamais de valeur choisie sans que la vendeuse la voie |
+| Saisie d'une entrée | **Copier / Coller** une grille de pointures | ⚠️ absent de la maquette — **gardé**, à dessiner |
 | Agenda | Couleurs par magasin (Albi bleu, Rouffiac vert, 2 Zèbres orange) | ⚠️ maquette avec d'autres couleurs — **gardées** |
 
 ## 2 ter. Codes couleur de l'outil actuel (conservés)
@@ -122,7 +122,7 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Couleurs des compteurs et pastilles de menu | Une couleur par type (réassorts, défectueux, commandes, SAV) | Accueil, menu (à dessiner) |
 | Couleurs d'agenda | Une couleur par magasin | Agenda |
 
-Ajouté par la refonte (à valider) : **point de couleur du statut** des entrées (Imp. étiquettes orange, Enregistré vert, Réassort bleu, Retour rouge) — dans l'outil actuel le statut est en texte gris.
+**Point de couleur du statut** des entrées : **gardé** (11/10). ⚠️ L'outil actuel n'a **pas** de couleur de statut (texte gris) : couleurs à confirmer — proposition de la maquette : Imp. étiquettes orange, Enregistré vert, Réassort bleu, Retour rouge.
 
 ---
 

@@ -201,9 +201,11 @@ button.ligne:hover,.ligne.cliquable:hover{background:color-mix(in srgb,var(--tex
 .carte{background:var(--surface);border-radius:var(--rayon);padding:16px}
 .jour-agenda{font-size:var(--t-meta);font-weight:700;color:var(--accent-texte);padding:10px 16px 0}
 .jour-agenda + .ligne::before{display:none}
-.compteurs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0 4px;max-width:560px}
-.compteur{background:var(--surface);border-radius:var(--rayon);padding:12px 14px;text-align:left;display:flex;flex-direction:column;gap:2px;min-height:64px}
-.compteur b{font-size:24px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.compteurs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:14px 0 4px}
+.compteur{position:relative;overflow:hidden;background:var(--surface);border-radius:var(--rayon);padding:12px 14px 12px 18px;text-align:left;display:flex;flex-direction:column;gap:2px;min-height:72px}
+.compteur::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+.compteur b{font-size:24px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--c)}
+.compteur em{font-style:normal;font-size:12px;font-weight:600;color:#f97316}
 .compteur span{font-size:var(--t-meta);color:var(--doux)}
 .compteur:hover{background:color-mix(in srgb,var(--texte) 3%,var(--surface))}
 .pt-suivi{min-height:52px;border-radius:10px;background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:600;font-size:15px}
@@ -261,6 +263,8 @@ const SIZES = {
   DP:['35-36','37-38','39-40','41-42','43-44','45-46'],
 }
 const GRILLE_NOM = { F:'Femme', H:'Homme', DP:'Double pointure' }
+const CATEGORIES = ['Femme','Homme','Enfant','Bébé','Acc']
+const CAT_DE_GRILLE = { F:'Femme', H:'Homme', E:'Enfant', B:'Bébé', ACC:'Acc' }   // déduction (comme l'outil actuel) ; DP : à choisir
 const MARQUES = {
   'Palladium': { modeles: {
     'PAMPA HI, Mojave desert': { grille:'F', attendu:{'36':1,'37':1,'38':2,'39':2,'40':1,'41':1}, recu:{'36':1,'38':1}, prix:34.15 },
@@ -347,11 +351,9 @@ function libelleJour(iso) {
 function evenementsAVenir(max = 4) {
   const auj = MAINTENANT.slice(0, 10), heure = MAINTENANT.slice(11)
   const tries = EVENEMENTS.slice().sort((x, y) => (x.date + (x.debut || '00:00')).localeCompare(y.date + (y.debut || '00:00')))
-  // 1. ce qui reste aujourd'hui (pas encore terminé, ou toute la journée)
+  // ce qui reste aujourd'hui (pas encore terminé, ou toute la journée), puis les jours suivants pour compléter les lignes libres
   const restantAuj = tries.filter(e => e.date === auj && (!e.fin || e.fin > heure))
-  if (restantAuj.length) return restantAuj.slice(0, max)
-  // 2. sinon : les prochains événements, avec leur jour
-  return tries.filter(e => e.date > auj).slice(0, max)
+  return [...restantAuj, ...tries.filter(e => e.date > auj)].slice(0, max)
 }
 function blocAVenir() {
   const evs = evenementsAVenir(4)
@@ -398,9 +400,10 @@ if (P.get('theme')) document.documentElement.dataset.theme = P.get('theme')
 
 let form = nouveauForm('Palladium')
 if (P.get('demo') === 'liv') { etat.onglet = 'livraisons'; etat.livOuverte = 'Bailly Albi|Palladium'; etat.livModele = 'Bailly Albi|Palladium|PAMPA HI, Mojave desert' }  // pour les captures
-if (P.get('demo') === '1') { form.modele = 'PAMPA HI, Mojave desert'; form.qte = { '38':1, '39':2, '40':1 } }  // pour les captures
+if (P.get('demo') === '1') { form.modele = 'PAMPA HI, Mojave desert'; form.qte = { '38':1, '39':2, '40':1 }; form.categorie = 'Femme'; form.categorieAuto = true }  // pour les captures
 function nouveauForm(marque, garder = {}) {
-  return { mode:'reception', marque, modele:null, grille: garder.grille || 'F', numero: garder.numero ?? '3', date: AUJ, qte:{}, retirer:false, choixMarque:false }
+  return { mode:'reception', marque, modele:null, grille: garder.grille || 'F', numero: garder.numero ?? '3', date: AUJ, qte:{}, retirer:false, choixMarque:false,
+    categorie:'', categorieAuto:false, statut: garder.statut ?? '' }
 }
 
 const fmtEur = n => n.toLocaleString('fr-FR', { style:'currency', currency:'EUR' })
@@ -485,9 +488,17 @@ function vueConnexion() {
   </form></div>`
 }
 
+// Compteurs de l'accueil : mêmes intitulés et couleurs que l'outil actuel ; un compteur à zéro est masqué
+const COMPTEURS = [
+  { label:'Réassorts à commander', n:1, couleur:'#ef4444', nav:'reassorts' },
+  { label:'Réassorts en route',    n:2, couleur:'#8b5cf6', nav:'reassorts', sous:'dont 1 en retard' },
+  { label:'Clients à prévenir',    n:3, couleur:'#0891b2', nav:'commandes' },
+  { label:'Défectueux à traiter',  n:2, couleur:'#e11d48', nav:'sav' },
+  { label:'Dossiers SAV en cours', n:3, couleur:'#0e7490', nav:'sav' },
+  { label:'Exemple à zéro (masqué)', n:0, couleur:'#94a3b8', nav:'accueil' },
+]
 function vueAccueil() {
   const aFaire = [
-    ['commande','3 commandes clients reçues','Clients à prévenir', 'att'],
     ['sav','2 dossiers SAV sans réponse','Mail envoyé il y a plus de 7 jours','att'],
     ['reassort','1 réassort en retard','Palladium · demandé il y a 16 jours','err'],
     ['entrees','2 entrées à pointer','Reçues aujourd\'hui','info'],
@@ -499,13 +510,12 @@ function vueAccueil() {
       <button class="btn">${ic('commande','style="width:20px;height:20px"')} Commande client</button>
       <button class="btn">${ic('sav','style="width:20px;height:20px"')} Dossier SAV</button>
     </div>
-    <div class="compteurs">
-      <button class="compteur" data-nav="reassorts"><b>2</b><span>Réassorts en route</span></button>
-      <button class="compteur" data-nav="sav"><b>3</b><span>Dossiers SAV en cours</span></button>
+    <div class="compteurs">${COMPTEURS.filter(c => c.n > 0).map(c => `
+      <button class="compteur" data-nav="${c.nav}" style="--c:${c.couleur}"><b>${c.n}</b><span>${c.label}</span>${c.sous ? `<em>${c.sous}</em>` : ''}</button>`).join('')}
     </div>
     <div class="grille-accueil">
       <section>
-        <h2 class="groupe-titre">À faire aujourd'hui · en retard</h2>
+        <h2 class="groupe-titre">En retard</h2>
         <div class="liste">${aFaire.map(([i,t,s,c]) => `<button class="ligne" ${i==='entrees'?'data-nav="entrees"':''}>
           <span style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--${c==='info'?'accent':c}-teinte);color:var(--${c==='info'?'accent-texte':c})">${ic(i,'style="width:20px;height:20px"')}</span>
           <span class="txt"><span class="t1">${t}</span><div class="t2">${s}</div></span>${ic('chevron','style="color:var(--discret)"')}</button>`).join('')}</div>
@@ -724,6 +734,11 @@ function contenuSaisie(dansPanneau) {
       <span>Grille <b>${GRILLE_NOM[form.grille]}</b></span>
       <button class="lien">Modifier</button>
     </div>
+    <span class="etiquette">Catégorie ${form.categorieAuto ? '<span style="font-weight:400;color:var(--discret)">— déduite de la grille, touchez pour changer</span>' : form.categorie ? '' : '<span style="font-weight:600;color:var(--att)">— à choisir</span>'}</span>
+    <div class="chips" style="flex-wrap:wrap;margin-bottom:12px">${CATEGORIES.map(c => `<button class="chip" data-cat="${c}" aria-pressed="${form.categorie === c}">${c}</button>`).join('')}</div>
+    <span class="etiquette">Statut</span>
+    ${retour ? `<div class="chips" style="margin-bottom:16px"><button class="chip" aria-pressed="true" disabled>Retour</button></div>`
+      : `<div class="chips" style="flex-wrap:wrap;margin-bottom:16px">${[['','Aucun'], ...STATUTS.filter(x => x !== 'Retour').map(x => [x, x])].map(([v, l]) => `<button class="chip" data-statut-saisie="${v}" aria-pressed="${form.statut === v}">${v ? `<span class="puce ${STATUT_CLASSE[v]}" style="color:inherit">${l}</span>` : l}</button>`).join('')}</div>`}
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
       <span class="etiquette" style="margin:0">Touchez une pointure pour ${form.retirer ? 'retirer' : 'ajouter'} une paire</span>
       <div class="segment" role="group" aria-label="Ajouter ou retirer">
@@ -761,7 +776,7 @@ function toast(txt, annuler) {
   clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('visible'), 5000)
 }
 document.addEventListener('click', ev => {
-  const el = ev.target.closest('[data-livmod],[data-livf],[data-nav],[data-act],[data-onglet],[data-filtre],[data-pointer],[data-ouvrir],[data-liv],[data-mode],[data-marque],[data-modele],[data-pt],[data-statut]')
+  const el = ev.target.closest('[data-cat],[data-statut-saisie],[data-livmod],[data-livf],[data-nav],[data-act],[data-onglet],[data-filtre],[data-pointer],[data-ouvrir],[data-liv],[data-mode],[data-marque],[data-modele],[data-pt],[data-statut]')
   if (!el) return
   const d = el.dataset
   if (d.nav) return aller(d.nav)
@@ -779,7 +794,10 @@ document.addEventListener('click', ev => {
   if (d.statut) { const e = ENTREES.find(x => x.id === etat.selection); e.statut = d.statut; rendu(); if (document.querySelector('.feuille.detail')) ouvrirDetailFeuille(); return toast('Statut : ' + d.statut) }
   if (d.mode) { form.mode = d.mode; form.qte = {}; return rendu() }
   if (d.marque) { form = nouveauForm(d.marque, { numero: form.numero }); return rendu() }
-  if (d.modele) { form.modele = d.modele; form.grille = MARQUES[form.marque].modeles[d.modele].grille; form.qte = {}; return rendu() }
+  if (d.modele) { form.modele = d.modele; form.grille = MARQUES[form.marque].modeles[d.modele].grille; form.qte = {}
+    form.categorie = CAT_DE_GRILLE[form.grille] || ''; form.categorieAuto = !!form.categorie; return rendu() }
+  if (d.cat) { form.categorie = d.cat; form.categorieAuto = false; return rendu() }
+  if (d.statutSaisie !== undefined) { form.statut = d.statutSaisie; return rendu() }
   if (d.pt) { const q = form.qte[d.pt] || 0; const n = form.retirer ? Math.max(0, q - 1) : q + 1; if (n) form.qte[d.pt] = n; else delete form.qte[d.pt]; return rendu() }
   switch (d.act) {
     case 'nouvelle': case 'nouvelle-depuis-accueil':
@@ -800,10 +818,10 @@ document.addEventListener('click', ev => {
       const mod = MARQUES[form.marque].modeles[form.modele], retour = form.mode === 'retour'
       const tot = Object.values(form.qte).reduce((s, v) => s + v, 0) * (retour ? -1 : 1)
       const sizes = Object.fromEntries(Object.entries(form.qte).map(([k, v]) => [k, retour ? -v : v]))
-      const e = { id: Date.now(), magasin: MAGASIN_APPAREIL, categorie: { F:'Femme', H:'Homme', DP:'Femme' }[form.grille], date: AUJ, marque: form.marque, modele: form.modele, numero: form.numero, paires: tot, montant: Math.round(mod.prix * tot * 100) / 100, statut: retour ? 'Retour' : '', pointe: false, sizes, grille: form.grille }
+      const e = { id: Date.now(), magasin: MAGASIN_APPAREIL, categorie: form.categorie, date: AUJ, marque: form.marque, modele: form.modele, numero: form.numero, paires: tot, montant: Math.round(mod.prix * tot * 100) / 100, statut: retour ? 'Retour' : form.statut, pointe: false, sizes, grille: form.grille }
       ENTREES.unshift(e)
       if (!retour) Object.entries(form.qte).forEach(([k, v]) => mod.recu[k] = (mod.recu[k] || 0) + v)
-      form = nouveauForm(form.marque, { numero: form.numero, grille: form.grille })   // on garde marque, N°, date et grille : carton suivant
+      form = nouveauForm(form.marque, { numero: form.numero, grille: form.grille, statut: form.statut })   // on garde marque, N°, date et grille : carton suivant
       rendu()
       return toast(`Enregistrée : ${e.marque} · ${e.modele}, ${e.paires} paire${Math.abs(e.paires) > 1 ? 's' : ''}`, () => { ENTREES = ENTREES.filter(x => x.id !== e.id); rendu() })
     }
