@@ -190,6 +190,19 @@ button.ligne:hover,.ligne.cliquable:hover{background:color-mix(in srgb,var(--tex
 .lien{color:var(--accent-texte);font-weight:600;font-size:14px;min-height:36px;padding:0 4px}
 
 .carte{background:var(--surface);border-radius:var(--rayon);padding:16px}
+.compteurs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0 4px;max-width:560px}
+.compteur{background:var(--surface);border-radius:var(--rayon);padding:12px 14px;text-align:left;display:flex;flex-direction:column;gap:2px;min-height:64px}
+.compteur b{font-size:24px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.compteur span{font-size:var(--t-meta);color:var(--doux)}
+.compteur:hover{background:color-mix(in srgb,var(--texte) 3%,var(--surface))}
+.pt-suivi{min-height:52px;border-radius:10px;background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:600;font-size:15px}
+.pt-suivi small{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.pt-suivi.ok{background:var(--ok-teinte)} .pt-suivi.ok small{color:var(--ok)}
+.pt-suivi.part{background:var(--att-teinte)} .pt-suivi.part small{color:var(--att)}
+.pt-suivi.zero small{color:var(--discret)}
+.resume-global{display:flex;align-items:center;gap:16px;margin:12px 0 4px}
+.resume-global .grand{font-size:30px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;min-width:84px}
+select.champ{appearance:auto}
 .grille-accueil{display:grid;gap:20px}
 @media (min-width:1000px){.grille-accueil{grid-template-columns:1.4fr 1fr}}
 .action-rapide{display:flex;gap:10px;flex-wrap:wrap}
@@ -255,21 +268,43 @@ const MARQUES = {
   }},
 }
 const AUJ = '10/10/2026'
+const MAGASIN_APPAREIL = 'Bailly Albi'   // magasin de l'appareil (maquette)
 let ENTREES = [
-  { id:7, date:'10/10/2026', marque:'Palladium', modele:'PAMPA HI, Mojave desert', numero:'3', paires:2, montant:68.30, statut:'Enregistré', pointe:false, sizes:{'36':1,'38':1}, grille:'F' },
-  { id:6, date:'10/10/2026', marque:'Sebago', modele:'Jacklyn, Pink white', numero:'2', paires:1, montant:58.00, statut:'Imp. étiquettes', pointe:false, sizes:{'37':1}, grille:'F' },
-  { id:5, date:'09/10/2026', marque:'Fluchos', modele:'F0047, Burdeos', numero:'3', paires:5, montant:249.30, statut:'Enregistré', pointe:true, sizes:{'41':1,'42':1,'43':1,'44':1,'45':1}, grille:'H' },
-  { id:4, date:'09/10/2026', marque:'Miss Elastic', modele:'75050-67-05, Negro', numero:'', paires:-1, montant:-29.90, statut:'Retour', pointe:false, sizes:{'38':-1}, grille:'F' },
-  { id:3, date:'08/10/2026', marque:'Birkenstock', modele:'Arizona, Taupe', numero:'3', paires:6, montant:212.40, statut:'Réassort', pointe:true, sizes:{'38':2,'39':2,'40':2}, grille:'F' },
-  { id:2, date:'08/10/2026', marque:'Rains', modele:'Hilo weekend bag, Navy', numero:'1', paires:2, montant:53.00, statut:'Enregistré', pointe:true, sizes:{'TU':2}, grille:'F' },
+  { id:9, date:'10/10/2026', magasin:'Bailly Rouffiac Tolosan', categorie:'Femme', marque:'Coco & Abricot', modele:'V3298C, Creme', numero:'2', paires:8, montant:273.20, statut:'Enregistré', pointe:false, sizes:{'36':1,'37':1,'38':2,'39':2,'40':1,'41':1}, grille:'F' },
+  { id:8, date:'09/10/2026', magasin:'Les 2 Zèbres', categorie:'Homme', marque:'Dr Martens', modele:'1460, Black smooth', numero:'1', paires:3, montant:224.70, statut:'Imp. étiquettes', pointe:false, sizes:{'41':1,'42':1,'43':1}, grille:'H' },
+  { id:7, magasin:'Bailly Albi', categorie:'Femme', date:'10/10/2026', marque:'Palladium', modele:'PAMPA HI, Mojave desert', numero:'3', paires:2, montant:68.30, statut:'Enregistré', pointe:false, sizes:{'36':1,'38':1}, grille:'F' },
+  { id:6, magasin:'Bailly Albi', categorie:'Femme', date:'10/10/2026', marque:'Sebago', modele:'Jacklyn, Pink white', numero:'2', paires:1, montant:58.00, statut:'Imp. étiquettes', pointe:false, sizes:{'37':1}, grille:'F' },
+  { id:5, magasin:'Bailly Albi', categorie:'Homme', date:'09/10/2026', marque:'Fluchos', modele:'F0047, Burdeos', numero:'3', paires:5, montant:249.30, statut:'Enregistré', pointe:true, sizes:{'41':1,'42':1,'43':1,'44':1,'45':1}, grille:'H' },
+  { id:4, magasin:'Bailly Albi', categorie:'Femme', date:'09/10/2026', marque:'Miss Elastic', modele:'75050-67-05, Negro', numero:'', paires:-1, montant:-29.90, statut:'Retour', pointe:false, sizes:{'38':-1}, grille:'F' },
+  { id:3, magasin:'Bailly Albi', categorie:'Femme', date:'08/10/2026', marque:'Birkenstock', modele:'Arizona, Taupe', numero:'3', paires:6, montant:212.40, statut:'Réassort', pointe:true, sizes:{'38':2,'39':2,'40':2}, grille:'F' },
+  { id:2, magasin:'Bailly Albi', categorie:'Acc', date:'08/10/2026', marque:'Rains', modele:'Hilo weekend bag, Navy', numero:'1', paires:2, montant:53.00, statut:'Enregistré', pointe:true, sizes:{'TU':2}, grille:'F' },
 ]
-const LIVRAISONS = [
-  { marque:'Palladium', recu:2, attendu:22, modeles:[['PAMPA HI, Mojave desert',2,8],['PALLA ACE CVS, Star white',0,8],['PAMPA OX WILD, Leopard',0,6]] },
-  { marque:'Sebago', recu:1, attendu:14, modeles:[['Docksides, Brown honey',0,8],['Jacklyn, Pink white',1,6]] },
-  { marque:'Fluchos', recu:5, attendu:5, modeles:[['F0047, Burdeos',5,5]] },
-  { marque:'Crocs', recu:0, attendu:10, modeles:[['Classic Clog, Black',0,10]] },
-  { marque:'Birkenstock', recu:30, attendu:36, modeles:[['Arizona, Taupe',18,20],['Boston, Mocha',12,16]] },
-]
+const md = (nom, numero, attendu, recu) => ({ nom, numero, attendu, recu })
+const LIVRAISONS = {
+  'Bailly Albi': [
+    { marque:'Palladium', modeles:[
+      md('PAMPA HI, Mojave desert','3',{'36':1,'37':1,'38':2,'39':2,'40':1,'41':1},{'36':1,'38':1}),
+      md('PALLA ACE CVS, Star white','3',{'36':1,'37':1,'38':2,'39':2,'40':1,'41':1},{}),
+      md('PAMPA OX WILD, Leopard','4',{'41':1,'42':2,'43':2,'44':1},{}) ] },
+    { marque:'Sebago', modeles:[
+      md('Docksides, Brown honey','2',{'40':1,'41':1,'42':2,'43':2,'44':1,'45':1},{}),
+      md('Jacklyn, Pink white','2',{'36':1,'37':1,'38':2,'39':1,'40':1},{'37':1}) ] },
+    { marque:'Fluchos', modeles:[ md('F0047, Burdeos','3',{'41':1,'42':1,'43':1,'44':1,'45':1},{'41':1,'42':1,'43':1,'44':1,'45':1}) ] },
+    { marque:'Crocs', modeles:[ md('Classic Clog, Black','1',{'37-38':2,'39-40':3,'41-42':3,'43-44':2},{}) ] },
+    { marque:'Birkenstock', modeles:[
+      md('Arizona, Taupe','3',{'37':4,'38':6,'39':6,'40':4},{'37':4,'38':6,'39':4,'40':4}),
+      md('Boston, Mocha','3',{'38':4,'39':4,'40':4,'41':4},{'38':4,'39':4,'40':4}) ] },
+  ],
+  'Bailly Rouffiac Tolosan': [
+    { marque:'Coco & Abricot', modeles:[ md('V3298C, Creme','2',{'36':1,'37':1,'38':2,'39':2,'40':1,'41':1},{'36':1,'37':1,'38':2,'39':2,'40':1,'41':1}), md('V3315N, Sand','2',{'36':1,'37':2,'38':2,'39':1,'40':1},{'37':1}) ] },
+    { marque:'Palladium', modeles:[ md('PAMPA HI, Mojave desert','5',{'36':1,'37':1,'38':2,'39':2,'40':1,'41':1},{}) ] },
+  ],
+  'Les 2 Zèbres': [
+    { marque:'Dr Martens', modeles:[ md('1460, Black smooth','1',{'41':3,'42':3,'43':3},{'41':1,'42':1,'43':1}) ] },
+    { marque:'Sebago', modeles:[ md('Docksides, Brown tan','1',{'40':1,'41':1,'42':2,'43':2,'44':1,'45':1},{'40':1,'41':1,'42':2,'43':2,'44':1,'45':1}) ] },
+  ],
+}
+const somme = o => Object.values(o).reduce((s, v) => s + v, 0)
 const STATUTS = ['Imp. étiquettes','Enregistré','Réassort','Retour']
 const STATUT_CLASSE = { 'Imp. étiquettes':'att', 'Enregistré':'ok', 'Réassort':'info', 'Retour':'err', '':'' }
 
@@ -283,7 +318,13 @@ const etat = {
   recherche: '',
   selection: null,              // id entrée affichée dans le panneau
   saisieOuverte: P.get('screen') === 'saisie',
-  livOuverte: null,
+  livOuverte: null,             // marque dépliée (clé magasin|marque)
+  livModele: null,              // modèle dont on montre les pointures
+  livMag: MAGASIN_APPAREIL,     // par défaut : le magasin de l'appareil
+  livQ: '',
+  livFiltre: 'toutes',          // toutes | encours | completes | nonrecues
+  f: { categorie:'', statut:'', marque:'', magasin:'', pointe:'' },   // filtres de la liste des entrées
+  filtresOuverts: false,
   plusOuvert: false,
 }
 if (etat.ecran === 'saisie') etat.ecran = 'entrees'
@@ -291,7 +332,8 @@ document.body.dataset.dir = etat.dir
 if (P.get('theme')) document.documentElement.dataset.theme = P.get('theme')
 
 let form = nouveauForm('Palladium')
-if (P.get('demo')) { form.modele = 'PAMPA HI, Mojave desert'; form.qte = { '38':1, '39':2, '40':1 } }  // pour les captures
+if (P.get('demo') === 'liv') { etat.onglet = 'livraisons'; etat.livOuverte = 'Bailly Albi|Palladium'; etat.livModele = 'Bailly Albi|Palladium|PAMPA HI, Mojave desert' }  // pour les captures
+if (P.get('demo') === '1') { form.modele = 'PAMPA HI, Mojave desert'; form.qte = { '38':1, '39':2, '40':1 } }  // pour les captures
 function nouveauForm(marque, garder = {}) {
   return { mode:'reception', marque, modele:null, grille: garder.grille || 'F', numero: garder.numero ?? '3', date: AUJ, qte:{}, retirer:false, choixMarque:false }
 }
@@ -314,6 +356,7 @@ function rendu() {
   ${barreOnglets()}
   ${etat.ecran === 'entrees' && etat.onglet === 'entrees' ? `<button class="btn btn-prim action-flottante" data-act="nouvelle">${ic('ajout')} Entrée</button>` : ''}
   ${vueSaisie()}
+  ${vueFiltres()}
   ${vuePlus()}`
   // Détail ouvert en feuille (téléphone / direction B) : on le tient à jour
   const fd = document.querySelector('.feuille.detail')
@@ -391,9 +434,13 @@ function vueAccueil() {
       <button class="btn">${ic('commande','style="width:20px;height:20px"')} Commande client</button>
       <button class="btn">${ic('sav','style="width:20px;height:20px"')} Dossier SAV</button>
     </div>
+    <div class="compteurs">
+      <button class="compteur" data-nav="reassorts"><b>2</b><span>Réassorts en route</span></button>
+      <button class="compteur" data-nav="sav"><b>3</b><span>Dossiers SAV en cours</span></button>
+    </div>
     <div class="grille-accueil">
       <section>
-        <h2 class="groupe-titre">À faire aujourd'hui</h2>
+        <h2 class="groupe-titre">À faire aujourd'hui · en retard</h2>
         <div class="liste">${aFaire.map(([i,t,s,c]) => `<button class="ligne" ${i==='entrees'?'data-nav="entrees"':''}>
           <span style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--${c==='info'?'accent':c}-teinte);color:var(--${c==='info'?'accent-texte':c})">${ic(i,'style="width:20px;height:20px"')}</span>
           <span class="txt"><span class="t1">${t}</span><div class="t2">${s}</div></span>${ic('chevron','style="color:var(--discret)"')}</button>`).join('')}</div>
@@ -423,13 +470,34 @@ function vueAutre() {
 
 // ─── Cahier des entrées ─────────────────────────────────────────
 function filtrees() {
-  const q = etat.recherche.trim().toLowerCase()
+  const q = etat.recherche.trim().toLowerCase(), f = etat.f
   return ENTREES.filter(e =>
+    (DIRECTION || e.magasin === MAGASIN_APPAREIL) &&
     (etat.filtre === 'toutes' || (etat.filtre === 'apointer' && !e.pointe) || (etat.filtre === 'retours' && e.statut === 'Retour')) &&
-    (!q || `${e.marque} ${e.modele} ${e.numero}`.toLowerCase().includes(q)))
+    (!q || `${e.marque} ${e.modele} ${e.numero}`.toLowerCase().includes(q)) &&
+    (!f.categorie || e.categorie === f.categorie) && (!f.statut || e.statut === f.statut) && (!f.marque || e.marque === f.marque) &&
+    (!DIRECTION || ((!f.magasin || e.magasin === f.magasin) && (!f.pointe || (f.pointe === 'oui') === e.pointe))))
+}
+function vueFiltres() {
+  if (!etat.filtresOuverts) return ''
+  const base = ENTREES.filter(e => DIRECTION || e.magasin === MAGASIN_APPAREIL)
+  const opts = (k, val) => [...new Set(base.map(e => e[k]).filter(Boolean))].sort().map(v => `<option ${v === val ? 'selected' : ''}>${esc(v)}</option>`).join('')
+  const champ = (lib, k, tout, options) => `<label class="etiquette" style="margin-top:14px">${lib}</label><select class="champ" data-f="${k}"><option value="">${tout}</option>${options}</select>`
+  return `<div class="feuille-fond ouvert" data-act="fermer-filtres"></div>
+  <div class="feuille ouvert" role="dialog" aria-label="Filtres">
+    <div class="feuille-entete"><h2>Filtres</h2><button class="icone-btn" data-act="fermer-filtres" aria-label="Fermer">${ic('fermer')}</button></div>
+    <div class="feuille-corps">
+      ${champ('Catégorie', 'categorie', 'Toutes les catégories', opts('categorie', etat.f.categorie))}
+      ${champ('Statut', 'statut', 'Tous les statuts', opts('statut', etat.f.statut))}
+      ${champ('Marque', 'marque', 'Toutes les marques', opts('marque', etat.f.marque))}
+      ${DIRECTION ? champ('Magasin', 'magasin', 'Tous les magasins', opts('magasin', etat.f.magasin)) : ''}
+      ${DIRECTION ? champ('Pointage', 'pointe', 'Pointées et non pointées', `<option value="non" ${etat.f.pointe==='non'?'selected':''}>Non pointées</option><option value="oui" ${etat.f.pointe==='oui'?'selected':''}>Pointées</option>`) : ''}
+    </div>
+    <div class="feuille-pied"><button class="btn btn-ghost" data-act="raz-filtres">Réinitialiser</button><span style="flex:1"></span><button class="btn btn-prim" data-act="fermer-filtres">Afficher ${filtrees().length} entrée${filtrees().length > 1 ? 's' : ''}</button></div>
+  </div>`
 }
 function vueCahier() {
-  const aPointer = ENTREES.filter(e => !e.pointe).length
+  const aPointer = ENTREES.filter(e => !e.pointe && (DIRECTION || e.magasin === MAGASIN_APPAREIL)).length
   const panneauOuvert = etat.dir === 'A' && (etat.selection || etat.saisieOuverte) && etat.onglet === 'entrees'
   return `<main class="page large">
     <div class="entete">
@@ -454,7 +522,7 @@ function vueCahier() {
             ${DIRECTION ? `<button class="chip" data-filtre="apointer" aria-pressed="${etat.filtre==='apointer'}">À pointer <span class="n">${aPointer}</span></button>` : ''}
             <button class="chip" data-filtre="retours" aria-pressed="${etat.filtre==='retours'}">Retours</button>
           </div>
-          <button class="chip" title="Filtres">${ic('filtre','style="width:18px;height:18px"')} Filtres</button>
+          <button class="chip" data-act="filtres" aria-pressed="${Object.values(etat.f).some(Boolean)}">${ic('filtre','style="width:18px;height:18px"')} Filtres${Object.values(etat.f).filter(Boolean).length ? ' · ' + Object.values(etat.f).filter(Boolean).length : ''}</button>
         </div>
         ${listeEntrees()}
       </div>
@@ -473,7 +541,7 @@ function listeEntrees() {
       <div class="ligne cliquable" data-ouvrir="${e.id}" ${etat.selection === e.id ? 'aria-current="true"' : ''} style="cursor:pointer">
         <div class="txt">
           <div class="t1">${esc(e.marque)} <span>· ${esc(e.modele)}</span></div>
-          <div class="t2">${e.numero ? 'N° ' + e.numero + ' · ' : ''}${e.paires} paire${Math.abs(e.paires) > 1 ? 's' : ''} · ${fmtEur(e.montant)}</div>
+          <div class="t2">${DIRECTION ? esc(e.magasin) + ' · ' : ''}${e.numero ? 'N° ' + e.numero + ' · ' : ''}${e.paires} paire${Math.abs(e.paires) > 1 ? 's' : ''} · ${fmtEur(e.montant)}</div>
         </div>
         <span class="puce ${STATUT_CLASSE[e.statut]}">${e.statut || 'Sans statut'}</span>
         ${DIRECTION ? `<button class="pointer" data-pointer="${e.id}" aria-pressed="${e.pointe}" aria-label="${e.pointe ? 'Pointée' : 'Pointer'}"><span>${ic('check')}</span></button>` : ''}
@@ -487,6 +555,7 @@ function contenuDetail() {
   <div class="feuille-corps">
     <div style="font-weight:600">${esc(e.modele)}</div>
     <div class="resume" style="margin:6px 0 16px">${e.date}${e.numero ? ' · N° ' + e.numero : ''} · <b>${e.paires} paire${Math.abs(e.paires)>1?'s':''}</b> · <b>${fmtEur(e.montant)}</b></div>
+    <div class="resume" style="margin:-8px 0 16px"><span>Catégorie <b>${esc(e.categorie || '—')}</b></span>${DIRECTION ? `<span>Magasin <b>${esc(e.magasin)}</b></span>` : ''}</div>
     <span class="etiquette">Statut</span>
     <div class="chips" style="flex-wrap:wrap;margin-bottom:18px">${STATUTS.map(s => `<button class="chip" data-statut="${s}" aria-pressed="${e.statut===s}">${s}</button>`).join('')}</div>
     <span class="etiquette">Pointures (${GRILLE_NOM[e.grille]})</span>
@@ -499,18 +568,55 @@ function contenuDetail() {
   </div>`
 }
 function vueLivraisons() {
-  return `<div class="chips" style="margin-bottom:4px"><button class="chip" aria-pressed="true">En cours</button><button class="chip">Complètes</button><button class="chip">Non reçues</button></div>
-  <h2 class="groupe-titre">Bailly Albi · Hiver 2026</h2>
-  <div class="liste">${LIVRAISONS.map((l, i) => {
-    const pc = Math.round(l.recu / l.attendu * 100), ouvert = etat.livOuverte === i
-    return `<button class="ligne" data-liv="${i}" aria-expanded="${ouvert}">
-      <span class="txt"><span class="t1">${l.marque}</span>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:6px"><div class="barre" style="flex:1"><i class="${pc>=100?'ok':''}" style="width:${pc}%"></i></div>
-        <span class="t2" style="margin:0;min-width:110px;text-align:right">${l.recu} / ${l.attendu} paires · ${pc} %</span></div></span>
-      ${ic(ouvert ? 'bas' : 'chevron','style="color:var(--discret)"')}</button>
-      ${ouvert ? l.modeles.map(([m, r, a]) => `<div class="ligne" style="padding-left:32px;min-height:52px"><span class="txt"><span class="t1" style="font-weight:500">${m}</span>
-        <div class="t2">${r} / ${a} reçues${r < a ? ' · reste ' + (a - r) : ' · complet'}</div></span></div>`).join('') : ''}`
-  }).join('')}</div>`
+  const mags = etat.livMag === 'tous' ? Object.keys(LIVRAISONS) : [etat.livMag]
+  const q = etat.livQ.trim().toLowerCase()
+  const passe = b => etat.livFiltre === 'toutes' || (etat.livFiltre === 'encours' && b.recu > 0 && b.recu < b.attendu)
+    || (etat.livFiltre === 'completes' && b.recu >= b.attendu) || (etat.livFiltre === 'nonrecues' && b.recu === 0)
+  const blocs = mags.map(mag => ({ mag, marques: LIVRAISONS[mag]
+    .map(b => ({ ...b, recu: b.modeles.reduce((t, m) => t + somme(m.recu), 0), attendu: b.modeles.reduce((t, m) => t + somme(m.attendu), 0) }))
+    .filter(b => (!q || b.marque.toLowerCase().includes(q)) && passe(b)) }))
+  const tot = blocs.flatMap(b => b.marques).reduce((t, b) => ({ r: t.r + b.recu, a: t.a + b.attendu }), { r: 0, a: 0 })
+  const pcG = tot.a ? Math.round(tot.r / tot.a * 100) : 0
+  const chip = (k, l) => `<button class="chip" data-livf="${k}" aria-pressed="${etat.livFiltre === k}">${l}</button>`
+  return `
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+    <select class="champ" data-livmag style="flex:1;min-width:180px;max-width:280px" aria-label="Magasin">
+      ${Object.keys(LIVRAISONS).map(m => `<option value="${esc(m)}" ${etat.livMag === m ? 'selected' : ''}>${esc(m)}${m === MAGASIN_APPAREIL ? ' (cet appareil)' : ''}</option>`).join('')}
+      <option value="tous" ${etat.livMag === 'tous' ? 'selected' : ''}>Tous les magasins</option>
+    </select>
+    <div style="position:relative;flex:2;min-width:200px">
+      <span style="position:absolute;left:12px;top:11px;color:var(--discret)">${ic('cherche','style="width:20px;height:20px"')}</span>
+      <input class="champ" id="livq" placeholder="Rechercher une marque" value="${esc(etat.livQ)}" style="padding-left:40px" aria-label="Rechercher une marque">
+    </div>
+  </div>
+  <div class="carte resume-global">
+    <span class="grand">${pcG} %</span>
+    <span style="flex:1"><div class="barre" style="height:8px"><i class="${pcG >= 100 ? 'ok' : ''}" style="width:${Math.min(100, pcG)}%"></i></div>
+      <div class="t2" style="margin-top:6px;color:var(--doux);font-size:var(--t-meta)"><b style="color:var(--texte)">${tot.r}</b> paires reçues sur <b style="color:var(--texte)">${tot.a}</b> attendues</div></span>
+  </div>
+  <div class="chips" style="margin:12px 0 0">${chip('toutes','Toutes')}${chip('encours','En cours')}${chip('completes','Complètes')}${chip('nonrecues','Non reçues')}</div>
+  ${blocs.map(({ mag, marques }) => `
+    <h2 class="groupe-titre">${esc(mag)} · Hiver 2026</h2>
+    ${marques.length ? `<div class="liste">${marques.map(b => {
+      const cle = mag + '|' + b.marque, ouvert = etat.livOuverte === cle, pc = b.attendu ? Math.round(b.recu / b.attendu * 100) : 0
+      return `<button class="ligne" data-liv="${esc(cle)}" aria-expanded="${ouvert}">
+        <span class="txt"><span class="t1">${esc(b.marque)}</span>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:6px"><div class="barre" style="flex:1"><i class="${pc >= 100 ? 'ok' : ''}" style="width:${pc}%"></i></div>
+          <span class="t2" style="margin:0;min-width:120px;text-align:right">${b.recu} / ${b.attendu} paires · ${pc} %</span></div></span>
+        ${ic(ouvert ? 'bas' : 'chevron', 'style="color:var(--discret)"')}</button>
+        ${ouvert ? b.modeles.map(m => {
+          const cm = cle + '|' + m.nom, mo = etat.livModele === cm, r = somme(m.recu), a = somme(m.attendu), p = a ? Math.round(r / a * 100) : 0
+          return `<button class="ligne" data-livmod="${esc(cm)}" aria-expanded="${mo}" style="padding-left:32px;min-height:56px">
+            <span class="txt"><span class="t1" style="font-weight:500">${esc(m.nom)} <span>· N° ${esc(m.numero)}</span></span>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:5px"><div class="barre" style="flex:1;height:5px"><i class="${p >= 100 ? 'ok' : ''}" style="width:${p}%"></i></div>
+              <span class="t2" style="margin:0;min-width:120px;text-align:right">${r} / ${a} reçues${r < a ? ' · reste ' + (a - r) : ' · complet'}</span></div></span>
+            ${ic(mo ? 'bas' : 'chevron', 'style="color:var(--discret);width:18px;height:18px"')}</button>
+            ${mo ? `<div style="padding:4px 16px 14px 32px"><div class="pointures" style="grid-template-columns:repeat(auto-fill,minmax(64px,1fr))">${Object.keys(m.attendu).map(t => {
+              const ra = m.recu[t] || 0, at = m.attendu[t]
+              return `<div class="pt-suivi ${ra >= at ? 'ok' : ra > 0 ? 'part' : 'zero'}">${t}<small>${ra} / ${at}</small></div>` }).join('')}</div>
+              <div style="margin-top:8px;font-size:var(--t-meta);color:var(--doux)">Reçu / attendu par pointure — vert : complet, orange : partiel</div></div>` : ''}`
+        }).join('') : ''}`
+    }).join('')}</div>` : `<div class="vide" style="padding:24px">Aucune marque ne correspond.</div>`}`).join('')}`
 }
 
 // ─── Saisie d'une entrée ────────────────────────────────────────
@@ -593,7 +699,7 @@ function toast(txt, annuler) {
   clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('visible'), 5000)
 }
 document.addEventListener('click', ev => {
-  const el = ev.target.closest('[data-nav],[data-act],[data-onglet],[data-filtre],[data-pointer],[data-ouvrir],[data-liv],[data-mode],[data-marque],[data-modele],[data-pt],[data-statut]')
+  const el = ev.target.closest('[data-livmod],[data-livf],[data-nav],[data-act],[data-onglet],[data-filtre],[data-pointer],[data-ouvrir],[data-liv],[data-mode],[data-marque],[data-modele],[data-pt],[data-statut]')
   if (!el) return
   const d = el.dataset
   if (d.nav) return aller(d.nav)
@@ -605,7 +711,9 @@ document.addEventListener('click', ev => {
     if (!(etat.dir === 'A' && window.innerWidth >= 1100)) return ouvrirDetailFeuille()
     return rendu()
   }
-  if (d.liv) { etat.livOuverte = etat.livOuverte === +d.liv ? null : +d.liv; return rendu() }
+  if (d.liv) { etat.livOuverte = etat.livOuverte === d.liv ? null : d.liv; etat.livModele = null; return rendu() }
+  if (d.livmod) { etat.livModele = etat.livModele === d.livmod ? null : d.livmod; return rendu() }
+  if (d.livf) { etat.livFiltre = d.livf; return rendu() }
   if (d.statut) { const e = ENTREES.find(x => x.id === etat.selection); e.statut = d.statut; rendu(); if (document.querySelector('.feuille.detail')) ouvrirDetailFeuille(); return toast('Statut : ' + d.statut) }
   if (d.mode) { form.mode = d.mode; form.qte = {}; return rendu() }
   if (d.marque) { form = nouveauForm(d.marque, { numero: form.numero }); return rendu() }
@@ -617,6 +725,9 @@ document.addEventListener('click', ev => {
     case 'fermer-saisie': etat.saisieOuverte = false; return rendu()
     case 'fermer-detail': etat.selection = null; document.querySelectorAll('.feuille.detail,.feuille-fond.detail').forEach(x => x.remove()); return rendu()
     case 'fermer-plus': etat.plusOuvert = false; return rendu()
+    case 'filtres': etat.filtresOuverts = true; return rendu()
+    case 'fermer-filtres': etat.filtresOuverts = false; return rendu()
+    case 'raz-filtres': etat.f = { categorie:'', statut:'', marque:'', magasin:'', pointe:'' }; return rendu()
     case 'choisir-marque': form.choixMarque = true; return rendu()
     case 'changer-modele': form.modele = null; form.qte = {}; return rendu()
     case 'mode-ajout': form.retirer = false; return rendu()
@@ -627,7 +738,7 @@ document.addEventListener('click', ev => {
       const mod = MARQUES[form.marque].modeles[form.modele], retour = form.mode === 'retour'
       const tot = Object.values(form.qte).reduce((s, v) => s + v, 0) * (retour ? -1 : 1)
       const sizes = Object.fromEntries(Object.entries(form.qte).map(([k, v]) => [k, retour ? -v : v]))
-      const e = { id: Date.now(), date: AUJ, marque: form.marque, modele: form.modele, numero: form.numero, paires: tot, montant: Math.round(mod.prix * tot * 100) / 100, statut: retour ? 'Retour' : '', pointe: false, sizes, grille: form.grille }
+      const e = { id: Date.now(), magasin: MAGASIN_APPAREIL, categorie: { F:'Femme', H:'Homme', DP:'Femme' }[form.grille], date: AUJ, marque: form.marque, modele: form.modele, numero: form.numero, paires: tot, montant: Math.round(mod.prix * tot * 100) / 100, statut: retour ? 'Retour' : '', pointe: false, sizes, grille: form.grille }
       ENTREES.unshift(e)
       if (!retour) Object.entries(form.qte).forEach(([k, v]) => mod.recu[k] = (mod.recu[k] || 0) + v)
       form = nouveauForm(form.marque, { numero: form.numero, grille: form.grille })   // on garde marque, N°, date et grille : carton suivant
@@ -642,14 +753,25 @@ function ouvrirDetailFeuille() {
   const f = document.createElement('div'); f.className = 'feuille ouvert detail'; f.setAttribute('role', 'dialog'); f.innerHTML = contenuDetail()
   document.body.append(fond, f)
 }
+document.addEventListener('change', ev => {
+  const t = ev.target
+  if (t.dataset.f !== undefined) { etat.f[t.dataset.f] = t.value; return rendu() }
+  if (t.dataset.livmag !== undefined) { etat.livMag = t.value; etat.livOuverte = null; etat.livModele = null; return rendu() }
+})
 document.addEventListener('input', ev => {
+  if (ev.target.id === 'livq') {
+    etat.livQ = ev.target.value
+    const pos = ev.target.selectionStart; rendu()
+    const r = document.getElementById('livq'); r.focus(); r.setSelectionRange(pos, pos)
+    return
+  }
   if (ev.target.id === 'recherche') {
     etat.recherche = ev.target.value
     const pos = ev.target.selectionStart; rendu()
     const r = document.getElementById('recherche'); r.focus(); r.setSelectionRange(pos, pos)
   }
 })
-document.addEventListener('keydown', ev => { if (ev.key === 'Escape') { etat.saisieOuverte = false; etat.plusOuvert = false; etat.selection = null; document.querySelectorAll('.feuille.detail,.feuille-fond.detail').forEach(x => x.remove()); rendu() } })
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape') { etat.saisieOuverte = false; etat.plusOuvert = false; etat.filtresOuverts = false; etat.selection = null; document.querySelectorAll('.feuille.detail,.feuille-fond.detail').forEach(x => x.remove()); rendu() } })
 window.addEventListener('resize', () => rendu())
 rendu()
 </script>
