@@ -16,6 +16,7 @@ import Reassort         from './reassort/Reassort'
 import StoreSelect      from './components/StoreSelect'
 import HomeScreen       from './home/HomeScreen'
 import { confirmDanger } from './components/DangerConfirm'
+import Connexion from './components/Connexion'
 import Sidebar          from './home/Sidebar'
 import { useAlerts }    from './home/useAlerts'
 import { useMediaQuery, TABLET } from './lib/useMediaQuery'
@@ -431,11 +432,15 @@ function Root() {
 
 export default function App() {
   return (
-    <SeasonProvider>
-      <MagasinProvider>
-        <ThemeToggle />
-        <Root />
-      </MagasinProvider>
-    </SeasonProvider>
+    <>
+      <ThemeToggle />
+      <Connexion>
+        <SeasonProvider>
+          <MagasinProvider>
+            <Root />
+          </MagasinProvider>
+        </SeasonProvider>
+      </Connexion>
+    </>
   )
 }

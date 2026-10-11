@@ -22,6 +22,33 @@ export function validateMail({ to, subject, text } = {}) {
   return { to: rule.to, subject, text }
 }
 
+// Vérifie que la demande vient d'un appareil connecté à l'outil (jeton de session Supabase valide).
+// Lève une erreur 401 sinon. Utilise l'adresse et la clé publique déjà connues (pas de clé secrète).
+export async function verifierConnexion(authorization) {
+  const refus = () => { const e = new Error('Connexion requise'); e.status = 401; throw e }
+  const jeton = /^Bearer\s+(.+)$/i.exec(authorization || '')?.[1]
+  if (!jeton) refus()
+  const url = process.env.VITE_SUPABASE_URL, cle = process.env.VITE_SUPABASE_ANON_KEY
+  if (!url || !cle) throw new Error('VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY non configurées')
+  const r = await fetch(`${url}/auth/v1/user`, { headers: { apikey: cle, Authorization: `Bearer ${jeton}` } })
+  if (!r.ok) refus()
+  return jeton
+}
+
+// Plafond d'envoi : la base note l'envoi et refuse au-delà de 3 récaps / 24 h vers la comptable
+// et 10 demandes / 24 h vers la direction (fonction noter_envoi_mail, appelée avec la connexion de l'appareil).
+// Lève une erreur 429 si le plafond est atteint.
+export async function noterEnvoi(jeton, { to, subject }) {
+  const url = process.env.VITE_SUPABASE_URL, cle = process.env.VITE_SUPABASE_ANON_KEY
+  const r = await fetch(`${url}/rest/v1/rpc/noter_envoi_mail`, {
+    method: 'POST',
+    headers: { apikey: cle, Authorization: `Bearer ${jeton}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ destinataire: to, objet: subject }),
+  })
+  if (!r.ok) throw new Error(`Journal des mails indisponible (${r.status})`)
+  if ((await r.json()) !== true) { const e = new Error('Plafond d\'envoi atteint pour aujourd\'hui'); e.status = 429; throw e }
+}
+
 let transporter
 
 function getTransporter() {
