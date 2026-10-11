@@ -12,6 +12,7 @@
   --ok:#1f7a4d; --ok-teinte:rgba(52,199,89,.15); --att:#a54a00; --att-teinte:rgba(255,149,0,.16);
   --err:#c4000f; --err-teinte:rgba(255,59,48,.12); --neutre-teinte:rgba(120,120,128,.12);
   --ombre:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.06); color-scheme:light;
+  --num1:#c4000f; --num1-fond:rgba(255,59,48,.12); --num2:#0062cc; --num2-fond:rgba(0,122,255,.12); --num3:#1f7a4d; --num3-fond:rgba(52,199,89,.16);
 }
 :root[data-theme="dark"]{
   --fond:#111113; --surface:#1c1c1e; --surface-2:#2c2c2e; --side:#18181a;
@@ -20,6 +21,7 @@
   --ok:#4cc38a; --ok-teinte:rgba(48,209,88,.18); --att:#ffb340; --att-teinte:rgba(255,159,10,.18);
   --err:#ff6961; --err-teinte:rgba(255,69,58,.18); --neutre-teinte:rgba(160,160,170,.16);
   --ombre:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4); color-scheme:dark;
+  --num1:#ff6961; --num1-fond:rgba(255,69,58,.22); --num2:#5aa9ff; --num2-fond:rgba(10,132,255,.24); --num3:#4cc38a; --num3-fond:rgba(48,209,88,.22);
 }
 *{box-sizing:border-box}
 body{margin:0;font:15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:var(--fond);color:var(--texte)}
@@ -64,6 +66,9 @@ td:first-child{width:34%;color:var(--doux)}
 .toast b{color:#4da3ff}
 .cols{display:grid;gap:16px}
 @media(min-width:760px){.cols{grid-template-columns:1fr 1fr}}
+.num{display:inline-block;padding:0 7px;border-radius:6px;font-weight:700;line-height:1.6}
+.num.n1{background:var(--num1-fond);color:var(--num1)} .num.n2{background:var(--num2-fond);color:var(--num2)} .num.n3{background:var(--num3-fond);color:var(--num3)}
+.jauge{height:8px;border-radius:4px;background:var(--neutre-teinte);overflow:hidden;width:140px}.jauge i{display:block;height:100%}
 header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
 </style>
 </head>
@@ -99,6 +104,23 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:12p
   <div class="nuance"><i style="background:#ff3b30"></i><div><b>Rouge</b>problème, retour, suppression</div></div>
 </div>
 <p class="doux" style="font-size:13px">Les couleurs d'état ont toujours la même signification dans toutes les apps (fin des « Clôturé » vert ici et violet là).</p>
+
+<h2>Numéros de commande (N°)</h2>
+<div class="bloc">
+  <div class="rangee"><span class="num n1">N° 1</span><span class="num n2">N° 2</span><span class="num n3">N° 3</span><span class="num n1">N° 4</span><span class="num n2">N° 5</span><span class="num n3">N° 6</span><span class="num">N° A3</span></div>
+  <p class="doux" style="font-size:13px;margin:12px 0 0">Règle reprise <strong>à l'identique</strong> de l'outil actuel : on lit le nombre du N° ; la couleur tourne sur trois teintes — 1 rouge, 2 bleu, 3 vert, 4 rouge, 5 bleu, 6 vert… (reste de (N° − 1) ÷ 3). Un N° sans nombre (vide, « A3 ») n'a pas de couleur. Un même modèle garde donc la même couleur qu'aujourd'hui. Appliquée <strong>partout</strong> où un N° apparaît : saisie, liste et détail des entrées, suivi des livraisons, et les écrans à venir. C'est un <strong>repère de commande</strong>, pas un état (le rouge ne veut pas dire « problème »).</p>
+</div>
+
+<h2>Jauges de livraison et pointures</h2>
+<div class="bloc">
+  <div class="rangee" style="gap:18px">
+    <span><span class="jauge" style="display:inline-block"><i style="width:0"></i></span> 0 % gris</span>
+    <span><span class="jauge" style="display:inline-block"><i style="width:30%;background:#ff9500"></i></span> &lt; 50 % orange</span>
+    <span><span class="jauge" style="display:inline-block"><i style="width:70%;background:#007aff"></i></span> ≥ 50 % bleu</span>
+    <span><span class="jauge" style="display:inline-block"><i style="width:100%;background:var(--ok)"></i></span> 100 % vert</span>
+  </div>
+  <p class="doux" style="font-size:13px;margin:12px 0 0">Mêmes seuils que l'outil actuel (jauge et pourcentage). Une marque ou un modèle sans rien de reçu est atténué. Détail par pointure : vert = complet, bleu = partiel, gris = rien reçu. Saisie : une pointure touchée devient verte (orange pour un retour).</p>
+</div>
 
 <h2>Typographie</h2>
 <div class="bloc">

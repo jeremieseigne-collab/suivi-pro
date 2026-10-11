@@ -101,6 +101,28 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | SAV | Champ magasin à la création | ⏸ à décider sur la maquette de l'écran |
 | Planning | 4 lignes vides ajoutées d'office | ⏸ à décider sur la maquette de l'écran |
 | Achats, Paie, Factures, Répertoire, Plan de règlement | — | rien de retiré prévu à ce jour |
+| Accueil | Compteurs « Réassorts à commander », « Clients à prévenir », « Défectueux à traiter » (avec leur couleur) | ⚠️ **absents de la maquette, gardés par défaut** — à confirmer (la maquette n'a dessiné que « en route » et « SAV en cours ») |
+| Menu | Pastilles de comptage colorées (Réassorts, Défectueux, Commandes) et rappel orange « À remplir avant le 25 » sur la paie | ⚠️ absents de la maquette — **gardés**, à dessiner |
+| Partout | **Sélecteur de saison** (pastille de couleur par saison) | ⚠️ absent de la maquette — **gardé**, à dessiner |
+| Cahier — Entrées | Bouton « Importer CSV » ; sélection multiple + changement de statut groupé | ⚠️ absents de la maquette — **gardés**, à dessiner |
+| Saisie d'une entrée | **Copier / Coller** une grille de pointures ; champs **Catégorie** et **Statut** à la création | ⚠️ absents de la maquette (catégorie déduite de la grille, statut vide) — **gardés par défaut**, à confirmer |
+| Agenda | Couleurs par magasin (Albi bleu, Rouffiac vert, 2 Zèbres orange) | ⚠️ maquette avec d'autres couleurs — **gardées** |
+
+## 2 ter. Codes couleur de l'outil actuel (conservés)
+
+| Code couleur | Règle | Où |
+|---|---|---|
+| **N° de commande** | Même logique que l'outil actuel : nombre du N°, (N° − 1) modulo 3 → **1 rouge, 2 bleu, 3 vert**, 4 rouge… ; pas de nombre = pas de couleur. Teintes de la charte, lisibles en clair et en sombre | **Partout** où un N° apparaît : saisie, liste et détail des entrées, suivi des livraisons, écrans à venir |
+| Jauges de livraison et % | 0 % gris · < 50 % orange · ≥ 50 % bleu · 100 % vert | Suivi des livraisons |
+| Rien reçu | Ligne de marque / modèle atténuée | Suivi des livraisons |
+| Détail par pointure | Vert complet · bleu partiel · gris rien reçu | Suivi des livraisons |
+| Entrée pointée | Ligne grisée (comptes Direction) | Liste des entrées |
+| Pointure saisie | Case verte (orange pour un retour) | Saisie d'une entrée |
+| Couleur par saison | Pastille du sélecteur de saison | En-tête (à dessiner) |
+| Couleurs des compteurs et pastilles de menu | Une couleur par type (réassorts, défectueux, commandes, SAV) | Accueil, menu (à dessiner) |
+| Couleurs d'agenda | Une couleur par magasin | Agenda |
+
+Ajouté par la refonte (à valider) : **point de couleur du statut** des entrées (Imp. étiquettes orange, Enregistré vert, Réassort bleu, Retour rouge) — dans l'outil actuel le statut est en texte gris.
 
 ---
 
@@ -122,6 +144,7 @@ Au téléphone, les deux directions sont identiques. Elles diffèrent sur ordina
 
 - **Couleurs** : fond gris très clair, surfaces blanches, texte noir doux, **un seul bleu d'action** ; vert = fait, orange = à faire, rouge = problème/retour, **même sens partout**. Mode sombre complet.
 - **Typographie** : police système de l'appareil, 3 tailles (13 / 15 / 17) + titre de page (26).
+- **N° de commande** : couleur qui tourne sur 3 teintes (1 rouge, 2 bleu, 3 vert…), logique identique à l'outil actuel, partout (voir §2 ter).
 - **Boutons** : arrondis, 44 px minimum ; bleu = action principale (une par écran), gris = secondaire, lien = discret, rouge pâle = destructif.
 - **Listes au lieu des tableaux** : titre en gras, détail en gris dessous, état à droite (point + mot).
 - **Formulaires** : étiquette au-dessus, erreur expliquée dessous, champs connus pré-remplis.

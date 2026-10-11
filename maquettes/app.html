@@ -17,6 +17,8 @@
   --ombre:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.06);
   --rayon:14px; --rayon-champ:10px;
   --t-meta:13px; --t-corps:15px; --t-titre:17px; --t-page:26px;
+  /* N° de commande : 3 teintes qui tournent (1 rouge, 2 bleu, 3 vert, 4 rouge…) — même règle que l'outil actuel */
+  --num1:#c4000f; --num1-fond:rgba(255,59,48,.12); --num2:#0062cc; --num2-fond:rgba(0,122,255,.12); --num3:#1f7a4d; --num3-fond:rgba(52,199,89,.16);
   color-scheme:light;
 }
 :root[data-theme="dark"]{
@@ -28,6 +30,7 @@
   --err:#ff6961; --err-teinte:rgba(255,69,58,.18);
   --neutre-teinte:rgba(160,160,170,.16);
   --ombre:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4);
+  --num1:#ff6961; --num1-fond:rgba(255,69,58,.22); --num2:#5aa9ff; --num2-fond:rgba(10,132,255,.24); --num3:#4cc38a; --num3-fond:rgba(48,209,88,.22);
   color-scheme:dark;
 }
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
@@ -37,6 +40,7 @@
   --ok:#4cc38a; --ok-teinte:rgba(48,209,88,.18); --att:#ffb340; --att-teinte:rgba(255,159,10,.18);
   --err:#ff6961; --err-teinte:rgba(255,69,58,.18); --neutre-teinte:rgba(160,160,170,.16);
   --ombre:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4); color-scheme:dark;
+  --num1:#ff6961; --num1-fond:rgba(255,69,58,.22); --num2:#5aa9ff; --num2-fond:rgba(10,132,255,.24); --num3:#4cc38a; --num3-fond:rgba(48,209,88,.22);
 }}
 
 *{box-sizing:border-box}
@@ -101,6 +105,11 @@ button.ligne:hover,.ligne.cliquable:hover{background:color-mix(in srgb,var(--tex
 .barre{height:6px;border-radius:3px;background:var(--neutre-teinte);overflow:hidden}
 .barre i{display:block;height:100%;background:#007aff;border-radius:3px}
 .barre i.ok{background:var(--ok)}
+.barre i.orange{background:#ff9500} .barre i.bleu{background:#007aff} .barre i.zero{width:0 !important}
+.pc{font-weight:600} .pc.ok{color:var(--ok)} .pc.bleu{color:var(--accent-texte)} .pc.orange{color:var(--att)} .pc.zero{color:var(--discret)}
+.num{display:inline-block;padding:0 7px;border-radius:6px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.5}
+.num.n1{background:var(--num1-fond);color:var(--num1)} .num.n2{background:var(--num2-fond);color:var(--num2)} .num.n3{background:var(--num3-fond);color:var(--num3)}
+.ligne.faible .txt,.ligne.faible .puce{opacity:.5}
 
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));background:var(--texte);color:var(--fond);
   border-radius:14px;padding:12px 8px 12px 16px;display:none;align-items:center;gap:12px;max-width:min(520px,calc(100% - 24px));font-size:14px;z-index:60;box-shadow:var(--ombre)}
@@ -179,8 +188,8 @@ button.ligne:hover,.ligne.cliquable:hover{background:color-mix(in srgb,var(--tex
 .pt{position:relative;min-height:64px;border-radius:12px;background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;
   font-weight:600;font-size:16px;user-select:none;-webkit-user-select:none;touch-action:manipulation;border:2px solid transparent}
 .pt small{font-size:11px;font-weight:500;color:var(--discret);margin-top:1px}
-.pt .qte{position:absolute;top:-6px;right:-6px;min-width:24px;height:24px;border-radius:12px;background:var(--accent);color:#fff;font-size:13px;display:none;align-items:center;justify-content:center;padding:0 6px}
-.pt.plein{background:var(--accent-teinte);border-color:var(--accent)}
+.pt .qte{position:absolute;top:-6px;right:-6px;min-width:24px;height:24px;border-radius:12px;background:#1f7a4d;color:#fff;font-size:13px;display:none;align-items:center;justify-content:center;padding:0 6px}
+.pt.plein{background:var(--ok-teinte);border-color:var(--ok)}
 .pt.plein .qte{display:flex}
 .pt.retour.plein{background:var(--att-teinte);border-color:#ff9500}
 .pt.retour .qte{background:#d97706}
@@ -198,7 +207,7 @@ button.ligne:hover,.ligne.cliquable:hover{background:color-mix(in srgb,var(--tex
 .pt-suivi{min-height:52px;border-radius:10px;background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:600;font-size:15px}
 .pt-suivi small{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
 .pt-suivi.ok{background:var(--ok-teinte)} .pt-suivi.ok small{color:var(--ok)}
-.pt-suivi.part{background:var(--att-teinte)} .pt-suivi.part small{color:var(--att)}
+.pt-suivi.part{background:var(--accent-teinte)} .pt-suivi.part small{color:var(--accent-texte)}
 .pt-suivi.zero small{color:var(--discret)}
 .resume-global{display:flex;align-items:center;gap:16px;margin:12px 0 4px}
 .resume-global .grand{font-size:30px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;min-width:84px}
@@ -305,6 +314,11 @@ const LIVRAISONS = {
   ],
 }
 const somme = o => Object.values(o).reduce((s, v) => s + v, 0)
+// Couleur du N° : même logique que l'outil actuel (numeroColor) — parseInt, puis (N° − 1) modulo 3 → rouge, bleu, vert
+function numCls(n) { const v = parseInt(n); return v ? 'n' + ((v - 1) % 3 + 1) : '' }
+const numHtml = (n, prefixe = true) => n ? `<span class="num ${numCls(n)}">${prefixe ? 'N° ' : ''}${esc(n)}</span>` : ''
+// Jauge : mêmes seuils que l'outil actuel (GaugeBar) — 0 % gris, < 50 % orange, ≥ 50 % bleu, 100 % vert
+const niveau = pc => pc === 0 ? 'zero' : pc >= 100 ? 'ok' : pc >= 50 ? 'bleu' : 'orange'
 const STATUTS = ['Imp. étiquettes','Enregistré','Réassort','Retour']
 const STATUT_CLASSE = { 'Imp. étiquettes':'att', 'Enregistré':'ok', 'Réassort':'info', 'Retour':'err', '':'' }
 
@@ -538,10 +552,10 @@ function listeEntrees() {
   return Object.entries(parJour).map(([d, es]) => `
     <h2 class="groupe-titre">${d === AUJ ? "Aujourd'hui" : d === '09/10/2026' ? 'Hier' : 'Jeudi 8 octobre'}</h2>
     <div class="liste">${es.map(e => `
-      <div class="ligne cliquable" data-ouvrir="${e.id}" ${etat.selection === e.id ? 'aria-current="true"' : ''} style="cursor:pointer">
+      <div class="ligne cliquable ${DIRECTION && e.pointe ? 'faible' : ''}" data-ouvrir="${e.id}" ${etat.selection === e.id ? 'aria-current="true"' : ''} style="cursor:pointer">
         <div class="txt">
           <div class="t1">${esc(e.marque)} <span>· ${esc(e.modele)}</span></div>
-          <div class="t2">${DIRECTION ? esc(e.magasin) + ' · ' : ''}${e.numero ? 'N° ' + e.numero + ' · ' : ''}${e.paires} paire${Math.abs(e.paires) > 1 ? 's' : ''} · ${fmtEur(e.montant)}</div>
+          <div class="t2">${DIRECTION ? esc(e.magasin) + ' · ' : ''}${e.numero ? numHtml(e.numero) + ' · ' : ''}${e.paires} paire${Math.abs(e.paires) > 1 ? 's' : ''} · ${fmtEur(e.montant)}</div>
         </div>
         <span class="puce ${STATUT_CLASSE[e.statut]}">${e.statut || 'Sans statut'}</span>
         ${DIRECTION ? `<button class="pointer" data-pointer="${e.id}" aria-pressed="${e.pointe}" aria-label="${e.pointe ? 'Pointée' : 'Pointer'}"><span>${ic('check')}</span></button>` : ''}
@@ -554,7 +568,7 @@ function contenuDetail() {
   return `<div class="feuille-entete"><h2>${esc(e.marque)}</h2><button class="icone-btn" data-act="fermer-detail" aria-label="Fermer">${ic('fermer')}</button></div>
   <div class="feuille-corps">
     <div style="font-weight:600">${esc(e.modele)}</div>
-    <div class="resume" style="margin:6px 0 16px">${e.date}${e.numero ? ' · N° ' + e.numero : ''} · <b>${e.paires} paire${Math.abs(e.paires)>1?'s':''}</b> · <b>${fmtEur(e.montant)}</b></div>
+    <div class="resume" style="margin:6px 0 16px">${e.date}${e.numero ? ' · ' + numHtml(e.numero) : ''} · <b>${e.paires} paire${Math.abs(e.paires)>1?'s':''}</b> · <b>${fmtEur(e.montant)}</b></div>
     <div class="resume" style="margin:-8px 0 16px"><span>Catégorie <b>${esc(e.categorie || '—')}</b></span>${DIRECTION ? `<span>Magasin <b>${esc(e.magasin)}</b></span>` : ''}</div>
     <span class="etiquette">Statut</span>
     <div class="chips" style="flex-wrap:wrap;margin-bottom:18px">${STATUTS.map(s => `<button class="chip" data-statut="${s}" aria-pressed="${e.statut===s}">${s}</button>`).join('')}</div>
@@ -590,8 +604,8 @@ function vueLivraisons() {
     </div>
   </div>
   <div class="carte resume-global">
-    <span class="grand">${pcG} %</span>
-    <span style="flex:1"><div class="barre" style="height:8px"><i class="${pcG >= 100 ? 'ok' : ''}" style="width:${Math.min(100, pcG)}%"></i></div>
+    <span class="grand pc ${niveau(pcG)}">${pcG} %</span>
+    <span style="flex:1"><div class="barre" style="height:8px"><i class="${niveau(pcG)}" style="width:${Math.min(100, pcG)}%"></i></div>
       <div class="t2" style="margin-top:6px;color:var(--doux);font-size:var(--t-meta)"><b style="color:var(--texte)">${tot.r}</b> paires reçues sur <b style="color:var(--texte)">${tot.a}</b> attendues</div></span>
   </div>
   <div class="chips" style="margin:12px 0 0">${chip('toutes','Toutes')}${chip('encours','En cours')}${chip('completes','Complètes')}${chip('nonrecues','Non reçues')}</div>
@@ -599,22 +613,22 @@ function vueLivraisons() {
     <h2 class="groupe-titre">${esc(mag)} · Hiver 2026</h2>
     ${marques.length ? `<div class="liste">${marques.map(b => {
       const cle = mag + '|' + b.marque, ouvert = etat.livOuverte === cle, pc = b.attendu ? Math.round(b.recu / b.attendu * 100) : 0
-      return `<button class="ligne" data-liv="${esc(cle)}" aria-expanded="${ouvert}">
+      return `<button class="ligne ${b.recu === 0 ? 'faible' : ''}" data-liv="${esc(cle)}" aria-expanded="${ouvert}">
         <span class="txt"><span class="t1">${esc(b.marque)}</span>
-          <div style="display:flex;align-items:center;gap:10px;margin-top:6px"><div class="barre" style="flex:1"><i class="${pc >= 100 ? 'ok' : ''}" style="width:${pc}%"></i></div>
-          <span class="t2" style="margin:0;min-width:120px;text-align:right">${b.recu} / ${b.attendu} paires · ${pc} %</span></div></span>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:6px"><div class="barre" style="flex:1"><i class="${niveau(pc)}" style="width:${Math.min(100, pc)}%"></i></div>
+          <span class="t2" style="margin:0;min-width:120px;text-align:right">${b.recu} / ${b.attendu} paires · <span class="pc ${niveau(pc)}">${pc} %</span></span></div></span>
         ${ic(ouvert ? 'bas' : 'chevron', 'style="color:var(--discret)"')}</button>
         ${ouvert ? b.modeles.map(m => {
           const cm = cle + '|' + m.nom, mo = etat.livModele === cm, r = somme(m.recu), a = somme(m.attendu), p = a ? Math.round(r / a * 100) : 0
-          return `<button class="ligne" data-livmod="${esc(cm)}" aria-expanded="${mo}" style="padding-left:32px;min-height:56px">
-            <span class="txt"><span class="t1" style="font-weight:500">${esc(m.nom)} <span>· N° ${esc(m.numero)}</span></span>
-              <div style="display:flex;align-items:center;gap:10px;margin-top:5px"><div class="barre" style="flex:1;height:5px"><i class="${p >= 100 ? 'ok' : ''}" style="width:${p}%"></i></div>
+          return `<button class="ligne ${r === 0 ? 'faible' : ''}" data-livmod="${esc(cm)}" aria-expanded="${mo}" style="padding-left:32px;min-height:56px">
+            <span class="txt"><span class="t1" style="font-weight:500">${esc(m.nom)} ${numHtml(m.numero)}</span>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:5px"><div class="barre" style="flex:1;height:5px"><i class="${niveau(p)}" style="width:${Math.min(100, p)}%"></i></div>
               <span class="t2" style="margin:0;min-width:120px;text-align:right">${r} / ${a} reçues${r < a ? ' · reste ' + (a - r) : ' · complet'}</span></div></span>
             ${ic(mo ? 'bas' : 'chevron', 'style="color:var(--discret);width:18px;height:18px"')}</button>
             ${mo ? `<div style="padding:4px 16px 14px 32px"><div class="pointures" style="grid-template-columns:repeat(auto-fill,minmax(64px,1fr))">${Object.keys(m.attendu).map(t => {
               const ra = m.recu[t] || 0, at = m.attendu[t]
               return `<div class="pt-suivi ${ra >= at ? 'ok' : ra > 0 ? 'part' : 'zero'}">${t}<small>${ra} / ${at}</small></div>` }).join('')}</div>
-              <div style="margin-top:8px;font-size:var(--t-meta);color:var(--doux)">Reçu / attendu par pointure — vert : complet, orange : partiel</div></div>` : ''}`
+              <div style="margin-top:8px;font-size:var(--t-meta);color:var(--doux)">Reçu / attendu par pointure — vert : complet, bleu : partiel, gris : rien reçu (comme l'outil actuel)</div></div>` : ''}`
         }).join('') : ''}`
     }).join('')}</div>` : `<div class="vide" style="padding:24px">Aucune marque ne correspond.</div>`}`).join('')}`
 }
@@ -658,7 +672,7 @@ function contenuSaisie(dansPanneau) {
     ${mod ? `
     <div class="resume" style="margin-bottom:14px">
       <span>Date <b>${form.date === AUJ ? "aujourd'hui" : form.date}</b></span>
-      <span>N° <b>${form.numero || '—'}</b></span>
+      <span>${form.numero ? numHtml(form.numero) : 'N° <b>—</b>'}</span>
       <span>Grille <b>${GRILLE_NOM[form.grille]}</b></span>
       <button class="lien">Modifier</button>
     </div>
