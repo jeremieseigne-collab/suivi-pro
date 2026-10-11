@@ -330,19 +330,22 @@ const NAV = [
   { titre:'Équipe' },
   { id:'planning', label:'Planning', icone:'planning' },
   { id:'paie', label:'Éléments de paie', icone:'paie' },
-  { titre:'Direction' },
-  { id:'achats', label:'Achats & assortiment', icone:'achats' },
-  { id:'reglement', label:'Plan de règlement', icone:'reglement' },
   { id:'factures', label:'Factures', icone:'facture' },
-  { id:'reglages', label:'Réglages', icone:'reglages' },
+  { titre:'Direction', direction:true },
+  { id:'achats', label:'Achats & assortiment', icone:'achats', direction:true },
+  { id:'reglement', label:'Plan de règlement', icone:'reglement', direction:true },
+  { id:'reglages', label:'Réglages', icone:'reglages', direction:true },
 ]
+// Compte connecté (maquette) : un compte magasin ne voit pas la partie Direction
+const DIRECTION = (new URLSearchParams(location.search).get('compte') || 'magasin') === 'direction'
+const NAV_VISIBLE = NAV.filter(n => !n.direction || DIRECTION)
 function barreLaterale() {
   return `<nav class="side" aria-label="Menu">
     <div class="marque-app"><b>S</b> Suivi Pro</div>
     <button class="magasin-btn">${ic('magasin','style="width:18px;height:18px;color:var(--doux)"')}<span class="flex">Bailly Albi</span>${ic('bas','style="width:16px;height:16px;color:var(--doux)"')}</button>
-    ${NAV.map(n => n.titre ? `<div class="nav-titre">${n.titre}</div>` :
+    ${NAV_VISIBLE.map(n => n.titre ? `<div class="nav-titre">${n.titre}</div>` :
       `<button class="nav" data-nav="${n.id}" ${etat.ecran === n.id ? 'aria-current="page"' : ''}>${ic(n.icone)}<span>${n.label}</span>${n.badge && n.badge() ? `<span class="badge" title="à pointer">${n.badge()}</span>` : ''}</button>`).join('')}
-    <div class="bas"><span style="flex:1">Bailly Albi</span><button class="lien" data-nav="login">Se déconnecter</button></div>
+    <div class="bas"><span style="flex:1">${DIRECTION ? 'Jérémie (Direction)' : 'Bailly Albi'}</span><button class="lien" data-nav="login">Se déconnecter</button></div>
   </nav>`
 }
 function barreOnglets() {
@@ -352,7 +355,7 @@ function barreOnglets() {
 }
 function vuePlus() {
   if (!etat.plusOuvert) return ''
-  const items = NAV.filter(n => n.id && !['accueil','entrees','reassorts','commandes','sav'].includes(n.id))
+  const items = NAV_VISIBLE.filter(n => n.id && !['accueil','entrees','reassorts','commandes','sav'].includes(n.id))
   return `<div class="feuille-fond ouvert" data-act="fermer-plus"></div>
   <div class="feuille ouvert" role="dialog" aria-label="Plus" style="top:auto;max-height:80%;border-radius:18px 18px 0 0">
     <div class="feuille-entete"><h2>Plus</h2><button class="icone-btn" data-act="fermer-plus" aria-label="Fermer">${ic('fermer')}</button></div>
