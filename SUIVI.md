@@ -26,6 +26,9 @@
 - 11/10 — Étape 2 : récap de paie envoyé d'un clic par la Direction (mail « saisies complètes » à Jérémie) ; Achats réservés à la Direction ; Planning modifiable par tous.
 - 11/10 — Règle ajoutée au CLAUDE.md : **aucun test destructif sur la production**.
 - 11/10 — Mots de passe de production recopiés en lieu sûr par vous ; fichiers `comptes-production.txt` et `messages-equipes.txt` supprimés.
+- 11/10 — Pointage des entrées réservé à la Direction : E7 (règle en base) accordé et testé sur la base de test ; écran Entrées masqué aux magasins ; ajouté à l'étape 2 et au message aux équipes.
+- 11/10 — Règle de construction (PLAN-REFONTE.md §2 bis + CLAUDE.md) : rien ne disparaît sans être dans la liste « Ce qui est retiré, masqué ou déplacé », avec accord ligne par ligne.
+- 11/10 — Décisions : agenda du jour + lien sur l'accueil ; compteurs « Réassorts en route » et « Dossiers SAV en cours » gardés + tâches en retard ; magasin sur chaque entrée pour la Direction seulement ; catégorie dans le détail et en filtre ; regroupement par jour ; pas de sous-titre sous le logo ; Défectueux / SAV / Planning : décision sur leurs maquettes.
 - 10/10 — Les ~65 suppressions de marques en production depuis juin sont bien de vous (nettoyage et fusion de doublons) : pas d'activité suspecte.
 - 10/10 — Le rituel de fin de session du `CLAUDE.md` (déploiement automatique) est **suspendu** pendant le chantier.
 - 10/10 — En local, les mails ne partent jamais (affichés dans le terminal) ; `SEND_REAL_MAIL=1` pour réactiver.
