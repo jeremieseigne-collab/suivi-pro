@@ -10,7 +10,7 @@
 | 1. Audit (`AUDIT.md`) | ✅ fait, propositions triées |
 | Correctifs urgents I1-I2-I3 | ✅ **en ligne** depuis le 10/10/2026 01h13 (5 commits, vérifiés ensemble) |
 | Sécurité B6 étape 1 + plafond mails (`SECURITE.md`) | ✅ **EN LIGNE depuis le dimanche 11/10/2026** : code à 14h20, filtrage activé à 14h28 (fenêtre d'exposition ~6 min). Vérifié : anonyme = 0 ligne / écriture refusée ; comptes connectés OK ; mail sans connexion refusé ; vrai mail reçu et noté au journal |
-| **Sécurité B6 étape 2** — paie réservée au compte Direction, PIN vérifié côté serveur | à faire **juste après l'étape 1**, avant la refonte — effort **moyen à gros (2 à 3 jours)** |
+| **Sécurité B6 étape 2** — paie réservée aux comptes Direction, PIN vérifié par la base | ⏳ **plan écrit** (`SECURITE.md`, partie « Étape 2 », branche `securite`) avec vos choix du 11/10 ; **en attente de votre accord écrit** (E1 à E6, base de test d'abord) — 2 à 3 jours |
 | 2. Plan, charte, maquettes (`PLAN-REFONTE.md`, `maquettes/`) | ⏳ à valider |
 | 3. Construction écran par écran | à venir |
 | 4. Préparation de la mise en ligne | à venir |
@@ -23,6 +23,9 @@
 - 10/10 — Comptes de connexion : **5 comptes** — un par magasin (contact.baillyalbi@, contact.baillyrouffiac@, contact.les2zebres@gmail.com) + **2 comptes Direction** (Jérémie, Raphaël).
 - 10/10 — Mails : journal + plafond (3 récaps / 24 h vers Marion, 10 demandes / 24 h vers vous), **option B** (fonction en base, aucune clé secrète).
 - 10/10 — Les 2 comptes Direction (Jérémie, Raphaël) ont les mêmes droits.
+- 11/10 — Étape 2 : récap de paie envoyé d'un clic par la Direction (mail « saisies complètes » à Jérémie) ; Achats réservés à la Direction ; Planning modifiable par tous.
+- 11/10 — Règle ajoutée au CLAUDE.md : **aucun test destructif sur la production**.
+- 11/10 — Mots de passe de production recopiés en lieu sûr par vous ; fichiers `comptes-production.txt` et `messages-equipes.txt` supprimés.
 - 10/10 — Les ~65 suppressions de marques en production depuis juin sont bien de vous (nettoyage et fusion de doublons) : pas d'activité suspecte.
 - 10/10 — Le rituel de fin de session du `CLAUDE.md` (déploiement automatique) est **suspendu** pendant le chantier.
 - 10/10 — En local, les mails ne partent jamais (affichés dans le terminal) ; `SEND_REAL_MAIL=1` pour réactiver.
