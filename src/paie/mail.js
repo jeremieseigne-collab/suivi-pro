@@ -123,3 +123,16 @@ export async function sendPaieRecap({ periode, rows, toEmail }) {
   })
   return recap
 }
+
+// Prévenance à la direction : toutes les fiches du mois sont remplies (aucun contenu de paie dans ce mail)
+export async function sendPaieCompleteNotification({ periode, toEmail }) {
+  await postMail({
+    to: toEmail,
+    subject: `Paie — saisies complètes — ${periodeLabel(periode)}`,
+    text: `Bonjour,
+
+Toutes les salariées ont rempli leurs éléments variables de paie pour ${periodeLabel(periode)}.
+
+Pour envoyer le récap à la comptable : ouvrez Suivi Pro avec un compte Direction → Éléments de paie → « Récap à envoyer » → Envoyer.`,
+  })
+}

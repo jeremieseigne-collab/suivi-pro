@@ -17,6 +17,7 @@ import StoreSelect      from './components/StoreSelect'
 import HomeScreen       from './home/HomeScreen'
 import { confirmDanger } from './components/DangerConfirm'
 import Connexion from './components/Connexion'
+import { useCompte } from './context/CompteContext'
 import Sidebar          from './home/Sidebar'
 import { useAlerts }    from './home/useAlerts'
 import { useMediaQuery, TABLET } from './lib/useMediaQuery'
@@ -24,8 +25,8 @@ import { SeasonProvider, useSeason } from './context/SeasonContext'
 import { MagasinProvider, useMagasin } from './context/MagasinContext'
 import './App.css'
 
-const PIN_CODE       = '2201'
-const PROTECTED_TABS = new Set(['reglement', 'parametres'])
+// Écrans réservés aux comptes Direction (la base refuse de toute façon les écritures sensibles aux comptes magasin)
+const DIRECTION_VIEWS = new Set(['reglement', 'parametres', 'achats'])
 
 function useDarkMode() {
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
@@ -51,65 +52,6 @@ function ThemeToggle() {
   )
 }
 
-function PinModal({ onSuccess, onClose }) {
-  const [digits, setDigits] = useState(['', '', '', ''])
-  const [error,  setError]  = useState(false)
-  const refs = [useRef(), useRef(), useRef(), useRef()]
-
-  useEffect(() => { refs[0].current?.focus() }, [])
-
-  function handleDigit(i, val) {
-    if (!/^\d?$/.test(val)) return
-    const next = [...digits]
-    next[i] = val
-    setDigits(next)
-    setError(false)
-    if (val && i < 3) refs[i + 1].current?.focus()
-    if (next.every(d => d !== '') && i === 3) {
-      const code = next.join('')
-      if (code === PIN_CODE) { onSuccess() }
-      else { setError(true); setDigits(['', '', '', '']); setTimeout(() => refs[0].current?.focus(), 50) }
-    }
-  }
-
-  function handleKeyDown(i, e) {
-    if (e.key === 'Backspace' && !digits[i] && i > 0) {
-      refs[i - 1].current?.focus()
-    }
-  }
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      onClick={onClose}>
-      <div style={{ background: 'var(--surface)', borderRadius: 16, padding: '32px 40px', boxShadow: '0 20px 60px var(--shadow-lg)', textAlign: 'center', minWidth: 280 }}
-        onClick={e => e.stopPropagation()}>
-        <div style={{ fontSize: 32, marginBottom: 8 }}>🔒</div>
-        <h2 style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>Accès restreint</h2>
-        <p style={{ margin: '0 0 24px', fontSize: 13, color: 'var(--text-3)' }}>Entrez le code à 4 chiffres</p>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 16 }}>
-          {digits.map((d, i) => (
-            <input key={i} ref={refs[i]}
-              type="password" inputMode="numeric" maxLength={1} value={d}
-              onChange={e => handleDigit(i, e.target.value)}
-              onKeyDown={e => handleKeyDown(i, e)}
-              style={{
-                width: 52, height: 56, textAlign: 'center', fontSize: 24, fontWeight: 700,
-                border: `2px solid ${error ? '#ef4444' : d ? 'var(--accent)' : 'var(--border)'}`,
-                borderRadius: 10, outline: 'none', background: error ? '#fef2f2' : 'var(--surface-2)',
-                color: error ? '#ef4444' : 'var(--text)', transition: 'border-color .15s',
-              }}
-            />
-          ))}
-        </div>
-        {error && <p style={{ margin: '0 0 8px', fontSize: 13, color: '#ef4444', fontWeight: 600 }}>Code incorrect</p>}
-        <button onClick={onClose}
-          style={{ marginTop: 4, fontSize: 13, color: 'var(--text-4)', background: 'none', border: 'none', cursor: 'pointer' }}>
-          Annuler
-        </button>
-      </div>
-    </div>
-  )
-}
 
 function BackButton({ onHome }) {
   return (
@@ -128,6 +70,7 @@ function BackButton({ onHome }) {
 }
 
 function SeasonBadge() {
+  const { estDirection } = useCompte()
   const { season, setSeason, seasons, addSeason, removeSeason } = useSeason()
   const current       = seasons.find(s => s.id === season) || seasons[0]
   const [open,        setOpen]        = useState(false)
@@ -149,7 +92,7 @@ function SeasonBadge() {
     if (id) { setSeason(id); setOpen(false); setAdding(false) }
   }
 
-  // Suppression d'une saison : efface toutes ses entrées et lignes d'achats → confirmation renforcée (nom + PIN)
+  // Suppression d'une saison : efface toutes ses entrées et lignes d'achats → réservée à la Direction, nom à retaper
   async function handleDelete(id) {
     const s = seasons.find(x => x.id === id)
     setDeleting(true)
@@ -163,7 +106,6 @@ function SeasonBadge() {
         title: `Supprimer la saison « ${s.label} » ?`,
         message: `Seront effacées pour tous les magasins et tous les appareils :\n• ${nbEntrees} entrée(s) du Cahier\n• ${nbAchats} ligne(s) d'achats et de modèles`,
         word: s.label,
-        pin: PIN_CODE,
       })
       if (!ok) return
       await db.entrees.where('season').equals(id).delete()
@@ -219,7 +161,7 @@ function SeasonBadge() {
                       {s.label}
                       {s.id === season && <span style={{ marginLeft: 'auto', fontSize: 12, paddingRight: 4 }}>✓</span>}
                     </button>
-                    {seasons.length > 1 && (
+                    {seasons.length > 1 && estDirection && (
                       <button
                         onClick={e => { e.stopPropagation(); setAdding(false); handleDelete(s.id) }} disabled={deleting}
                         title="Supprimer cette saison"
@@ -357,17 +299,11 @@ function ReassortApp({ onHome }) {
 
 function Root() {
   const [view,      setView]      = useState('home')
-  const [unlocked,  setUnlocked]  = useState(new Set())
-  const [pinTarget, setPinTarget] = useState(null) // vue en attente de déverrouillage
+  const { estDirection } = useCompte()
 
   function open(v) {
-    if (PROTECTED_TABS.has(v) && !unlocked.has(v)) setPinTarget(v)
-    else setView(v)
-  }
-  function handlePinSuccess() {
-    setUnlocked(prev => new Set([...prev, pinTarget]))
-    setView(pinTarget)
-    setPinTarget(null)
+    if (DIRECTION_VIEWS.has(v) && !estDirection) return
+    setView(v)
   }
   const home = () => setView('home')
   const { magasin, setMagasin } = useMagasin()
@@ -385,10 +321,10 @@ function Root() {
   else if (view === 'commandes')  content = <Commandes onHome={home} />
   else if (view === 'defectueux') content = <Defectueux onHome={home} />
   else if (view === 'paie')       content = <PageShell title="🧾 Éléments variables de paie" onHome={home} withSeason={false}><Paie /></PageShell>
-  else if (view === 'achats')     content = <PageShell title="🛒 Achats" onHome={home}><Achats /></PageShell>
+  else if (view === 'achats' && estDirection)     content = <PageShell title="🛒 Achats" onHome={home}><Achats /></PageShell>
   else if (view === 'repertoire') content = <PageShell title="📒 Répertoire fournisseurs" onHome={home} withSeason={false}><Repertoire /></PageShell>
-  else if (view === 'reglement')  content = <PageShell title="💳 Plan de règlement" onHome={home}><PlanReglement /></PageShell>
-  else if (view === 'parametres') content = <PageShell title="⚙️ Paramètres" onHome={home}><Parametres /></PageShell>
+  else if (view === 'reglement' && estDirection)  content = <PageShell title="💳 Plan de règlement" onHome={home}><PlanReglement /></PageShell>
+  else if (view === 'parametres' && estDirection) content = <PageShell title="⚙️ Paramètres" onHome={home}><Parametres /></PageShell>
   else if (view === 'factures')   content = <PageShell title="📄 Factures" onHome={home} withSeason={false}><Factures /></PageShell>
   else if (view === 'planning')   content = <Planning onHome={home} />
   else if (view === 'sav')        content = <Sav onHome={home} />
@@ -425,7 +361,6 @@ function Root() {
       <div style={{ flex: 1, minWidth: 0 }}>
         {content}
       </div>
-      {pinTarget && <PinModal onSuccess={handlePinSuccess} onClose={() => setPinTarget(null)} />}
     </div>
   )
 }

@@ -7,6 +7,7 @@ import nodemailer from 'nodemailer'
 const ALLOWED = [
   { to: 'marion.fouquereau@lecussan.fr', subjectPrefix: 'Éléments variables de paie — ' },     // récap mensuel (RECAP_EMAIL)
   { to: 'jeremie.seigne@gmail.com',      subjectPrefix: 'Demande de modification paie — ' },  // demande de modification (ADMIN_EMAIL)
+  { to: 'jeremie.seigne@gmail.com',      subjectPrefix: 'Paie — saisies complètes — ' },      // prévenance : toutes les fiches du mois sont remplies
 ]
 const MAX_SUBJECT = 200
 const MAX_TEXT    = 20000

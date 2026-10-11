@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { CompteContext, compteDepuisSession } from '../context/CompteContext'
 
 // Garde l'outil derrière une connexion : tant que l'appareil n'est pas connecté avec un compte,
 // seul l'écran de connexion s'affiche. La session reste mémorisée sur l'appareil (pas besoin de se reconnecter).
@@ -14,7 +15,7 @@ export default function Connexion({ children }) {
 
   if (session === undefined) return null
   if (!session) return <EcranConnexion />
-  return children
+  return <CompteContext.Provider value={compteDepuisSession(session)}>{children}</CompteContext.Provider>
 }
 
 function EcranConnexion() {
