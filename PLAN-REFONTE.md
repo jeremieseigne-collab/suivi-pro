@@ -71,6 +71,39 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 
 ---
 
+## 2 bis. Ce qui est retiré, masqué ou déplacé
+
+> ⛔ **Règle de construction** (décision du 11/10, aussi dans `CLAUDE.md`) : **rien ne disparaît de l'outil s'il n'est pas dans cette liste, avec l'accord de l'utilisateur ligne par ligne.** En cas de doute, on garde et on demande.
+> Légende : ✅ accordé · ⏸ à décider plus tard (rien n'est retiré d'ici là) · ↔ déplacé (toujours accessible ailleurs).
+
+| Écran | Élément | Décision |
+|---|---|---|
+| Partout | Bouton retour ← en haut de chaque app | ✅ retiré (menu toujours visible, retour du navigateur) |
+| Partout | Boutons flottants ☰ et 🌙 | ✅ retirés (menu / onglets ; thème suivant l'appareil, option dans Réglages) |
+| Partout | Emojis des menus | ✅ remplacés par des icônes avec texte |
+| Partout | Sous-titre « B'Shoes · JR Shoes » sous le logo | ✅ retiré (11/10) |
+| Partout — compte magasin | Achats, Plan de règlement, Paramètres | ✅ masqués (sécurité étape 2) |
+| Partout — compte magasin | Pointage des entrées (rond, filtre « À pointer », compteur, rappel sur l'accueil) | ✅ masqué (11/10, sécurité étape 2 / E7) |
+| Accueil | Ligne en double « Aujourd'hui · magasin » | ✅ retirée |
+| Accueil | Compteurs à zéro | ✅ masqués |
+| Accueil | Agenda en 4 vues (Jour / Semaine / Mois / Année) | ↔ ✅ l'accueil montre « Agenda du jour » + lien vers l'agenda complet (11/10) |
+| Accueil | Compteurs « Réassorts en route » et « Dossiers SAV en cours » | **gardés** (11/10) ; on **ajoute** les tâches en retard |
+| Cahier — Entrées | 4 compteurs en haut (lignes totales, lignes filtrées, unités, valeur estimée) | ✅ retirés |
+| Cahier — Entrées | 6 menus de filtres toujours visibles | ↔ ✅ repliés : pastilles + bouton « Filtres » (catégorie, statut, marque ; magasin et pointage pour la Direction) |
+| Cahier — Entrées | Colonne magasin | ✅ affichée sur chaque ligne **pour les comptes Direction seulement** (11/10) |
+| Cahier — Entrées | Colonne catégorie | ↔ ✅ visible dans le **détail** d'une entrée et disponible en **filtre** (11/10) |
+| Cahier — Entrées | Colonne date | ↔ ✅ remplacée par un regroupement par jour (11/10) |
+| Cahier — Suivi des livraisons | Compteur « nombre de magasins » | ✅ retiré |
+| Cahier — Suivi des livraisons | Taux global, reçues, attendues ; N° de chaque modèle ; détail par pointure ; recherche par marque ; choix du magasin | **gardés** (11/10) — choix du magasin avec, par défaut, celui de l'appareil |
+| Commandes clients | Commandes retirées / annulées | ↔ ✅ masquées par défaut (U6), accessibles par un filtre |
+| Réassorts | Étape « Demandé » | ✅ supprimée (U7) |
+| Défectueux | Colonnes Magasin et Société ; champ « État » à la création | ⏸ à décider sur la maquette de l'écran |
+| SAV | Champ magasin à la création | ⏸ à décider sur la maquette de l'écran |
+| Planning | 4 lignes vides ajoutées d'office | ⏸ à décider sur la maquette de l'écran |
+| Achats, Paie, Factures, Répertoire, Plan de règlement | — | rien de retiré prévu à ce jour |
+
+---
+
 ## 3. Deux directions pour l'ordinateur
 
 Au téléphone, les deux directions sont identiques. Elles diffèrent sur ordinateur (et tablette en paysage) :
