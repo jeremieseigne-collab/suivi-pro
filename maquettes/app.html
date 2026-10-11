@@ -322,7 +322,7 @@ function rendu() {
 
 const NAV = [
   { id:'accueil', label:'Accueil', icone:'accueil' },
-  { id:'entrees', label:'Cahier des entrées', icone:'entrees', badge:() => ENTREES.filter(e => !e.pointe).length || '' },
+  { id:'entrees', label:'Cahier des entrées', icone:'entrees', badge:() => DIRECTION ? (ENTREES.filter(e => !e.pointe).length || '') : '' },  // pointage : Direction seulement
   { id:'reassorts', label:'Réassorts', icone:'reassort' },
   { id:'commandes', label:'Commandes clients', icone:'commande' },
   { id:'sav', label:'SAV & défectueux', icone:'sav' },
@@ -383,7 +383,7 @@ function vueAccueil() {
     ['sav','2 dossiers SAV sans réponse','Mail envoyé il y a plus de 7 jours','att'],
     ['reassort','1 réassort en retard','Palladium · demandé il y a 16 jours','err'],
     ['entrees','2 entrées à pointer','Reçues aujourd\'hui','info'],
-  ]
+  ].filter(([i]) => i !== 'entrees' || DIRECTION)   // pointage : Direction seulement
   return `<main class="page">
     <div class="entete"><div style="flex:1"><div class="sous">Samedi 10 octobre · Bailly Albi</div><h1>Bonjour</h1></div></div>
     <div class="action-rapide" style="margin:4px 0 6px">
@@ -451,7 +451,7 @@ function vueCahier() {
         <div style="display:flex;gap:8px;align-items:center">
           <div class="chips" style="flex:1">
             <button class="chip" data-filtre="toutes" aria-pressed="${etat.filtre==='toutes'}">Toutes</button>
-            <button class="chip" data-filtre="apointer" aria-pressed="${etat.filtre==='apointer'}">À pointer <span class="n">${aPointer}</span></button>
+            ${DIRECTION ? `<button class="chip" data-filtre="apointer" aria-pressed="${etat.filtre==='apointer'}">À pointer <span class="n">${aPointer}</span></button>` : ''}
             <button class="chip" data-filtre="retours" aria-pressed="${etat.filtre==='retours'}">Retours</button>
           </div>
           <button class="chip" title="Filtres">${ic('filtre','style="width:18px;height:18px"')} Filtres</button>
@@ -476,7 +476,7 @@ function listeEntrees() {
           <div class="t2">${e.numero ? 'N° ' + e.numero + ' · ' : ''}${e.paires} paire${Math.abs(e.paires) > 1 ? 's' : ''} · ${fmtEur(e.montant)}</div>
         </div>
         <span class="puce ${STATUT_CLASSE[e.statut]}">${e.statut || 'Sans statut'}</span>
-        <button class="pointer" data-pointer="${e.id}" aria-pressed="${e.pointe}" aria-label="${e.pointe ? 'Pointée' : 'Pointer'}"><span>${ic('check')}</span></button>
+        ${DIRECTION ? `<button class="pointer" data-pointer="${e.id}" aria-pressed="${e.pointe}" aria-label="${e.pointe ? 'Pointée' : 'Pointer'}"><span>${ic('check')}</span></button>` : ''}
       </div>`).join('')}
     </div>`).join('')
 }
@@ -492,7 +492,7 @@ function contenuDetail() {
     <span class="etiquette">Pointures (${GRILLE_NOM[e.grille]})</span>
     <div class="pointures" style="margin-bottom:18px">${tailles.map(([t,q]) => `<div class="pt plein ${q<0?'retour':''}" style="min-height:52px">${t}<span class="qte">${q}</span></div>`).join('')}</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn" data-pointer="${e.id}">${e.pointe ? 'Dépointer' : ic('check','style="width:18px;height:18px"') + ' Pointer'}</button>
+      ${DIRECTION ? `<button class="btn" data-pointer="${e.id}">${e.pointe ? 'Dépointer' : ic('check','style="width:18px;height:18px"') + ' Pointer'}</button>` : ''}
       <button class="btn">Modifier</button>
       <button class="btn btn-ghost" style="color:var(--err)">Supprimer</button>
     </div>
@@ -597,7 +597,7 @@ document.addEventListener('click', ev => {
   if (!el) return
   const d = el.dataset
   if (d.nav) return aller(d.nav)
-  if (d.pointer) { ev.stopPropagation(); const e = ENTREES.find(x => x.id == d.pointer); e.pointe = !e.pointe; rendu(); return toast(e.pointe ? 'Entrée pointée' : 'Entrée dépointée', () => { e.pointe = !e.pointe; rendu() }) }
+  if (d.pointer) { ev.stopPropagation(); if (!DIRECTION) return; const e = ENTREES.find(x => x.id == d.pointer); e.pointe = !e.pointe; rendu(); return toast(e.pointe ? 'Entrée pointée' : 'Entrée dépointée', () => { e.pointe = !e.pointe; rendu() }) }
   if (d.onglet) { etat.onglet = d.onglet; return rendu() }
   if (d.filtre) { etat.filtre = d.filtre; return rendu() }
   if (d.ouvrir) {

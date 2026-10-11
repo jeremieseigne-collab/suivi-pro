@@ -51,7 +51,8 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 - **Écran de connexion** (chantier sécurité).
 - **Saisie des pointures au tapotement** et enchaînement « carton suivant » (I7).
 - **Liens directs** par écran, retour du navigateur (U9) ; **icône sur l'écran d'accueil** du téléphone (U14).
-- **Annuler** après une action courante (pointer, enregistrer…) au lieu des confirmations à répétition.
+- **Annuler** après une action courante (enregistrer, changer un statut…) au lieu des confirmations à répétition.
+- **Pointage des entrées : réservé aux comptes Direction** (décision du 11/10) — avec un compte magasin, il n'apparaît nulle part (ni rond, ni filtre « À pointer », ni compteur, ni rappel sur l'accueil).
 
 ---
 
@@ -77,7 +78,7 @@ Au téléphone, les deux directions sont identiques. Elles diffèrent sur ordina
 | | **A · Liste + panneau** (comme Mail) | **B · Liste + fenêtre** |
 |---|---|---|
 | Détail d'une entrée, saisie | dans un **panneau à droite**, la liste reste visible | dans une **fenêtre au centre**, la liste est masquée derrière |
-| Avantages | on voit la liste se mettre à jour en saisissant ; idéal pour pointer ou corriger plusieurs lignes à la suite | plus simple, plus « une chose à la fois » |
+| Avantages | on voit la liste se mettre à jour en saisissant ; idéal pour corriger plusieurs lignes à la suite (et pour la Direction, pointer en série) | plus simple, plus « une chose à la fois » |
 | Inconvénients | demande un écran assez large (sinon bascule en fenêtre) | on perd la liste de vue pendant la saisie |
 
 **Ma recommandation : A**, parce que les équipes saisissent carton par carton et pointent en série : voir la liste se remplir au fur et à mesure rassure et évite les doublons. Sur un écran étroit, A se comporte automatiquement comme B.
