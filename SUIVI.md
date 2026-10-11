@@ -1,7 +1,7 @@
 # Suivi du chantier de refonte
 
-> Mis à jour à chaque étape — **dernière mise à jour : samedi 10 octobre 2026, veille de la mise en ligne de la protection**.
-> Branches : `refonte` (dossier `Projets/suivi-pro-refonte`), `securite` (dossier `Projets/suivi-pro`). En production : `main` = correctifs I1-I3 (b3a7ab6).
+> Mis à jour à chaque étape — **dernière mise à jour : dimanche 11 octobre 2026, protection mise en ligne**.
+> Branches : `refonte` (dossier `Projets/suivi-pro-refonte`), `securite` (dossier `Projets/suivi-pro`). En production : `main` = correctifs I1-I3 + protection (d3b32c4) ; `dev` identique.
 
 ## Où on en est
 
@@ -9,7 +9,7 @@
 |---|---|
 | 1. Audit (`AUDIT.md`) | ✅ fait, propositions triées |
 | Correctifs urgents I1-I2-I3 | ✅ **en ligne** depuis le 10/10/2026 01h13 (5 commits, vérifiés ensemble) |
-| Sécurité B6 étape 1 + plafond mails (`SECURITE.md`, branche `securite`) | ✅ **testé sur la base de test** (inscriptions fermées, essai local validé par vous) · ✅ **accord écrit pour la production** (10/10) · 📅 **mise en ligne dimanche 11 octobre**, lancée **par vous** avec le message « on met en ligne » — **ne rien toucher à la production avant** |
+| Sécurité B6 étape 1 + plafond mails (`SECURITE.md`) | ✅ **EN LIGNE depuis le dimanche 11/10/2026** : code à 14h20, filtrage activé à 14h28 (fenêtre d'exposition ~6 min). Vérifié : anonyme = 0 ligne / écriture refusée ; comptes connectés OK ; mail sans connexion refusé ; vrai mail reçu et noté au journal |
 | **Sécurité B6 étape 2** — paie réservée au compte Direction, PIN vérifié côté serveur | à faire **juste après l'étape 1**, avant la refonte — effort **moyen à gros (2 à 3 jours)** |
 | 2. Plan, charte, maquettes (`PLAN-REFONTE.md`, `maquettes/`) | ⏳ à valider |
 | 3. Construction écran par écran | à venir |
@@ -88,7 +88,7 @@
 - [x] Inscriptions fermées sur la base de test (vérifié le 10/10)
 - [x] Accord écrit pour la production : S1, S2, S2 bis, S3 (10/10)
 - [x] Messages aux équipes datés du dimanche 11 octobre (à envoyer le samedi 10 par vous)
-- [ ] **Jour J — dimanche 11 octobre** : voir le déroulé ci-dessous
+- [x] **Jour J — dimanche 11 octobre** : fait (étapes 1 à 10) ; sauvegarde `~/Sauvegardes/suivi-pro/prod-2026-10-11_14h17-avant-protection/`
 - [ ] Sécurité étape 2 (paie Direction, PIN côté serveur)
 - [ ] Validation du plan et des maquettes (direction A ou B)
 - [ ] Étape 3 : socle, puis les écrans dans l'ordre du plan
