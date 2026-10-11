@@ -144,6 +144,7 @@ Deux façons de faire fonctionner le journal des mails :
 | **Récap à la comptable** | Fabriqué et envoyé par l'appareil du magasin qui valide en dernier | Quand la dernière salariée valide, **Jérémie reçoit un mail** « toutes les saisies sont faites » ; un compte Direction ouvre le récap et clique **Envoyer** |
 | **Achats** | Visibles et modifiables par tous | **Direction seulement** (écran et modifications) |
 | **Planning** | Modifiable par tous | **inchangé** |
+| **Pointage des entrées** | Possible pour tous | **Direction seulement** (E7, décision du 11/10) |
 | **Code PIN 2201** | Écrit dans le site, contournable | **Supprimé**. Plan de règlement et Paramètres (et le récap de paie) n'apparaissent que pour les comptes Direction, et la base refuse les écritures sensibles aux comptes magasin |
 | **Déconnecter les appareils d'un magasin** | Une commande lancée par Claude | Un bouton dans Paramètres, réservé à la Direction |
 
@@ -160,6 +161,7 @@ Les 2 comptes Direction (Jérémie, Raphaël) ont exactement les mêmes droits.
 | E5 | **Fonction `deconnecter_compte(adresse)`**, réservée Direction | Révoque toutes les sessions d'un compte (déconnexion ≤ 1 h) | La supprimer |
 | E4 bis | **Achats réservés à la Direction** : écriture sur les lignes d'achat (`parametres` : budgets, modèles, prix, plans chèque) réservée à la Direction ; menu « Achats » masqué pour les magasins | Les magasins ne voient plus l'écran Achats et ne peuvent plus modifier montants ni modèles. ⚠️ Ils peuvent encore **lire** ces lignes techniquement (l'outil en a besoin pour le prix des entrées) : la confidentialité des budgets n'est donc assurée qu'à l'écran, pas en base | Remettre la règle « tout compte connecté » |
 | ~~E6~~ | ~~Fonction `paie_complete(période)`~~ — **non nécessaire, non créée** | | |
+| E7 | **Pointage des entrées réservé à la Direction** : la base refuse à un compte magasin de pointer, dépointer ou créer une entrée déjà pointée (il crée et corrige ses entrées normalement) ; le pointage est masqué aux comptes magasin dans l'écran Entrées | Les magasins ne voient plus la colonne « Pointé », le filtre ni les boutons « Pointer / Dépointer » | Supprimer la règle (1 commande, en bas de `supabase-securite-etape2.sql`) |
 
 Aucune donnée n'est modifiée ni supprimée. Tout est testé d'abord sur la base de test.
 
@@ -190,3 +192,4 @@ Un appareil de magasin ne pourra plus lire les saisies, donc il ne pourra plus f
 - **Mail « Paie — saisies complètes — [mois] »** vers Jérémie : ajouté à la liste fermée du serveur, compté dans le plafond de 10 / 24 h.
 - **Limite mineure** : la liste « rempli / à remplir » d'un appareil magasin se met à jour au prochain changement dans l'outil (et non à l'instant où une collègue d'un autre magasin dépose sa fiche).
 - **Suppression de saison** : réservée à la Direction (nom à retaper ; plus de code PIN).
+- **E7 (pointage)** : accord écrit du 11/10 pour la base de test ; fait et testé sur une entrée de test (magasin : création et correction OK, pointage et création d'une entrée pointée refusés ; Direction : pointage OK). Écran Entrées : colonne, filtre et boutons de pointage masqués aux comptes magasin.
