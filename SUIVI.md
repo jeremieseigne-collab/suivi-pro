@@ -10,7 +10,7 @@
 | 1. Audit (`AUDIT.md`) | ✅ fait, propositions triées |
 | Correctifs urgents I1-I2-I3 | ✅ **en ligne** depuis le 10/10/2026 01h13 (5 commits, vérifiés ensemble) |
 | Sécurité B6 étape 1 + plafond mails (`SECURITE.md`) | ✅ **EN LIGNE depuis le dimanche 11/10/2026** : code à 14h20, filtrage activé à 14h28 (fenêtre d'exposition ~6 min). Vérifié : anonyme = 0 ligne / écriture refusée ; comptes connectés OK ; mail sans connexion refusé ; vrai mail reçu et noté au journal |
-| **Sécurité B6 étape 2** — paie réservée aux comptes Direction, PIN vérifié par la base | ⏳ **plan écrit** (`SECURITE.md`, partie « Étape 2 », branche `securite`) avec vos choix du 11/10 ; **en attente de votre accord écrit** (E1 à E6, base de test d'abord) — 2 à 3 jours |
+| **Sécurité B6 étape 2** — paie réservée aux comptes Direction, PIN vérifié par la base | ⏳ **accord écrit du 11/10 pour E1-E6 sur la base de TEST uniquement** ; production : nouvel accord écrit, **pas avant que les 3 magasins se soient connectés sans problème lundi 12/10** — 2 à 3 jours |
 | 2. Plan, charte, maquettes (`PLAN-REFONTE.md`, `maquettes/`) | ⏳ à valider |
 | 3. Construction écran par écran | à venir |
 | 4. Préparation de la mise en ligne | à venir |
@@ -83,6 +83,11 @@
 - **Bouton « Déconnecter tous les appareils d'un magasin »** dans Réglages.
 - Limite à connaître : avec un compte par magasin, une collègue peut remplir la paie « au nom » d'une autre sur le même appareil. Seuls des comptes par personne régleraient ce point (à rediscuter si besoin).
 - Effort : **moyen à gros, 2 à 3 jours** (test complet sur la base de test compris). Modifie la structure de la base → accord écrit.
+
+## Limites connues (acceptées)
+
+- **Budgets d'achat lisibles techniquement par un compte magasin** (accepté le 11/10) : après l'étape 2, l'écran Achats est réservé à la Direction et la base refuse aux magasins toute modification, mais les lignes d'achat restent **lisibles** par un compte magasin qui interrogerait la base directement (l'outil en a besoin pour le prix des entrées et le suivi des livraisons). **Pour supprimer cette limite** : séparer la table `parametres` en « assortiment » (modèles, prix, pointures, quantités attendues — lisible par tous) et « budgets » (reçu N-1, objectif, réel, stratégie, plan chèque — Direction seulement) ; modification de structure + adaptation de 7 écrans (Achats, fenêtres d'achat, import achats, Paramètres, Plan de règlement, Suivi des livraisons, saisie d'entrée). **Effort : moyen à gros, 2 à 3 jours.**
+- **Paie avec comptes par magasin** : une collègue peut remplir la fiche « au nom » d'une autre sur le même appareil (seuls des comptes par personne régleraient ce point).
 
 ## Reste à faire
 
