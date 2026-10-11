@@ -121,7 +121,7 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Couleur par saison | Pastille du sélecteur de saison | En-tête (à dessiner) |
 | Couleurs des compteurs | **Trait de couleur** à gauche de chaque compteur (chiffre en noir) — une couleur par type | Accueil |
 | Pastilles de comptage du menu | Une couleur par type (réassorts, défectueux, commandes) | Menu (à dessiner) |
-| Couleurs d'agenda | Une couleur par magasin — **barre** (ou point : choix en attente, voir `maquettes/comparaisons.html` §3) | Agenda, bloc « À venir » |
+| Couleurs d'agenda | Une couleur par magasin — **barre de couleur** (décision du 11/10) | Agenda, bloc « À venir » |
 
 **Statuts des entrées** (décisions du 11/10) :
 - **Ordre des étapes, partout** (saisie, filtres, détail) : **Aucun → Enregistré → Imp. étiquettes** (dernière étape), puis Réassort et Retour. ⚠️ L'outil actuel affiche « Imp. Etiquettes » **avant** « Enregistré » dans ses listes : à corriger dans la refonte.
