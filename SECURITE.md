@@ -131,6 +131,7 @@ Deux façons de faire fonctionner le journal des mails :
 
 > Statut : **proposition, en attente de votre accord écrit** (base de test d'abord). Rien n'est modifié.
 > Étape 1 en ligne depuis le 11/10/2026 14h28.
+> **Choix faits le 11/10** : récap envoyé d'**un clic par la Direction** (option 1) · **Achats réservés à la Direction** · **Planning modifiable par tous** (inchangé).
 
 ## 1. Ce qui change
 
@@ -138,7 +139,9 @@ Deux façons de faire fonctionner le journal des mails :
 |---|---|---|
 | **Saisies de paie** | Lisibles par tout compte connecté (les 3 magasins) | Un compte magasin peut **déposer** une saisie, **jamais en relire** une. Seuls les **2 comptes Direction** lisent, corrigent et envoient |
 | **Liste « rempli / à remplir »** | Calculée en chargeant toutes les saisies | Fournie par la base **sans le contenu** (juste les prénoms déjà remplis) |
-| **Récap à la comptable** | Fabriqué et envoyé par l'appareil du magasin qui valide en dernier | Voir le choix ci-dessous (§3) |
+| **Récap à la comptable** | Fabriqué et envoyé par l'appareil du magasin qui valide en dernier | Quand la dernière salariée valide, **Jérémie reçoit un mail** « toutes les saisies sont faites » ; un compte Direction ouvre le récap et clique **Envoyer** |
+| **Achats** | Visibles et modifiables par tous | **Direction seulement** (écran et modifications) |
+| **Planning** | Modifiable par tous | **inchangé** |
 | **Code PIN 2201** | Écrit dans le site, contournable | **Supprimé**. Plan de règlement et Paramètres (et le récap de paie) n'apparaissent que pour les comptes Direction, et la base refuse les écritures sensibles aux comptes magasin |
 | **Déconnecter les appareils d'un magasin** | Une commande lancée par Claude | Un bouton dans Paramètres, réservé à la Direction |
 
@@ -153,7 +156,8 @@ Les 2 comptes Direction (Jérémie, Raphaël) ont exactement les mêmes droits.
 | E3 | **Règles sur la paie** : compte magasin = dépôt seul ; Direction = tout. **Fonction `paie_remplies(période)`** (prénoms remplis, sans contenu) | Les appareils des magasins ne peuvent plus lire aucune saisie | Remettre la règle « tout compte connecté » |
 | E4 | **Règles « Direction seulement » en écriture** sur : pointages de paiement (`reglement_paye`, aussi en lecture), modes de règlement, salariés, magasins, envois de paie | Un compte magasin ne peut plus les modifier (il peut toujours lire ce dont l'outil a besoin, ex. la liste des salariés) | Remettre la règle « tout compte connecté » |
 | E5 | **Fonction `deconnecter_compte(adresse)`**, réservée Direction | Révoque toutes les sessions d'un compte (déconnexion ≤ 1 h) | La supprimer |
-| E6 | *(selon §3)* | | |
+| E4 bis | **Achats réservés à la Direction** : écriture sur les lignes d'achat (`parametres` : budgets, modèles, prix, plans chèque) réservée à la Direction ; menu « Achats » masqué pour les magasins | Les magasins ne voient plus l'écran Achats et ne peuvent plus modifier montants ni modèles. ⚠️ Ils peuvent encore **lire** ces lignes techniquement (l'outil en a besoin pour le prix des entrées) : la confidentialité des budgets n'est donc assurée qu'à l'écran, pas en base | Remettre la règle « tout compte connecté » |
+| E6 | **Fonction `paie_complete(période)`** : répond oui/non (sans aucun contenu) quand toutes les salariées ont rempli | Déclenche le mail « toutes les saisies sont faites » envoyé à Jérémie | La supprimer |
 
 Aucune donnée n'est modifiée ni supprimée. Tout est testé d'abord sur la base de test.
 
@@ -163,7 +167,7 @@ Un appareil de magasin ne pourra plus lire les saisies, donc il ne pourra plus f
 
 | | **Option 1 — un clic de la Direction** (recommandée) | **Option 2 — envoi automatique** |
 |---|---|---|
-| Fonctionnement | Quand la dernière salariée valide, **vous recevez un mail** « Toutes les saisies d'octobre sont faites ». Vous ouvrez le récap (compte Direction) et cliquez **Envoyer** | Le serveur fabrique et envoie le récap tout seul, comme aujourd'hui |
+| ✅ **Choisie** — Fonctionnement | Quand la dernière salariée valide, **vous recevez un mail** « Toutes les saisies d'octobre sont faites ». Vous ouvrez le récap (compte Direction) et cliquez **Envoyer** | Le serveur fabrique et envoie le récap tout seul, comme aujourd'hui |
 | Secret à gérer | **Aucun** | La clé secrète `SUPABASE_SERVICE_ROLE_KEY` à ajouter dans Vercel (jamais dans le code ni le projet) |
 | Bonus | Vous relisez avant envoi | Zéro action |
 | E6 | une petite fonction « toutes remplies ? » pour déclencher votre mail (sans contenu) | rien en base, mais la clé dans Vercel |
@@ -172,4 +176,5 @@ Un appareil de magasin ne pourra plus lire les saisies, donc il ne pourra plus f
 
 - **2 à 3 jours**, test complet sur la base de test compris.
 - Mise en ligne comme l'étape 1 : sauvegarde → E1-E5 (et E6) → code → vous vous reconnectez avec le compte Direction → vérifications. Retour arrière : remettre les règles de l'étape 1 (1 commande) + « Instant Rollback ».
-- Pour les équipes : **rien ne change**, sauf que Plan de règlement et Paramètres disparaissent de leur menu (ils étaient déjà protégés par le code).
+- Pour les équipes : la saisie de paie ne change pas ; **Plan de règlement, Paramètres et Achats disparaissent de leur menu**. Seul changement visible à annoncer : **les Achats**.
+- Nouveau mail autorisé (ajouté à la liste fermée du serveur) : « Paie — saisies complètes — [mois] », vers Jérémie uniquement, compté dans son plafond de 10 / 24 h.
