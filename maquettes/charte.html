@@ -85,6 +85,7 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:12p
   <tr><td>Au doigt</td><td>Toute zone cliquable fait au moins 44 px de haut. Rien ne dépend du survol de la souris.</td></tr>
   <tr><td>Téléphone d'abord</td><td>Chaque écran magasin est conçu à 390 px de large, puis élargi. Jamais de tableau à faire défiler de côté : des listes.</td></tr>
   <tr><td>Une main</td><td>Sur téléphone, l'action principale et la navigation sont en bas de l'écran, à portée du pouce.</td></tr>
+  <tr><td>Sobriété</td><td>La couleur est <strong>réservée aux repères</strong> (N°, statuts, jauges, magasins, types de compteur) et à <strong>l'urgence</strong> (retard, doublon, erreur). Chiffres, icônes et titres restent en noir ou gris ; un seul bleu pour l'action principale. Les repères colorés prennent la forme de <strong>petits points</strong> ou de pastilles, jamais de grands aplats.</td></tr>
   <tr><td>Pas d'animation</td><td>Seulement un léger changement de couleur au toucher. Pas de mouvements, de fondus ni de rebonds.</td></tr>
   <tr><td>Clair / sombre</td><td>L'outil suit le réglage de l'appareil. Toutes les couleurs passent par la charte (aucune couleur « en dur »).</td></tr>
   <tr><td>Icônes</td><td>Icônes au trait, toujours accompagnées d'un texte dans les menus (plus d'emojis).</td></tr>
@@ -122,6 +123,12 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:12p
   <p class="doux" style="font-size:13px;margin:12px 0 0">Mêmes seuils que l'outil actuel (jauge et pourcentage). Une marque ou un modèle sans rien de reçu est atténué. Détail par pointure : vert = complet, bleu = partiel, gris = rien reçu. Saisie : une pointure touchée devient verte (orange pour un retour).</p>
 </div>
 
+<h2>Statuts des entrées</h2>
+<div class="bloc">
+  <div class="rangee"><span class="puce">Aucun</span><span style="color:var(--doux)">→</span><span class="puce att">Enregistré</span><span style="color:var(--doux)">→</span><span class="puce ok">Imp. étiquettes</span><span style="width:20px"></span><span class="puce info">Réassort</span><span class="puce err">Retour</span></div>
+  <p class="doux" style="font-size:13px;margin:12px 0 0">Ordre des étapes, <strong>partout</strong> (saisie, filtres, détail) : Aucun → Enregistré → Imp. étiquettes (dernière étape). Couleurs selon la progression : orange = en cours, vert = terminé ; Réassort bleu, Retour rouge. Le statut est toujours un <strong>point plein suivi du mot</strong> ; le N° est une <strong>pastille pleine</strong> commençant par « N° » — on ne les confond pas.</p>
+</div>
+
 <h2>Typographie</h2>
 <div class="bloc">
   <div style="font-size:26px;font-weight:700;letter-spacing:-.02em">Titre de page — 26</div>
@@ -143,8 +150,8 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:12p
 
 <h2>Listes (à la place des tableaux)</h2>
 <div class="liste">
-  <div class="ligne"><div class="txt"><div class="t1">Palladium <span>· PAMPA HI, Mojave desert</span></div><div class="t2">N° 3 · 8 paires · 273,20 €</div></div><span class="puce ok">Enregistré</span></div>
-  <div class="ligne"><div class="txt"><div class="t1">Sebago <span>· Jacklyn, Pink white</span></div><div class="t2">N° 2 · 1 paire · 58,00 €</div></div><span class="puce att">Imp. étiquettes</span></div>
+  <div class="ligne"><div class="txt"><div class="t1">Palladium <span>· PAMPA HI, Mojave desert</span></div><div class="t2">N° 3 · 8 paires · 273,20 €</div></div><span class="puce att">Enregistré</span></div>
+  <div class="ligne"><div class="txt"><div class="t1">Sebago <span>· Jacklyn, Pink white</span></div><div class="t2">N° 2 · 1 paire · 58,00 €</div></div><span class="puce ok">Imp. étiquettes</span></div>
   <div class="ligne"><div class="txt"><div class="t1">Miss Elastic <span>· 75050, Negro</span></div><div class="t2">−1 paire · −29,90 €</div></div><span class="puce err">Retour</span></div>
 </div>
 <p class="doux" style="font-size:13px">Ligne : titre en gras, détail en gris dessous, état à droite (point de couleur + mot). Sur ordinateur, les colonnes s'alignent mais la liste reste lisible à toutes les tailles.</p>

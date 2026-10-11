@@ -83,6 +83,9 @@ svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stro
 .sobre .icone-tache{background:var(--surface-2) !important;color:var(--doux) !important}
 .sobre .barre-agenda{width:8px !important;height:8px;align-self:center !important;border-radius:50% !important}
 .sobre .jour-agenda{color:var(--texte)}
+.sobre .nav svg.i{color:var(--doux)} .sobre .nav[aria-current="page"] svg.i{color:var(--accent-texte)}
+.sobre .feuille .ligne svg.i[style*="accent-texte"]{color:var(--doux) !important}
+.sobre .encart.info{background:var(--surface-2);color:var(--texte)}
 .puce.ok::before{background:var(--ok)} .puce.att::before{background:#ff9500} .puce.err::before{background:#ff3b30} .puce.info::before{background:#007aff}
 
 .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 0}
@@ -384,8 +387,11 @@ function numCls(n) { const v = parseInt(n); return v ? 'n' + ((v - 1) % 3 + 1) :
 const numHtml = (n, prefixe = true) => n ? `<span class="num ${numCls(n)}">${prefixe ? 'N° ' : ''}${esc(n)}</span>` : ''
 // Jauge : mêmes seuils que l'outil actuel (GaugeBar) — 0 % gris, < 50 % orange, ≥ 50 % bleu, 100 % vert
 const niveau = pc => pc === 0 ? 'zero' : pc >= 100 ? 'ok' : pc >= 50 ? 'bleu' : 'orange'
-const STATUTS = ['Imp. étiquettes','Enregistré','Réassort','Retour']
-const STATUT_CLASSE = { 'Imp. étiquettes':'att', 'Enregistré':'ok', 'Réassort':'info', 'Retour':'err', '':'' }
+// Ordre des étapes (11/10) : Aucun → Enregistré → Imp. étiquettes (dernière étape) ; puis Réassort et Retour.
+// Couleurs : Enregistré orange (en cours), Imp. étiquettes vert (terminé), Réassort bleu, Retour rouge.
+// ⚠️ Dans la base, la valeur reste « Imp. Etiquettes » (sans accent) : seul l'affichage et l'ordre changent.
+const STATUTS = ['Enregistré','Imp. étiquettes','Réassort','Retour']
+const STATUT_CLASSE = { 'Enregistré':'att', 'Imp. étiquettes':'ok', 'Réassort':'info', 'Retour':'err', '':'' }
 
 // ─── État ────────────────────────────────────────────────────────
 const P = new URLSearchParams(location.search)
@@ -409,7 +415,7 @@ const etat = {
 if (etat.ecran === 'saisie') etat.ecran = 'entrees'
 document.body.dataset.dir = etat.dir
 if (P.get('theme')) document.documentElement.dataset.theme = P.get('theme')
-if (P.get('style') === 'sobre') document.body.classList.add('sobre')        // proposition « accueil sobre »
+if (P.get('style') !== 'vif') document.body.classList.add('sobre')         // principe retenu le 11/10 : couleur réservée aux repères et à l'urgence
 if (P.get('statut') === 'creux') document.body.classList.add('statut-creux') // variante : point de statut creux
 
 let form = nouveauForm('Palladium')
@@ -562,7 +568,7 @@ function filtrees() {
     (DIRECTION || e.magasin === MAGASIN_APPAREIL) &&
     (etat.filtre === 'toutes' || (etat.filtre === 'apointer' && !e.pointe) || (etat.filtre === 'retours' && e.statut === 'Retour')) &&
     (!q || `${e.marque} ${e.modele} ${e.numero}`.toLowerCase().includes(q)) &&
-    (!f.categorie || e.categorie === f.categorie) && (!f.statut || e.statut === f.statut) && (!f.marque || e.marque === f.marque) &&
+    (!f.categorie || e.categorie === f.categorie) && (!f.statut || (f.statut === 'aucun' ? !e.statut : e.statut === f.statut)) && (!f.marque || e.marque === f.marque) &&
     (!DIRECTION || ((!f.magasin || e.magasin === f.magasin) && (!f.pointe || (f.pointe === 'oui') === e.pointe))))
 }
 function vueFiltres() {
@@ -575,7 +581,7 @@ function vueFiltres() {
     <div class="feuille-entete"><h2>Filtres</h2><button class="icone-btn" data-act="fermer-filtres" aria-label="Fermer">${ic('fermer')}</button></div>
     <div class="feuille-corps">
       ${champ('Catégorie', 'categorie', 'Toutes les catégories', opts('categorie', etat.f.categorie))}
-      ${champ('Statut', 'statut', 'Tous les statuts', opts('statut', etat.f.statut))}
+      ${champ('Statut', 'statut', 'Tous les statuts', ['aucun', ...STATUTS].map(v => `<option value="${v}" ${v === etat.f.statut ? 'selected' : ''}>${v === 'aucun' ? 'Aucun' : v}</option>`).join(''))}
       ${champ('Marque', 'marque', 'Toutes les marques', opts('marque', etat.f.marque))}
       ${DIRECTION ? champ('Magasin', 'magasin', 'Tous les magasins', opts('magasin', etat.f.magasin)) : ''}
       ${DIRECTION ? champ('Pointage', 'pointe', 'Pointées et non pointées', `<option value="non" ${etat.f.pointe==='non'?'selected':''}>Non pointées</option><option value="oui" ${etat.f.pointe==='oui'?'selected':''}>Pointées</option>`) : ''}

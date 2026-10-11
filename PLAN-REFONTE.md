@@ -122,7 +122,11 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Couleurs des compteurs et pastilles de menu | Une couleur par type (réassorts, défectueux, commandes, SAV) | Accueil, menu (à dessiner) |
 | Couleurs d'agenda | Une couleur par magasin | Agenda |
 
-**Point de couleur du statut** des entrées : **gardé** avec les couleurs de la maquette (11/10) : Imp. étiquettes orange, Enregistré vert, Réassort bleu, Retour rouge (l'outil actuel n'en avait pas). Pour ne pas le confondre avec le N° (rouge / bleu / vert) sur la même ligne : **N° = pastille pleine commençant par « N° »**, **statut = point + mot**, à droite ; variante proposée : **point creux** pour le statut (à valider, voir `maquettes/comparaisons.html`).
+**Statuts des entrées** (décisions du 11/10) :
+- **Ordre des étapes, partout** (saisie, filtres, détail) : **Aucun → Enregistré → Imp. étiquettes** (dernière étape), puis Réassort et Retour. ⚠️ L'outil actuel affiche « Imp. Etiquettes » **avant** « Enregistré » dans ses listes : à corriger dans la refonte.
+- **Couleurs selon la progression** : Enregistré **orange** (en cours), Imp. étiquettes **vert** (terminé), Réassort **bleu**, Retour **rouge** (l'outil actuel n'avait pas de couleur de statut).
+- **Forme** : statut = **point plein suivi du mot** ; N° = **pastille pleine commençant par « N° »** — on ne les confond pas (point creux écarté).
+- **Données inchangées** : la valeur enregistrée reste « Imp. Etiquettes » (sans accent) ; seuls l'affichage et l'ordre changent, aucune donnée existante n'est modifiée.
 
 ---
 
@@ -150,6 +154,7 @@ Au téléphone, les deux directions sont identiques. Elles diffèrent sur ordina
 
 - **Couleurs** : fond gris très clair, surfaces blanches, texte noir doux, **un seul bleu d'action** ; vert = fait, orange = à faire, rouge = problème/retour, **même sens partout**. Mode sombre complet.
 - **Typographie** : police système de l'appareil, 3 tailles (13 / 15 / 17) + titre de page (26).
+- **Sobriété (11/10)** : la couleur est **réservée aux repères** (N°, statuts, jauges, magasins, types de compteur) **et à l'urgence** (retard, doublon, erreur) ; chiffres, icônes et titres en noir ou gris ; un seul bleu pour l'action principale ; repères en petits points ou pastilles, jamais en grands aplats. Appliquée à **tous les écrans**.
 - **N° de commande** : couleur qui tourne sur 3 teintes (1 rouge, 2 bleu, 3 vert…), logique identique à l'outil actuel, partout (voir §2 ter).
 - **Boutons** : arrondis, 44 px minimum ; bleu = action principale (une par écran), gris = secondaire, lien = discret, rouge pâle = destructif.
 - **Listes au lieu des tableaux** : titre en gras, détail en gris dessous, état à droite (point + mot).
