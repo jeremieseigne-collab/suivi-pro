@@ -86,7 +86,7 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Partout — compte magasin | Pointage des entrées (rond, filtre « À pointer », compteur, rappel sur l'accueil) | ✅ masqué (11/10, sécurité étape 2 / E7) |
 | Accueil | Ligne en double « Aujourd'hui · magasin » | ✅ retirée |
 | Accueil | Compteurs à zéro | ✅ masqués |
-| Accueil | Agenda en 4 vues (Jour / Semaine / Mois / Année) | ↔ ✅ l'accueil montre « Agenda du jour » + lien vers l'agenda complet (11/10) |
+| Accueil | Agenda en 4 vues (Jour / Semaine / Mois / Année) | ↔ ✅ l'accueil montre un bloc **« À venir »** façon widget Calendrier de l'iPhone : les rendez-vous restants d'aujourd'hui ; s'il n'y en a pas (ou plus), les **prochains** avec leur jour (« Demain », « Jeudi 15 »…) ; jamais vide tant qu'un événement est à venir ; **4 lignes max** ; lien « Voir l'agenda » vers l'agenda complet (11/10) |
 | Accueil | Compteurs « Réassorts en route » et « Dossiers SAV en cours » | **gardés** (11/10) ; on **ajoute** les tâches en retard |
 | Cahier — Entrées | 4 compteurs en haut (lignes totales, lignes filtrées, unités, valeur estimée) | ✅ retirés |
 | Cahier — Entrées | 6 menus de filtres toujours visibles | ↔ ✅ repliés : pastilles + bouton « Filtres » (catégorie, statut, marque ; magasin et pointage pour la Direction) |
