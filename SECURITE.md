@@ -129,7 +129,9 @@ Deux façons de faire fonctionner le journal des mails :
 
 # Étape 2 — Paie réservée à la Direction, code PIN vérifié par la base
 
-> Statut : **proposition, en attente de votre accord écrit** (base de test d'abord). Rien n'est modifié.
+> Statut (11/10/2026) : **accord écrit pour E1-E5 + E4 bis sur la base de TEST uniquement — faits et testés** (instructions : `supabase-securite-etape2.sql`, code : branche `securite-etape2`).
+> **E6 n'a pas été nécessaire** : l'appareil compare la liste des salariés aux prénoms fournis par `paie_remplies` (aucune fonction en plus).
+> Production : nouvel accord écrit, **pas avant que les 3 magasins se soient connectés sans problème lundi 12/10**.
 > Étape 1 en ligne depuis le 11/10/2026 14h28.
 > **Choix faits le 11/10** : récap envoyé d'**un clic par la Direction** (option 1) · **Achats réservés à la Direction** · **Planning modifiable par tous** (inchangé).
 
@@ -157,7 +159,7 @@ Les 2 comptes Direction (Jérémie, Raphaël) ont exactement les mêmes droits.
 | E4 | **Règles « Direction seulement » en écriture** sur : pointages de paiement (`reglement_paye`, aussi en lecture), modes de règlement, salariés, magasins, envois de paie | Un compte magasin ne peut plus les modifier (il peut toujours lire ce dont l'outil a besoin, ex. la liste des salariés) | Remettre la règle « tout compte connecté » |
 | E5 | **Fonction `deconnecter_compte(adresse)`**, réservée Direction | Révoque toutes les sessions d'un compte (déconnexion ≤ 1 h) | La supprimer |
 | E4 bis | **Achats réservés à la Direction** : écriture sur les lignes d'achat (`parametres` : budgets, modèles, prix, plans chèque) réservée à la Direction ; menu « Achats » masqué pour les magasins | Les magasins ne voient plus l'écran Achats et ne peuvent plus modifier montants ni modèles. ⚠️ Ils peuvent encore **lire** ces lignes techniquement (l'outil en a besoin pour le prix des entrées) : la confidentialité des budgets n'est donc assurée qu'à l'écran, pas en base | Remettre la règle « tout compte connecté » |
-| E6 | **Fonction `paie_complete(période)`** : répond oui/non (sans aucun contenu) quand toutes les salariées ont rempli | Déclenche le mail « toutes les saisies sont faites » envoyé à Jérémie | La supprimer |
+| ~~E6~~ | ~~Fonction `paie_complete(période)`~~ — **non nécessaire, non créée** | | |
 
 Aucune donnée n'est modifiée ni supprimée. Tout est testé d'abord sur la base de test.
 
@@ -178,3 +180,13 @@ Un appareil de magasin ne pourra plus lire les saisies, donc il ne pourra plus f
 - Mise en ligne comme l'étape 1 : sauvegarde → E1-E5 (et E6) → code → vous vous reconnectez avec le compte Direction → vérifications. Retour arrière : remettre les règles de l'étape 1 (1 commande) + « Instant Rollback ».
 - Pour les équipes : la saisie de paie ne change pas ; **Plan de règlement, Paramètres et Achats disparaissent de leur menu**. Seul changement visible à annoncer : **les Achats**.
 - Nouveau mail autorisé (ajouté à la liste fermée du serveur) : « Paie — saisies complètes — [mois] », vers Jérémie uniquement, compté dans son plafond de 10 / 24 h.
+
+## 5. Ce qui a été construit et testé (base de test, 11/10)
+
+- **Choix du 11/10** : rien de la liste (salariés, modèles/prix/grilles, modes de règlement) ne reste ouvert aux magasins ; écran « Vérifiez votre saisie » ajouté à la paie.
+- **Dépôt d'une fiche de paie par un compte magasin** : enregistré « sans relecture » (la base refuse de lui renvoyer la fiche) ; une deuxième fiche pour la même personne et le même mois est refusée.
+- **Testé** (comptes de test) : magasin = 0 fiche lisible, dépôt OK, écrasement refusé, salariés/achats non modifiables, pointages illisibles, déconnexion d'un autre compte refusée ; Direction = lecture, correction, modifications, pointages, déconnexion à distance effective (session coupée).
+- **Écran** : avec un compte magasin, le menu n'affiche plus Achats, Plan de règlement, Paramètres ; avec un compte Direction, oui. Code PIN supprimé du site. Nouvel onglet Paramètres → « Appareils connectés ».
+- **Mail « Paie — saisies complètes — [mois] »** vers Jérémie : ajouté à la liste fermée du serveur, compté dans le plafond de 10 / 24 h.
+- **Limite mineure** : la liste « rempli / à remplir » d'un appareil magasin se met à jour au prochain changement dans l'outil (et non à l'instant où une collègue d'un autre magasin dépose sa fiche).
+- **Suppression de saison** : réservée à la Direction (nom à retaper ; plus de code PIN).

@@ -3,13 +3,14 @@ import { db } from '../db'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { LoadingState } from '../components/shared'
 import { currentPeriode, periodeLabel, shiftPeriode, isGerant } from './constants'
-import { sendPaieRecap, buildRecapText, sendModificationRequest, modificationGmailUrl } from './mail'
+import { sendPaieRecap, buildRecapText, sendModificationRequest, modificationGmailUrl, sendPaieCompleteNotification } from './mail'
+import { supabase } from '../lib/supabase'
+import { useCompte } from '../context/CompteContext'
 import PaieForm from './PaieForm'
 
 // ⚠️ Ces adresses doivent aussi figurer dans la liste autorisée du serveur (api/_send.js → ALLOWED)
 const RECAP_EMAIL = 'marion.fouquereau@lecussan.fr'   // récap mensuel → comptable
 const ADMIN_EMAIL = 'jeremie.seigne@gmail.com'        // demandes de modification → direction
-const PIN_CODE = '2201'
 
 // ─── Document déjà validé : verrouillé + demande de modification ──────────────
 function LockedView({ salarie, periode, onBack }) {
@@ -78,37 +79,6 @@ function LockedView({ salarie, periode, onBack }) {
           {busy ? 'Envoi…' : '📨 Envoyer la demande'}
         </button>
       </div>
-    </div>
-  )
-}
-
-// ─── Petite modale code PIN (récap réservé) ──────────────────────────────────
-function PinGate({ onSuccess, onClose }) {
-  const [code, setCode] = useState('')
-  const [error, setError] = useState(false)
-  function submit(e) {
-    e.preventDefault()
-    if (code === PIN_CODE) onSuccess()
-    else { setError(true); setCode('') }
-  }
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
-      <form onSubmit={submit} onClick={e => e.stopPropagation()}
-        style={{ background: 'var(--surface)', borderRadius: 16, padding: '28px 36px', boxShadow: '0 20px 60px var(--shadow-lg)', textAlign: 'center', minWidth: 260 }}>
-        <div style={{ fontSize: 30, marginBottom: 6 }}>🔒</div>
-        <h2 style={{ margin: '0 0 14px', fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Récap réservé</h2>
-        <input autoFocus type="password" inputMode="numeric" maxLength={4} value={code}
-          onChange={e => { setCode(e.target.value.replace(/\D/g, '')); setError(false) }}
-          placeholder="Code à 4 chiffres"
-          style={{ width: 180, padding: '10px 12px', textAlign: 'center', fontSize: 18, letterSpacing: 4,
-            border: `2px solid ${error ? '#ef4444' : 'var(--border)'}`, borderRadius: 10, outline: 'none',
-            background: 'var(--surface-2)', color: 'var(--text)' }} />
-        {error && <p style={{ margin: '8px 0 0', fontSize: 13, color: '#ef4444', fontWeight: 600 }}>Code incorrect</p>}
-        <div style={{ marginTop: 16, display: 'flex', gap: 10, justifyContent: 'center' }}>
-          <button type="button" onClick={onClose} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer' }}>Annuler</button>
-          <button type="submit" style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, #fff)', cursor: 'pointer', fontWeight: 700 }}>Valider</button>
-        </div>
-      </form>
     </div>
   )
 }
@@ -197,11 +167,15 @@ export default function Paie() {
   const [locked, setLocked] = useState(null)     // nom du salarié dont le doc est verrouillé
   const [justSaved, setJustSaved] = useState(false)
   const [recapOpen, setRecapOpen] = useState(false)
-  const [pinOpen, setPinOpen] = useState(false)
+  const { estDirection } = useCompte()
 
   const salaries = useLiveQuery(async () => (await db.salaries.orderBy('nom').toArray()).filter(s => !isGerant(s.nom)), [])
-  const rows     = useLiveQuery(async () => (await db.paieVariables.where('periode').equals(periode).toArray()).filter(r => !isGerant(r.salarie)), [periode])
-  const envoi    = useLiveQuery(() => db.paieEnvois.where('periode').equals(periode).first(), [periode])
+  // Direction : saisies complètes. Magasin : seulement les prénoms déjà remplis (la base ne donne pas le contenu).
+  const rows     = useLiveQuery(async () => (estDirection
+    ? await db.paieVariables.where('periode').equals(periode).toArray()
+    : await prenomsRemplis(periode)
+  ).filter(r => !isGerant(r.salarie)), [periode, estDirection])
+  const envoi    = useLiveQuery(() => estDirection ? db.paieEnvois.where('periode').equals(periode).first() : null, [periode, estDirection])
 
   const byName = useMemo(() => {
     const m = new Map()
@@ -220,28 +194,19 @@ export default function Paie() {
     setEditing({ salarie: nom, existing: null })
   }
 
-  // Après enregistrement : confirmation + tentative d'envoi auto si tout le monde a rempli
+  // Après enregistrement : confirmation ; si c'était la dernière fiche du mois, la direction est prévenue par mail
+  // (le récap est ensuite envoyé à la comptable d'un clic, depuis un compte Direction).
   async function handleSaved() {
     const fromRecap = recapOpen
     setEditing(null)
     if (!fromRecap) setJustSaved(true)   // confirmation salarié uniquement ; depuis le récap on y retourne
+    if (estDirection) return
     try {
-      const fresh = (await db.paieVariables.where('periode').equals(periode).toArray()).filter(r => !isGerant(r.salarie))
-      const names = new Set(fresh.map(r => r.salarie))
+      const names = new Set((await prenomsRemplis(periode)).map(r => r.salarie))
       const complete = salaries.length > 0 && salaries.every(s => names.has(s.nom))
-      if (!complete) return
-      const already = await db.paieEnvois.where('periode').equals(periode).first()
-      if (already) return
-      let envoiId
-      try { envoiId = await db.paieEnvois.add({ periode }) } catch { return } // déjà pris par un autre poste
-      try {
-        await sendPaieRecap({ periode, rows: fresh, toEmail: RECAP_EMAIL })
-      } catch (e) {
-        console.error('Envoi auto du récap paie échoué :', e)
-        if (envoiId) await db.paieEnvois.delete(envoiId)
-      }
+      if (complete) await sendPaieCompleteNotification({ periode, toEmail: ADMIN_EMAIL })
     } catch (e) {
-      console.error(e)
+      console.error('Prévenance « saisies complètes » non envoyée :', e)
     }
   }
 
@@ -279,8 +244,8 @@ export default function Paie() {
     )
   }
 
-  // ── Récap admin ──
-  if (recapOpen) {
+  // ── Récap (Direction seulement) ──
+  if (recapOpen && estDirection) {
     return <RecapView periode={periode} rows={rows} envoi={envoi} onBack={() => setRecapOpen(false)}
       onEdit={row => setEditing({ salarie: row.salarie, existing: row })} />
   }
@@ -295,10 +260,12 @@ export default function Paie() {
           <span style={{ minWidth: 150, textAlign: 'center', fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>{periodeLabel(periode)}</span>
           <button onClick={() => changePeriode(1)} style={navBtn}>▶</button>
         </div>
-        <button onClick={() => setPinOpen(true)}
-          style={{ padding: '7px 14px', borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-3)', cursor: 'pointer', fontSize: 13 }}>
-          🔒 Récap
-        </button>
+        {estDirection && (
+          <button onClick={() => setRecapOpen(true)}
+            style={{ padding: '7px 14px', borderRadius: 9, border: '1px solid var(--border)', background: allFilled && !envoi ? 'var(--accent)' : 'var(--surface)', color: allFilled && !envoi ? 'var(--on-accent, #fff)' : 'var(--text-3)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+            {allFilled && !envoi ? 'Récap à envoyer →' : 'Récap'}
+          </button>
+        )}
       </div>
 
       {/* Progression */}
@@ -310,7 +277,7 @@ export default function Paie() {
           {salaries.length === 0
             ? 'Aucun salarié — ajoute-les dans Paramètres → Salariés.'
             : allFilled
-              ? '✅ Tout le monde a rempli — le récap est transmis à la comptabilité.'
+              ? (envoi ? '✅ Tout le monde a rempli — récap envoyé à la comptabilité.' : '✅ Tout le monde a rempli — la direction transmet le récap à la comptabilité.')
               : 'Les éléments seront transmis une fois que tous auront rempli leur document.'}
         </div>
       </div>
@@ -336,9 +303,15 @@ export default function Paie() {
         })}
       </div>
 
-      {pinOpen && <PinGate onSuccess={() => { setPinOpen(false); setRecapOpen(true) }} onClose={() => setPinOpen(false)} />}
     </div>
   )
+}
+
+// Prénoms ayant déjà rempli leur fiche pour la période (sans le contenu des fiches)
+async function prenomsRemplis(periode) {
+  const { data, error } = await supabase.rpc('paie_remplies', { p_periode: periode })
+  if (error) throw error
+  return data || []
 }
 
 const navBtn = {

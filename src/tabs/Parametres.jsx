@@ -6,6 +6,7 @@ import { DEFAULT_DELAIS, DEFAULT_NB_CHEQUE } from '../data/reglement'
 import { SIZE_TYPES, DEFAULT_GRID_BY_MARQUE } from '../data/sizes'
 import { getSociete } from '../data/societes'
 import { confirmDanger } from '../components/DangerConfirm'
+import { supabase } from '../lib/supabase'
 
 const MODES_REGLEMENT = ['', 'PRELEVEMENT', 'CHEQUE', 'GARANT', 'VIREMENT', 'GMS', 'LCR']
 
@@ -981,6 +982,47 @@ function SectionModes() {
 }
 
 // ─── Onglet principal ────────────────────────────────────────────────────────
+// ─── Section Appareils : déconnecter à distance tous les appareils d'un compte ──────────
+// (salarié qui part, téléphone perdu). La base vérifie que le compte connecté est un compte Direction.
+function SectionAppareils() {
+  const [adresse, setAdresse] = useState('')
+  const [msg, setMsg]         = useState(null)
+  const [busy, setBusy]       = useState(false)
+
+  async function deconnecter(e) {
+    e.preventDefault()
+    const a = adresse.trim()
+    if (!a) return
+    const ok = await confirmDanger({
+      title: `Déconnecter tous les appareils de « ${a} » ?`,
+      message: "Tous les appareils connectés avec ce compte devront se reconnecter (au plus tard dans l'heure).\nPensez d'abord à changer le mot de passe du compte si quelqu'un d'extérieur le connaît.",
+      word: a,
+      confirmLabel: 'Déconnecter',
+    })
+    if (!ok) return
+    setBusy(true); setMsg(null)
+    const { data, error } = await supabase.rpc('deconnecter_compte', { adresse: a })
+    setBusy(false)
+    setMsg(error ? { ok: false, text: error.message } : { ok: true, text: `${data} session(s) révoquée(s). Les appareils de ce compte seront déconnectés au plus tard dans l'heure.` })
+  }
+
+  return (
+    <div className="store-card" style={{ padding: 18 }}>
+      <h3 style={{ margin: '0 0 6px', fontSize: 16, color: 'var(--text)' }}>Déconnecter à distance</h3>
+      <p style={{ margin: '0 0 14px', fontSize: 14, color: 'var(--text-3)', lineHeight: 1.5 }}>
+        Salarié qui part, téléphone perdu ou volé : <strong>1.</strong> changez le mot de passe du compte (Supabase → Authentication → Users),
+        <strong> 2.</strong> déconnectez ici tous ses appareils, <strong>3.</strong> reconnectez les appareils du magasin avec le nouveau mot de passe.
+      </p>
+      <form onSubmit={deconnecter} style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <input type="email" value={adresse} onChange={e => setAdresse(e.target.value)} placeholder="Adresse du compte (ex. contact.baillyalbi@gmail.com)"
+          style={{ flex: 1, minWidth: 260, minHeight: 44, padding: '0 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: 15 }} />
+        <button type="submit" className="btn-primary" disabled={busy || !adresse.trim()} style={{ minHeight: 44 }}>{busy ? '…' : 'Déconnecter'}</button>
+      </form>
+      {msg && <p style={{ margin: '12px 0 0', fontSize: 14, fontWeight: 600, color: msg.ok ? '#059669' : '#dc2626' }}>{msg.text}</p>}
+    </div>
+  )
+}
+
 export default function Parametres() {
   const [section, setSection] = useState('magasins')
 
@@ -989,6 +1031,7 @@ export default function Parametres() {
     { id: 'salaries',     label: '👤 Salariés' },
     { id: 'fournisseurs', label: '🏷️ Marques' },
     { id: 'modes',        label: '💳 Modes de règlement' },
+    { id: 'appareils',    label: '📱 Appareils connectés' },
   ]
 
   return (
@@ -998,6 +1041,7 @@ export default function Parametres() {
       {section === 'salaries'     && <SectionSalaries />}
       {section === 'fournisseurs' && <SectionFournisseurs />}
       {section === 'modes'        && <SectionModes />}
+      {section === 'appareils'    && <SectionAppareils />}
     </div>
   )
 }

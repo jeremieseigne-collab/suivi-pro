@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { useCompte } from '../context/CompteContext'
 import { useState } from 'react'
 import { db } from '../db'
 import { useLiveQuery } from '../lib/useLiveQuery'
@@ -20,11 +21,11 @@ const GROUPS = [
     { id: 'paie',     icon: '🧾', label: 'Éléments de paie' },
   ] },
   { title: 'Gestion', items: [
-    { id: 'achats',     icon: '🛒', label: 'Achats' },
+    { id: 'achats',     icon: '🛒', label: 'Achats',            direction: true },
     { id: 'factures',   icon: '📄', label: 'Factures' },
     { id: 'repertoire', icon: '📒', label: 'Répertoire' },
-    { id: 'reglement',  icon: '💳', label: 'Plan de règlement', lock: true },
-    { id: 'parametres', icon: '⚙️', label: 'Paramètres',        lock: true },
+    { id: 'reglement',  icon: '💳', label: 'Plan de règlement', direction: true },
+    { id: 'parametres', icon: '⚙️', label: 'Paramètres',        direction: true },
   ] },
 ]
 
@@ -94,7 +95,6 @@ function NavItem({ item, active, badge, note, collapsed, onOpen }) {
           {note && <span style={{ display: 'block', fontSize: 11, color: '#d97706', fontWeight: 600 }}>{note}</span>}
         </span>
       )}
-      {!collapsed && item.lock && <span style={{ fontSize: 11, opacity: 0.5 }}>🔒</span>}
       {badge?.n > 0 && (
         <span title={badge.title} style={{
           minWidth: 20, height: 20, padding: '0 6px', borderRadius: 10, background: badge.color, color: '#fff', fontSize: 11, fontWeight: 800,
@@ -114,6 +114,7 @@ function seDeconnecter() {
 }
 
 export default function Sidebar({ view, magasin, setMagasin, alerts, onOpen, collapsed = false, onToggleCollapse }) {
+  const { estDirection } = useCompte()
   const jour = new Date().getDate()
   const badges = {
     reassort:   alerts?.retard ? { n: alerts.retard, color: '#f97316', title: 'Réassorts en retard' }
@@ -142,7 +143,7 @@ export default function Sidebar({ view, magasin, setMagasin, alerts, onOpen, col
           )}
           {g.title && collapsed && <div style={{ height: 1, background: 'var(--border)', margin: '0 8px 8px' }} />}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {g.items.map(it => (
+            {g.items.filter(it => !it.direction || estDirection).map(it => (
               <NavItem key={it.id} item={it} active={view === it.id} badge={badges[it.id]} note={notes[it.id]} collapsed={collapsed} onOpen={onOpen} />
             ))}
           </div>

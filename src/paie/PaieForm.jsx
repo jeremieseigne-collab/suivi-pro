@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { db } from '../db'
+import { supabase } from '../lib/supabase'
+import { useCompte } from '../context/CompteContext'
 import { SOCIETES, SOCIETE_MAGASINS, HOUR_SECTIONS, RANGE_SECTIONS } from './constants'
 
 const inputStyle = {
@@ -47,31 +49,48 @@ export default function PaieForm({ salarie, periode, existing, onSaved, onCancel
     commentaire: init.commentaire || '',
   })
   const [saving, setSaving] = useState(false)
+  const [verif, setVerif]   = useState(false)   // écran « Vérifiez votre saisie » avant l'enregistrement définitif
+  const { estDirection } = useCompte()
 
   const addRow = (key, blank) => setData(d => ({ ...d, [key]: [...d[key], blank] }))
   const setRow = (key, i, field, val) => setData(d => ({ ...d, [key]: d[key].map((r, j) => j === i ? { ...r, [field]: val } : r) }))
   const delRow = (key, i) => setData(d => ({ ...d, [key]: d[key].filter((_, j) => j !== i) }))
 
-  async function save() {
+  const clean = {
+    heuresSupp: data.heuresSupp.filter(r => r.date || r.heures),
+    dimanche:   data.dimanche.filter(r => r.date || r.heures),
+    feries:     data.feries.filter(r => r.date || r.heures),
+    conges:     data.conges.filter(r => r.du || r.au),
+    maladie:    data.maladie.filter(r => r.du || r.au),
+    commentaire: (data.commentaire || '').trim(),
+  }
+
+  function verifier() {
     if (!societe) { alert('Merci de choisir ta société.'); return }
+    setVerif(true)
+    window.scrollTo(0, 0)
+  }
+
+  async function save() {
     setSaving(true)
     try {
-      const clean = {
-        heuresSupp: data.heuresSupp.filter(r => r.date || r.heures),
-        dimanche:   data.dimanche.filter(r => r.date || r.heures),
-        feries:     data.feries.filter(r => r.date || r.heures),
-        conges:     data.conges.filter(r => r.du || r.au),
-        maladie:    data.maladie.filter(r => r.du || r.au),
-        commentaire: (data.commentaire || '').trim(),
+      if (existing?.id) {
+        await db.paieVariables.update(existing.id, { societe, data: clean })   // correction : Direction seulement
+      } else if (estDirection) {
+        await db.paieVariables.add({ periode, salarie, societe, data: clean })
+      } else {
+        // Compte magasin : dépôt sans relecture (la base n'autorise pas un magasin à relire une fiche)
+        const { error } = await supabase.from('paie_variables').insert({ periode, salarie, societe, data: clean })
+        if (error) throw new Error(error.code === '23505' ? `La fiche de ${salarie} pour ce mois est déjà enregistrée.` : (error.message || 'erreur inconnue'))
       }
-      if (existing?.id) await db.paieVariables.update(existing.id, { societe, data: clean })
-      else              await db.paieVariables.add({ periode, salarie, societe, data: clean })
       onSaved()
     } catch (e) {
       alert('Erreur lors de l’enregistrement : ' + (e.message || e))
       setSaving(false)
     }
   }
+
+  if (verif) return <Verification salarie={salarie} societe={societe} data={clean} saving={saving} onBack={() => setVerif(false)} onConfirm={save} />
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto' }}>
@@ -141,9 +160,48 @@ export default function PaieForm({ salarie, periode, existing, onSaved, onCancel
           style={{ padding: '12px 20px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 15 }}>
           Annuler
         </button>
-        <button onClick={save} disabled={saving}
+        <button onClick={verifier} disabled={saving}
           style={{ padding: '12px 28px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, #fff)', cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
-          {saving ? 'Enregistrement…' : '✓ Enregistrer'}
+          Vérifier ma saisie →
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Écran « Vérifiez votre saisie » : dernier contrôle avant l'enregistrement définitif ───
+const fmt = d => { if (!d) return '?'; const [y, m, j] = d.split('-'); return `${j}/${m}/${y}` }
+
+function Verification({ salarie, societe, data, saving, onBack, onConfirm }) {
+  const lignes = [
+    ...HOUR_SECTIONS.map(s => [s, data[s.key].map(r => `${fmt(r.date)} : ${r.heures || '?'} h`)]),
+    ...RANGE_SECTIONS.map(s => [s, data[s.key].map(r => `du ${fmt(r.du)} au ${fmt(r.au)}`)]),
+  ].filter(([, l]) => l.length)
+  return (
+    <div style={{ maxWidth: 620, margin: '0 auto' }}>
+      <h2 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>Vérifie ta saisie — {salarie}</h2>
+      <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--text-3)' }}>
+        Une fois confirmée, ta fiche ne pourra plus être modifiée ni relue (seulement via une demande à la direction).
+      </p>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, fontSize: 15, color: 'var(--text)', lineHeight: 1.6 }}>
+        <div><strong>Société :</strong> {societe}</div>
+        {lignes.length === 0 && <div style={{ marginTop: 8, color: 'var(--text-3)' }}>Rien à signaler ce mois-ci.</div>}
+        {lignes.map(([s, l]) => (
+          <div key={s.key} style={{ marginTop: 10 }}>
+            <strong>{s.icon} {s.label} :</strong>
+            {l.map((t, i) => <div key={i} style={{ paddingLeft: 12 }}>• {t}</div>)}
+          </div>
+        ))}
+        {data.commentaire && <div style={{ marginTop: 10 }}><strong>📝 Commentaire :</strong> {data.commentaire}</div>}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
+        <button onClick={onBack} disabled={saving}
+          style={{ minHeight: 44, padding: '0 20px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 15 }}>
+          ← Corriger
+        </button>
+        <button onClick={onConfirm} disabled={saving}
+          style={{ minHeight: 44, padding: '0 28px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, #fff)', cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
+          {saving ? 'Enregistrement…' : '✓ Confirmer et enregistrer'}
         </button>
       </div>
     </div>
