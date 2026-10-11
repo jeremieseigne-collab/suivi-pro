@@ -12,7 +12,8 @@ import { SOCIETES, getSociete } from '../data/societes'
 
 function uniq(arr) { return [...new Set(arr.filter(Boolean))].sort() }
 
-const STATUTS = ['', 'Imp. Etiquettes', 'Enregistré', 'Réassort', 'Retour']
+// Ordre des étapes : Aucun → Enregistré → Imp. Etiquettes (dernière étape), puis Réassort, Retour
+const STATUTS = ['', 'Enregistré', 'Imp. Etiquettes', 'Réassort', 'Retour']
 
 function numeroColor(n) {
   const num = parseInt(n)
@@ -87,7 +88,8 @@ export default function Entrees({ defaultMagasin = '' }) {
   const magasinList  = useMemo(() => uniq(rows.map(r => r.magasin)),   [rows])
   const marqueList   = useMemo(() => uniq(rows.map(r => r.marque)),    [rows])
   const categList    = useMemo(() => uniq(rows.map(r => r.categorie)), [rows])
-  const statutList   = useMemo(() => uniq(rows.map(r => r.statut)),    [rows])
+  // Filtre des statuts : dans l'ordre des étapes (puis d'éventuels statuts hors liste)
+  const statutList   = useMemo(() => { const u = uniq(rows.map(r => r.statut)); return [...STATUTS.filter(x => x && u.includes(x)), ...u.filter(x => !STATUTS.includes(x))] }, [rows])
 
   function resetPage() { setPage(1) }
 
