@@ -1,11 +1,22 @@
 # Message aux équipes — sécurité étape 2
 
 > À envoyer **avant** la mise en ligne de l'étape 2 (date à fixer : quand l'étape 1 aura tourné quelques jours sans souci).
-> Remplacer **[DATE]** par le jour de mise en ligne. Aucun mot de passe dans ce message : les identifiants ne changent pas.
+> Remplacer **[DATE]** par le jour de mise en ligne (3 fois). Aucun mot de passe dans ce message : les identifiants ne changent pas.
+> Version courte en tête (pour tout le monde), détail en dessous (pour les responsables).
 
 ---
 
 **Objet : Suivi Pro — quelques écrans réservés à la direction à partir du [DATE]**
+
+**En bref, pour tout le monde :**
+À partir du [DATE], rien ne change pour le quotidien : Cahier des entrées, SAV, défectueux, commandes, réassorts, planning, répertoire et factures fonctionnent comme avant.
+Quelques rubriques de gestion (Achats, Plan de règlement, Paramètres) disparaissent du menu des magasins.
+Votre identifiant et votre mot de passe ne changent pas.
+Paie : relisez bien l'écran « Vérifie ta saisie » — une fiche validée ne peut plus être corrigée par vous, prévenez Jérémie en cas d'erreur.
+
+---
+
+**Le détail, pour les responsables de magasin :**
 
 Bonjour à toutes et à tous,
 
