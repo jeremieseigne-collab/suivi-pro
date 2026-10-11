@@ -10,7 +10,7 @@
 
 **En bref, pour tout le monde :**
 À partir du [DATE], rien ne change pour le quotidien : Cahier des entrées, SAV, défectueux, commandes, réassorts, planning, répertoire et factures fonctionnent comme avant.
-Quelques rubriques de gestion (Achats, Plan de règlement, Paramètres) disparaissent du menu des magasins.
+Quelques rubriques de gestion (Achats, Plan de règlement, Paramètres) et le pointage des entrées disparaissent pour les comptes des magasins.
 Votre identifiant et votre mot de passe ne changent pas.
 Paie : relisez bien l'écran « Vérifie ta saisie » — une fiche validée ne peut plus être corrigée par vous, prévenez Jérémie en cas d'erreur.
 
@@ -30,7 +30,8 @@ Bonjour à toutes et à tous,
 - renommer, supprimer ou fusionner une **marque** ;
 - saisir les **modèles de la saison** avec leurs quantités, leurs prix, leurs pointures attendues ou leur grille, et importer le fichier de commandes d'une marque ;
 - régler les **modes de règlement** et les plans de chèques des fournisseurs ;
-- **supprimer une saison**.
+- **supprimer une saison** ;
+- **pointer ou dépointer une entrée** dans le Cahier des entrées : la colonne « Pointé », le filtre et les boutons disparaissent (vous continuez à saisir et corriger vos entrées comme avant).
 
 Si vous avez besoin de l'une de ces actions (par exemple une nouvelle collègue à ajouter ou un modèle à créer avec son prix), demandez à Jérémie ou à Raphaël.
 
