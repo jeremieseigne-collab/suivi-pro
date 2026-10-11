@@ -6,7 +6,8 @@ import { getClipboard, setClipboard } from '../data/clipboard'
 import ComboBox from './ComboBox'
 import { useSeason } from '../context/SeasonContext'
 
-const STATUTS    = ['', 'Imp. Etiquettes', 'Enregistré', 'Réassort', 'Retour']
+// Ordre des étapes : Aucun → Enregistré → Imp. Etiquettes (dernière étape), puis Réassort, Retour
+const STATUTS    = ['', 'Enregistré', 'Imp. Etiquettes', 'Réassort', 'Retour']
 const CATEGORIES = ['', 'Acc', 'Femme', 'Homme', 'Enfant', 'Bébé']
 const CAT_TO_KEY = { 'Femme': 'F', 'Homme': 'H', 'Enfant': 'E', 'Bébé': 'B', 'Acc': 'ACC' }
 

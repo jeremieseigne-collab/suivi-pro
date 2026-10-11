@@ -39,6 +39,8 @@ Si vous avez besoin de l'une de ces actions (par exemple une nouvelle collègue 
 - vous remplissez votre fiche **comme avant** ; un nouvel écran **« Vérifie ta saisie »** vous montre le résumé avant l'enregistrement définitif : relisez bien ;
 - **une fois validée, votre fiche ne peut plus être corrigée par vous** : en cas d'erreur, prévenez Jérémie (bouton « Envoyer la demande » sur votre nom, ou directement).
 
+**Petit changement dans les listes de statuts :** « Enregistré » vient désormais **avant** « Imp. étiquettes » (ordre des étapes : on enregistre, puis on imprime les étiquettes).
+
 **Ce qui ne change pas :** le Cahier des entrées (y compris une marque ou un modèle nouveau), les SAV, les défectueux, les commandes clients, les réassorts, le planning, le répertoire et les factures fonctionnent exactement comme aujourd'hui. Vous pouvez toujours ajouter une marque depuis le SAV, les défectueux, le répertoire ou les top modèles, et un modèle depuis le SAV ou les défectueux.
 
 Merci,
