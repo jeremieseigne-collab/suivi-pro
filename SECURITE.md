@@ -123,3 +123,53 @@ Deux façons de faire fonctionner le journal des mails :
 | Accord | déjà couvert par S2 | **✅ CHOISIE — accord écrit du 10/10 (base de test uniquement)** |
 
 État sur la base de test : S1 (filtrage), S2 (journal), **S2 bis (plafond : 10ᵉ envoi accepté, 11ᵉ refusé vers la direction ; 3ᵉ accepté, 4ᵉ refusé vers la comptable)**, S3 (5 comptes de test) faits et testés ; **inscriptions encore ouvertes** (à fermer dans le tableau de bord). **Plus aucune variable à ajouter dans Vercel.**
+
+---
+---
+
+# Étape 2 — Paie réservée à la Direction, code PIN vérifié par la base
+
+> Statut : **proposition, en attente de votre accord écrit** (base de test d'abord). Rien n'est modifié.
+> Étape 1 en ligne depuis le 11/10/2026 14h28.
+
+## 1. Ce qui change
+
+| | Aujourd'hui | Après l'étape 2 |
+|---|---|---|
+| **Saisies de paie** | Lisibles par tout compte connecté (les 3 magasins) | Un compte magasin peut **déposer** une saisie, **jamais en relire** une. Seuls les **2 comptes Direction** lisent, corrigent et envoient |
+| **Liste « rempli / à remplir »** | Calculée en chargeant toutes les saisies | Fournie par la base **sans le contenu** (juste les prénoms déjà remplis) |
+| **Récap à la comptable** | Fabriqué et envoyé par l'appareil du magasin qui valide en dernier | Voir le choix ci-dessous (§3) |
+| **Code PIN 2201** | Écrit dans le site, contournable | **Supprimé**. Plan de règlement et Paramètres (et le récap de paie) n'apparaissent que pour les comptes Direction, et la base refuse les écritures sensibles aux comptes magasin |
+| **Déconnecter les appareils d'un magasin** | Une commande lancée par Claude | Un bouton dans Paramètres, réservé à la Direction |
+
+Les 2 comptes Direction (Jérémie, Raphaël) ont exactement les mêmes droits.
+
+## 2. Modifications de structure (demandent votre accord écrit)
+
+| # | Modification | Conséquence | Annulation |
+|---|---|---|---|
+| E1 | **Marquer les 2 comptes Direction** (« direction » dans leurs informations de compte, non modifiable par l'utilisateur) | Après le marquage, chacun doit se reconnecter une fois (ou attendre ≤ 1 h) | Retirer la marque |
+| E2 | **Fonction `est_direction()`** | Sert aux règles ci-dessous | La supprimer |
+| E3 | **Règles sur la paie** : compte magasin = dépôt seul ; Direction = tout. **Fonction `paie_remplies(période)`** (prénoms remplis, sans contenu) | Les appareils des magasins ne peuvent plus lire aucune saisie | Remettre la règle « tout compte connecté » |
+| E4 | **Règles « Direction seulement » en écriture** sur : pointages de paiement (`reglement_paye`, aussi en lecture), modes de règlement, salariés, magasins, envois de paie | Un compte magasin ne peut plus les modifier (il peut toujours lire ce dont l'outil a besoin, ex. la liste des salariés) | Remettre la règle « tout compte connecté » |
+| E5 | **Fonction `deconnecter_compte(adresse)`**, réservée Direction | Révoque toutes les sessions d'un compte (déconnexion ≤ 1 h) | La supprimer |
+| E6 | *(selon §3)* | | |
+
+Aucune donnée n'est modifiée ni supprimée. Tout est testé d'abord sur la base de test.
+
+## 3. Choix à faire : l'envoi du récap à la comptable
+
+Un appareil de magasin ne pourra plus lire les saisies, donc il ne pourra plus fabriquer le récap. Deux possibilités :
+
+| | **Option 1 — un clic de la Direction** (recommandée) | **Option 2 — envoi automatique** |
+|---|---|---|
+| Fonctionnement | Quand la dernière salariée valide, **vous recevez un mail** « Toutes les saisies d'octobre sont faites ». Vous ouvrez le récap (compte Direction) et cliquez **Envoyer** | Le serveur fabrique et envoie le récap tout seul, comme aujourd'hui |
+| Secret à gérer | **Aucun** | La clé secrète `SUPABASE_SERVICE_ROLE_KEY` à ajouter dans Vercel (jamais dans le code ni le projet) |
+| Bonus | Vous relisez avant envoi | Zéro action |
+| E6 | une petite fonction « toutes remplies ? » pour déclencher votre mail (sans contenu) | rien en base, mais la clé dans Vercel |
+
+## 4. Effort et mise en ligne
+
+- **2 à 3 jours**, test complet sur la base de test compris.
+- Mise en ligne comme l'étape 1 : sauvegarde → E1-E5 (et E6) → code → vous vous reconnectez avec le compte Direction → vérifications. Retour arrière : remettre les règles de l'étape 1 (1 commande) + « Instant Rollback ».
+- Pour les équipes : **rien ne change**, sauf que Plan de règlement et Paramètres disparaissent de leur menu (ils étaient déjà protégés par le code).
