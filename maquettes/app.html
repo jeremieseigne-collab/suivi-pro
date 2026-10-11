@@ -72,6 +72,17 @@ svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stro
 
 .puce{display:inline-flex;align-items:center;gap:6px;font-size:var(--t-meta);color:var(--doux);white-space:nowrap}
 .puce::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--discret)}
+.statut-creux .puce::before{background:transparent !important;border:2px solid var(--discret);width:9px;height:9px;box-sizing:border-box}
+.statut-creux .puce.ok::before{border-color:var(--ok)} .statut-creux .puce.att::before{border-color:#ff9500} .statut-creux .puce.err::before{border-color:#ff3b30} .statut-creux .puce.info::before{border-color:#007aff}
+/* Accueil sobre : la couleur ne sert qu'aux repères (petit point) et à l'urgence ; chiffres et icônes en neutre */
+.sobre .compteur::before{display:none}
+.sobre .compteur{padding-left:14px}
+.sobre .compteur b{color:var(--texte)}
+.sobre .compteur span{display:flex;align-items:center;gap:6px}
+.sobre .compteur span::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c);flex-shrink:0}
+.sobre .icone-tache{background:var(--surface-2) !important;color:var(--doux) !important}
+.sobre .barre-agenda{width:8px !important;height:8px;align-self:center !important;border-radius:50% !important}
+.sobre .jour-agenda{color:var(--texte)}
 .puce.ok::before{background:var(--ok)} .puce.att::before{background:#ff9500} .puce.err::before{background:#ff3b30} .puce.info::before{background:#007aff}
 
 .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 0}
@@ -199,6 +210,7 @@ button.ligne:hover,.ligne.cliquable:hover{background:color-mix(in srgb,var(--tex
 .lien{color:var(--accent-texte);font-weight:600;font-size:14px;min-height:36px;padding:0 4px}
 
 .carte{background:var(--surface);border-radius:var(--rayon);padding:16px}
+.rappel{margin:0 0 14px} .rappel summary{cursor:pointer;font-size:var(--t-meta);font-weight:600;color:var(--doux);min-height:32px;display:flex;align-items:center}
 .jour-agenda{font-size:var(--t-meta);font-weight:700;color:var(--accent-texte);padding:10px 16px 0}
 .jour-agenda + .ligne::before{display:none}
 .compteurs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:14px 0 4px}
@@ -287,8 +299,8 @@ const MAGASIN_APPAREIL = 'Bailly Albi'   // magasin de l'appareil (maquette)
 let ENTREES = [
   { id:9, date:'10/10/2026', magasin:'Bailly Rouffiac Tolosan', categorie:'Femme', marque:'Coco & Abricot', modele:'V3298C, Creme', numero:'2', paires:8, montant:273.20, statut:'Enregistré', pointe:false, sizes:{'36':1,'37':1,'38':2,'39':2,'40':1,'41':1}, grille:'F' },
   { id:8, date:'09/10/2026', magasin:'Les 2 Zèbres', categorie:'Homme', marque:'Dr Martens', modele:'1460, Black smooth', numero:'1', paires:3, montant:224.70, statut:'Imp. étiquettes', pointe:false, sizes:{'41':1,'42':1,'43':1}, grille:'H' },
-  { id:7, magasin:'Bailly Albi', categorie:'Femme', date:'10/10/2026', marque:'Palladium', modele:'PAMPA HI, Mojave desert', numero:'3', paires:2, montant:68.30, statut:'Enregistré', pointe:false, sizes:{'36':1,'38':1}, grille:'F' },
-  { id:6, magasin:'Bailly Albi', categorie:'Femme', date:'10/10/2026', marque:'Sebago', modele:'Jacklyn, Pink white', numero:'2', paires:1, montant:58.00, statut:'Imp. étiquettes', pointe:false, sizes:{'37':1}, grille:'F' },
+  { id:7, heure:'09:12', magasin:'Bailly Albi', categorie:'Femme', date:'10/10/2026', marque:'Palladium', modele:'PAMPA HI, Mojave desert', numero:'3', paires:2, montant:68.30, statut:'Enregistré', pointe:false, sizes:{'36':1,'38':1}, grille:'F' },
+  { id:6, heure:'08:47', magasin:'Bailly Albi', categorie:'Femme', date:'10/10/2026', marque:'Sebago', modele:'Jacklyn, Pink white', numero:'2', paires:1, montant:58.00, statut:'Imp. étiquettes', pointe:false, sizes:{'37':1}, grille:'F' },
   { id:5, magasin:'Bailly Albi', categorie:'Homme', date:'09/10/2026', marque:'Fluchos', modele:'F0047, Burdeos', numero:'3', paires:5, montant:249.30, statut:'Enregistré', pointe:true, sizes:{'41':1,'42':1,'43':1,'44':1,'45':1}, grille:'H' },
   { id:4, magasin:'Bailly Albi', categorie:'Femme', date:'09/10/2026', marque:'Miss Elastic', modele:'75050-67-05, Negro', numero:'', paires:-1, montant:-29.90, statut:'Retour', pointe:false, sizes:{'38':-1}, grille:'F' },
   { id:3, magasin:'Bailly Albi', categorie:'Femme', date:'08/10/2026', marque:'Birkenstock', modele:'Arizona, Taupe', numero:'3', paires:6, montant:212.40, statut:'Réassort', pointe:true, sizes:{'38':2,'39':2,'40':2}, grille:'F' },
@@ -363,7 +375,7 @@ function blocAVenir() {
     const lib = libelleJour(e.date), entete = lib !== jourPrec ? lib : ''
     jourPrec = lib
     return `${entete ? `<div class="jour-agenda">${entete}</div>` : ''}
-      <div class="ligne" style="min-height:56px"><span style="width:4px;align-self:stretch;border-radius:2px;background:${COUL_AGENDA[e.lieu]}"></span>
+      <div class="ligne" style="min-height:56px"><span class="barre-agenda" style="width:4px;align-self:stretch;border-radius:2px;background:${COUL_AGENDA[e.lieu]}"></span>
         <span class="txt"><span class="t1">${esc(e.titre)}</span><div class="t2">${e.debut ? e.debut + ' – ' + e.fin : 'Toute la journée'} · ${esc(e.lieu)}</div></span></div>`
   }).join('')}</div>`
 }
@@ -379,7 +391,7 @@ const STATUT_CLASSE = { 'Imp. étiquettes':'att', 'Enregistré':'ok', 'Réassort
 const P = new URLSearchParams(location.search)
 const etat = {
   ecran: P.get('screen') || 'accueil',
-  dir: P.get('dir') || 'A',
+  dir: P.get('dir') || 'B',      // direction choisie le 11/10 : B (liste + fenêtre au centre)
   onglet: 'entrees',            // entrees | livraisons
   filtre: 'toutes',             // toutes | apointer | retours
   recherche: '',
@@ -397,9 +409,12 @@ const etat = {
 if (etat.ecran === 'saisie') etat.ecran = 'entrees'
 document.body.dataset.dir = etat.dir
 if (P.get('theme')) document.documentElement.dataset.theme = P.get('theme')
+if (P.get('style') === 'sobre') document.body.classList.add('sobre')        // proposition « accueil sobre »
+if (P.get('statut') === 'creux') document.body.classList.add('statut-creux') // variante : point de statut creux
 
 let form = nouveauForm('Palladium')
 if (P.get('demo') === 'liv') { etat.onglet = 'livraisons'; etat.livOuverte = 'Bailly Albi|Palladium'; etat.livModele = 'Bailly Albi|Palladium|PAMPA HI, Mojave desert' }  // pour les captures
+if (P.get('demo') === 'doublon') { form.modele = 'PAMPA HI, Mojave desert'; form.qte = { '36':1, '38':1 }; form.categorie = 'Femme'; form.categorieAuto = true }
 if (P.get('demo') === '1') { form.modele = 'PAMPA HI, Mojave desert'; form.qte = { '38':1, '39':2, '40':1 }; form.categorie = 'Femme'; form.categorieAuto = true }  // pour les captures
 function nouveauForm(marque, garder = {}) {
   return { mode:'reception', marque, modele:null, grille: garder.grille || 'F', numero: garder.numero ?? '3', date: AUJ, qte:{}, retirer:false, choixMarque:false,
@@ -517,7 +532,7 @@ function vueAccueil() {
       <section>
         <h2 class="groupe-titre">En retard</h2>
         <div class="liste">${aFaire.map(([i,t,s,c]) => `<button class="ligne" ${i==='entrees'?'data-nav="entrees"':''}>
-          <span style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--${c==='info'?'accent':c}-teinte);color:var(--${c==='info'?'accent-texte':c})">${ic(i,'style="width:20px;height:20px"')}</span>
+          <span class="icone-tache" style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--${c==='info'?'accent':c}-teinte);color:var(--${c==='info'?'accent-texte':c})">${ic(i,'style="width:20px;height:20px"')}</span>
           <span class="txt"><span class="t1">${t}</span><div class="t2">${s}</div></span>${ic('chevron','style="color:var(--discret)"')}</button>`).join('')}</div>
         <h2 class="groupe-titre">Livraisons attendues cette semaine</h2>
         <div class="liste">
@@ -697,6 +712,35 @@ function vueSaisie() {
   if (etat.dir === 'A' && window.innerWidth >= 1100 && etat.ecran === 'entrees' && etat.onglet === 'entrees') return ''  // affichée dans le panneau
   return `<div class="feuille-fond ouvert" data-act="fermer-saisie"></div><div class="feuille ouvert" role="dialog" aria-label="Nouvelle entrée">${contenuSaisie(false)}</div>`
 }
+// Entrées du jour du magasin de l'appareil (les plus récentes d'abord)
+const entreesDuJour = () => ENTREES.filter(e => e.date === AUJ && e.magasin === MAGASIN_APPAREIL)
+const memesTailles = (a, b) => { const ka = Object.keys(a).filter(k => a[k]), kb = Object.keys(b).filter(k => b[k]); return ka.length === kb.length && ka.every(k => a[k] === b[k]) }
+// Doublon : même marque, même modèle, même N° aujourd'hui ; « identique » si en plus mêmes pointures et quantités
+function doublonDuJour() {
+  if (!form.modele) return null
+  const retour = form.mode === 'retour'
+  const qte = Object.fromEntries(Object.entries(form.qte).map(([k, v]) => [k, retour ? -v : v]))
+  const memes = entreesDuJour().filter(e => e.marque === form.marque && e.modele === form.modele && (e.numero || '') === (form.numero || ''))
+  if (!memes.length) return null
+  const identique = Object.keys(qte).length ? memes.find(e => memesTailles(e.sizes, qte)) : null
+  return { identique, deja: memes[0] }
+}
+const listeTailles = sz => Object.entries(sz).map(([t, q]) => Math.abs(q) > 1 ? `${t} ×${Math.abs(q)}` : t).join(', ')
+function rappelDernieres() {
+  const der = entreesDuJour().slice(0, 3)
+  if (!der.length) return ''
+  return `<details class="rappel" ${der.length ? 'open' : ''}><summary>Déjà enregistré aujourd'hui (${entreesDuJour().length})</summary>
+    <div class="liste" style="background:var(--surface-2);margin-top:8px">${der.map(e => `<div class="ligne" style="min-height:44px;padding:6px 12px">
+      <span class="txt"><span class="t1" style="font-size:14px">${esc(e.marque)} <span>· ${esc(e.modele)}</span></span>
+      <div class="t2">${e.heure || ''} · ${e.numero ? numHtml(e.numero) + ' · ' : ''}${e.paires} paire${Math.abs(e.paires) > 1 ? 's' : ''}</div></span></div>`).join('')}</div></details>`
+}
+function avertissementDoublon() {
+  const d = doublonDuJour(); if (!d) return ''
+  if (d.identique) return `<div class="encart err" style="margin:10px 0 14px;flex-direction:column;gap:4px"><b>⚠️ Entrée identique déjà enregistrée aujourd'hui</b>
+    <span>${esc(d.identique.marque)} · ${esc(d.identique.modele)} · N° ${esc(d.identique.numero || '—')} · mêmes pointures (${listeTailles(d.identique.sizes)}), à ${d.identique.heure || '?'}. Doublon ? Vérifiez avant d'enregistrer.</span></div>`
+  return `<div class="encart info" style="margin:10px 0 14px">Déjà reçu aujourd'hui pour ce modèle et ce N° : ${d.deja.paires} paire${Math.abs(d.deja.paires) > 1 ? 's' : ''} (${listeTailles(d.deja.sizes)}) à ${d.deja.heure || '?'}. Autre carton ? Vous pouvez continuer.</div>`
+}
+
 function contenuSaisie(dansPanneau) {
   const m = MARQUES[form.marque]
   const mod = form.modele ? m.modeles[form.modele] : null
@@ -716,6 +760,7 @@ function contenuSaisie(dansPanneau) {
       <button data-mode="retour" aria-pressed="${retour}">Retour</button>
     </div>
     ${retour ? `<div class="encart att" style="margin-bottom:14px">Retour : les paires seront déduites du reçu et un avoir sera attendu.</div>` : ''}
+    ${rappelDernieres()}
 
     <span class="etiquette">Marque</span>
     ${form.choixMarque ? `<div class="liste" style="background:var(--surface-2);margin-bottom:14px">${Object.keys(MARQUES).map(k => `<button class="ligne" data-marque="${k}" style="min-height:48px"><span class="txt"><span class="t1">${k}</span></span>${k===form.marque?ic('check','style="color:var(--accent-texte)"'):''}</button>`).join('')}</div>`
@@ -748,14 +793,15 @@ function contenuSaisie(dansPanneau) {
     </div>
     <div class="pointures">${grille.map(t => {
       const q = form.qte[t] || 0, r = reste(t)
-      const info = retour || !mod ? '&nbsp;' : r - q > 0 ? 'reste ' + (r - q) : q > r ? (r ? '+' + (q - r) + ' en plus' : 'non attendu') : '&nbsp;'
+      const info = retour || !mod ? '&nbsp;' : r - q > 0 ? 'reste ' + (r - q) : q > r ? ((mod.attendu[t] || 0) ? '+' + (q - r) + ' en plus' : 'non attendu') : '&nbsp;'
       return `<button class="pt ${q ? 'plein' : ''} ${retour ? 'retour' : ''}" data-pt="${t}">${t}<small>${info}</small><span class="qte">${retour ? '−' : ''}${q}</span></button>`
     }).join('')}</div>
     ${!retour ? `<div style="margin-top:10px"><button class="lien" data-act="tout-reste">Tout le reste à recevoir</button>${total ? ` · <button class="lien" data-act="vider">Vider</button>` : ''}</div>` : ''}` : ''}
   </div>
-  <div class="feuille-pied">
+  <div class="feuille-pied" style="flex-wrap:wrap">
+    ${avertissementDoublon() ? `<div style="flex-basis:100%">${avertissementDoublon().replace('margin:10px 0 14px', 'margin:0')}</div>` : ''}
     <div class="total"><b>${retour ? '−' : ''}${total} paire${total > 1 ? 's' : ''}</b>${prix ? (retour ? 'avoir ' : '') + fmtEur(prix * total) : 'Choisissez un modèle'}</div>
-    <button class="btn btn-prim" data-act="enregistrer" ${total && mod ? '' : 'disabled'}>Enregistrer</button>
+    <button class="btn btn-prim" data-act="enregistrer" ${total && mod ? '' : 'disabled'} ${doublonDuJour()?.identique ? 'style="background:#c4000f"' : ''}>${doublonDuJour()?.identique ? (form.confirmDoublon ? 'Confirmer : enregistrer quand même' : 'Enregistrer quand même…') : 'Enregistrer'}</button>
   </div>`
 }
 
@@ -798,7 +844,7 @@ document.addEventListener('click', ev => {
     form.categorie = CAT_DE_GRILLE[form.grille] || ''; form.categorieAuto = !!form.categorie; return rendu() }
   if (d.cat) { form.categorie = d.cat; form.categorieAuto = false; return rendu() }
   if (d.statutSaisie !== undefined) { form.statut = d.statutSaisie; return rendu() }
-  if (d.pt) { const q = form.qte[d.pt] || 0; const n = form.retirer ? Math.max(0, q - 1) : q + 1; if (n) form.qte[d.pt] = n; else delete form.qte[d.pt]; return rendu() }
+  if (d.pt) { form.confirmDoublon = false; const q = form.qte[d.pt] || 0; const n = form.retirer ? Math.max(0, q - 1) : q + 1; if (n) form.qte[d.pt] = n; else delete form.qte[d.pt]; return rendu() }
   switch (d.act) {
     case 'nouvelle': case 'nouvelle-depuis-accueil':
       etat.ecran = 'entrees'; etat.onglet = 'entrees'; etat.selection = null; etat.saisieOuverte = true; return rendu()
@@ -815,10 +861,11 @@ document.addEventListener('click', ev => {
     case 'vider': form.qte = {}; return rendu()
     case 'tout-reste': { const mod = MARQUES[form.marque].modeles[form.modele]; form.qte = {}; Object.keys(mod.attendu).forEach(t => { const r = (mod.attendu[t]||0) - (mod.recu[t]||0); if (r > 0) form.qte[t] = r }); return rendu() }
     case 'enregistrer': {
+      if (doublonDuJour()?.identique && !form.confirmDoublon) { form.confirmDoublon = true; return rendu() }   // 2ᵉ toucher pour confirmer un doublon
       const mod = MARQUES[form.marque].modeles[form.modele], retour = form.mode === 'retour'
       const tot = Object.values(form.qte).reduce((s, v) => s + v, 0) * (retour ? -1 : 1)
       const sizes = Object.fromEntries(Object.entries(form.qte).map(([k, v]) => [k, retour ? -v : v]))
-      const e = { id: Date.now(), magasin: MAGASIN_APPAREIL, categorie: form.categorie, date: AUJ, marque: form.marque, modele: form.modele, numero: form.numero, paires: tot, montant: Math.round(mod.prix * tot * 100) / 100, statut: retour ? 'Retour' : form.statut, pointe: false, sizes, grille: form.grille }
+      const e = { id: Date.now(), heure: new Date().toTimeString().slice(0, 5), magasin: MAGASIN_APPAREIL, categorie: form.categorie, date: AUJ, marque: form.marque, modele: form.modele, numero: form.numero, paires: tot, montant: Math.round(mod.prix * tot * 100) / 100, statut: retour ? 'Retour' : form.statut, pointe: false, sizes, grille: form.grille }
       ENTREES.unshift(e)
       if (!retour) Object.entries(form.qte).forEach(([k, v]) => mod.recu[k] = (mod.recu[k] || 0) + v)
       form = nouveauForm(form.marque, { numero: form.numero, grille: form.grille, statut: form.statut })   // on garde marque, N°, date et grille : carton suivant

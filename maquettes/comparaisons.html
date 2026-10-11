@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comparaisons maquette</title>
+<style>
+:root{--fond:#e9e9ee;--surface:#fff;--texte:#1d1d1f;--doux:#6e6e73;--trait:rgba(60,60,67,.16);--accent:#0a66d9;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--fond:#0b0b0d;--surface:#1c1c1e;--texte:#f5f5f7;--doux:#a1a1a6;--trait:rgba(255,255,255,.14);--accent:#1a6fe0;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;background:var(--fond);color:var(--texte)}
+main{max-width:1400px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:24px;margin:0 0 4px} h2{font-size:18px;margin:34px 0 6px}
+p{color:var(--doux);margin:0 0 12px;max-width:900px}
+a{color:var(--accent);font-weight:600;text-decoration:none}
+.rangee{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+figure{margin:0;display:flex;flex-direction:column;gap:8px}
+figcaption{font-size:14px;font-weight:600}
+figcaption span{font-weight:400;color:var(--doux)}
+.cadre{border-radius:22px;overflow:hidden;border:6px solid #1d1d1f;background:#fff}
+.cadre.ordi{border-radius:10px;border-width:3px}
+iframe{display:block;border:0}
+.echelle{transform-origin:top left}
+</style>
+</head>
+<body>
+<main>
+  <h1>Comparaisons</h1>
+  <p><a href="index.html">← Retour aux maquettes</a></p>
+
+  <h2>1. Statut et N° sur la même ligne</h2>
+  <p>Le N° est une <strong>pastille pleine</strong> qui commence par « N° » ; le statut est un <strong>petit point suivi d'un mot</strong>, à droite. Variante proposée : un <strong>point creux</strong> pour le statut, pour que « plein = N°, creux = statut » soit évident même d'un coup d'œil.</p>
+  <div class="rangee">
+    <figure><figcaption>Point plein <span>(actuel)</span></figcaption><div class="cadre"><iframe src="app.html?screen=entrees&compte=direction&theme=light" width="390" height="560" title="Point plein clair"></iframe></div></figure>
+    <figure><figcaption>Point creux <span>(proposé)</span></figcaption><div class="cadre"><iframe src="app.html?screen=entrees&compte=direction&theme=light&statut=creux" width="390" height="560" title="Point creux clair"></iframe></div></figure>
+    <figure><figcaption>Point plein <span>(sombre)</span></figcaption><div class="cadre"><iframe src="app.html?screen=entrees&compte=direction&theme=dark" width="390" height="560" title="Point plein sombre"></iframe></div></figure>
+    <figure><figcaption>Point creux <span>(sombre)</span></figcaption><div class="cadre"><iframe src="app.html?screen=entrees&compte=direction&theme=dark&statut=creux" width="390" height="560" title="Point creux sombre"></iframe></div></figure>
+  </div>
+
+  <h2>2. Accueil : version actuelle et version sobre</h2>
+  <p>Version sobre : tous les repères restent, mais la couleur n'est plus portée que par de <strong>petits points</strong> (compteurs, agenda) et par ce qui est <strong>urgent</strong> (« dont 1 en retard »). Les chiffres et les icônes des tâches passent en neutre ; un seul bleu reste pour l'action principale.</p>
+  <div class="rangee">
+    <figure><figcaption>Actuelle <span>(téléphone)</span></figcaption><div class="cadre"><iframe src="app.html?screen=accueil&compte=magasin&theme=light&agenda=plein" width="390" height="1180" title="Accueil actuel"></iframe></div></figure>
+    <figure><figcaption>Sobre <span>(téléphone)</span></figcaption><div class="cadre"><iframe src="app.html?screen=accueil&compte=magasin&theme=light&agenda=plein&style=sobre" width="390" height="1180" title="Accueil sobre"></iframe></div></figure>
+  </div>
+  <div class="rangee" style="margin-top:20px">
+    <figure><figcaption>Actuelle <span>(ordinateur, sombre)</span></figcaption><div class="cadre ordi" style="width:672px;height:420px"><iframe class="echelle" src="app.html?screen=accueil&compte=direction&theme=dark&agenda=plein" width="1280" height="800" style="transform:scale(.525)" title="Accueil actuel ordinateur"></iframe></div></figure>
+    <figure><figcaption>Sobre <span>(ordinateur, sombre)</span></figcaption><div class="cadre ordi" style="width:672px;height:420px"><iframe class="echelle" src="app.html?screen=accueil&compte=direction&theme=dark&agenda=plein&style=sobre" width="1280" height="800" style="transform:scale(.525)" title="Accueil sobre ordinateur"></iframe></div></figure>
+  </div>
+</main>
+</body>
+</html>

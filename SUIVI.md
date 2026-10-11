@@ -35,6 +35,8 @@
 - 11/10 — Accueil : les 5 compteurs gardés et dessinés (zéro masqué) + bloc « En retard ».
 - 11/10 — Saisie : catégorie et statut pré-remplis si déductibles, toujours visibles et modifiables d'un toucher.
 - 11/10 — Point de couleur du statut gardé ; couleurs à confirmer (l'outil actuel n'en a pas).
+- 11/10 — **Direction B choisie** ; fenêtre de saisie avec rappel des dernières entrées du jour et avertissement de doublon (2ᵉ toucher pour confirmer une entrée identique).
+- 11/10 — Couleurs de statut de la maquette gardées ; distinction N° / statut à valider (point plein ou creux) ; accueil « sobre » proposé (comparaison dans `maquettes/comparaisons.html`).
 - 10/10 — Les ~65 suppressions de marques en production depuis juin sont bien de vous (nettoyage et fusion de doublons) : pas d'activité suspecte.
 - 10/10 — Le rituel de fin de session du `CLAUDE.md` (déploiement automatique) est **suspendu** pendant le chantier.
 - 10/10 — En local, les mails ne partent jamais (affichés dans le terminal) ; `SEND_REAL_MAIL=1` pour réactiver.

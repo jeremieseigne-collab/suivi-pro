@@ -122,11 +122,17 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Couleurs des compteurs et pastilles de menu | Une couleur par type (réassorts, défectueux, commandes, SAV) | Accueil, menu (à dessiner) |
 | Couleurs d'agenda | Une couleur par magasin | Agenda |
 
-**Point de couleur du statut** des entrées : **gardé** (11/10). ⚠️ L'outil actuel n'a **pas** de couleur de statut (texte gris) : couleurs à confirmer — proposition de la maquette : Imp. étiquettes orange, Enregistré vert, Réassort bleu, Retour rouge.
+**Point de couleur du statut** des entrées : **gardé** avec les couleurs de la maquette (11/10) : Imp. étiquettes orange, Enregistré vert, Réassort bleu, Retour rouge (l'outil actuel n'en avait pas). Pour ne pas le confondre avec le N° (rouge / bleu / vert) sur la même ligne : **N° = pastille pleine commençant par « N° »**, **statut = point + mot**, à droite ; variante proposée : **point creux** pour le statut (à valider, voir `maquettes/comparaisons.html`).
 
 ---
 
-## 3. Deux directions pour l'ordinateur
+## 3. Deux directions pour l'ordinateur — ✅ **B choisie** (11/10)
+
+> **Décision du 11/10 : direction B** (liste pleine largeur, détail et saisie dans une fenêtre au centre).
+> Comme la liste n'est plus visible pendant la saisie, la fenêtre de saisie contient de quoi **éviter les doublons** quand on enchaîne les cartons :
+> - un rappel **« Déjà enregistré aujourd'hui »** : les 3 dernières entrées du jour du magasin (heure, marque, modèle, N° coloré, paires) ;
+> - si l'entrée en cours a la **même marque, le même modèle et le même N°** qu'une entrée du jour : simple information (« Déjà reçu aujourd'hui… autre carton ? ») ;
+> - si en plus **les pointures et quantités sont identiques** : avertissement rouge juste au-dessus du bouton, qui devient « Enregistrer quand même… » et demande **un 2ᵉ toucher** pour confirmer.
 
 Au téléphone, les deux directions sont identiques. Elles diffèrent sur ordinateur (et tablette en paysage) :
 

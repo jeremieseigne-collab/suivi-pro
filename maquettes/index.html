@@ -31,11 +31,11 @@ iframe{display:block;border:0;background:#fff}
   <div class="grp" id="g-app"><span>Appareil</span>
     <button data-v="tel">Téléphone</button><button data-v="tab">Tablette</button><button data-v="ordi">Ordinateur</button></div>
   <div class="grp" id="g-dir"><span>Direction</span>
-    <button data-v="A" title="Liste à gauche, détail et saisie dans un panneau à droite (comme Mail)">A · Liste + panneau</button><button data-v="B" title="Liste pleine largeur, détail et saisie dans une fenêtre">B · Liste + fenêtre</button></div>
+    <button data-v="A" title="Liste à gauche, détail et saisie dans un panneau à droite (comme Mail)">A · Liste + panneau</button><button data-v="B" title="Liste pleine largeur, détail et saisie dans une fenêtre">B · Liste + fenêtre (choisie)</button></div>
   <div class="grp" id="g-compte"><span>Compte</span><button data-v="magasin">Magasin</button><button data-v="direction">Direction</button></div>
   <div class="grp" id="g-agenda" title="Pour l'écran Accueil : bloc « À venir »"><span>Agenda</span><button data-v="plein">Journée avec rdv</button><button data-v="vide">Journée vide</button><button data-v="soir">Le soir (rdv passés)</button></div>
   <div class="grp" id="g-theme"><span>Thème</span><button data-v="light">Clair</button><button data-v="dark">Sombre</button></div>
-  <a href="charte.html">Voir la charte →</a>
+  <a href="comparaisons.html">Comparaisons →</a> <a href="charte.html">Voir la charte →</a>
 </header>
 <p class="note" id="note"></p>
 <div class="scene"><div class="cadre" id="cadre"><iframe id="f" title="Maquette"></iframe></div></div>
@@ -47,7 +47,7 @@ const NOTES = {
   entrees:"Cahier des entrées : liste groupée par jour, recherche, bouton « Filtres » (catégorie, statut, marque ; magasin et pointage pour la Direction). Touchez une ligne pour le détail. 2ᵉ onglet « Suivi des livraisons » : magasin, recherche, taux global, modèles avec N° et détail par pointure.",
   saisie:"Saisie : on touche la pointure pour ajouter une paire (« − » pour corriger). Après « Enregistrer », la marque, le N°, la date et la grille restent : on enchaîne le carton suivant.",
 }
-const s = { ecran:'entrees', app:'tel', dir:'A', compte:'magasin', agenda:'plein', theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light' }
+const s = { ecran:'entrees', app:'tel', dir:'B', compte:'magasin', agenda:'plein', theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light' }
 try { Object.assign(s, JSON.parse(localStorage.getItem('maquettes') || '{}')) } catch {}
 function maj() {
   try { localStorage.setItem('maquettes', JSON.stringify(s)) } catch {}
