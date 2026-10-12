@@ -13,19 +13,33 @@ import './App.css'
 import './styles/charte.css'
 import './styles/pont.css'
 
-// Chaque écran n'est chargé qu'au moment où on l'ouvre (ouverture de l'outil plus rapide, surtout sur téléphone)
-const Cahier          = lazy(() => import('./cahier/Cahier'))
-const Achats          = lazy(() => import('./tabs/Achats'))
-const PlanReglement   = lazy(() => import('./reglement/Plan'))
-const Parametres      = lazy(() => import('./tabs/Parametres'))
-const Repertoire      = lazy(() => import('./repertoire/Repertoire'))
-const Commandes       = lazy(() => import('./commandes/Commandes'))
-const Paie            = lazy(() => import('./paie/Paie'))
-const Planning        = lazy(() => import('./planning/Planning'))
-const SavDefectueux   = lazy(() => import('./savdef/SavDefectueux'))
-const Factures        = lazy(() => import('./factures/Factures'))
-const Reassort        = lazy(() => import('./reassort/Reassort'))
-const AgendaBoard     = lazy(() => import('./agenda/AgendaBoard'))
+// Chaque écran n'est chargé qu'au moment où on l'ouvre (ouverture de l'outil plus rapide, surtout sur téléphone).
+// Après une mise en ligne, les fichiers de la version précédente n'existent plus sur le site : un appareil resté ouvert
+// qui ouvre un écran pas encore chargé recharge la page une fois (au plus toutes les 30 s) au lieu d'afficher une page blanche.
+function ecran(charger) {
+  return lazy(() => charger().catch(err => {
+    let dernier = 0
+    try { dernier = Number(sessionStorage.getItem('rechargement_version')) || 0 } catch { /* stockage indisponible */ }
+    if (Date.now() - dernier > 30000) {
+      try { sessionStorage.setItem('rechargement_version', String(Date.now())) } catch { /* stockage indisponible */ }
+      location.reload()
+      return new Promise(() => {})
+    }
+    throw err
+  }))
+}
+const Cahier          = ecran(() => import('./cahier/Cahier'))
+const Achats          = ecran(() => import('./tabs/Achats'))
+const PlanReglement   = ecran(() => import('./reglement/Plan'))
+const Parametres      = ecran(() => import('./tabs/Parametres'))
+const Repertoire      = ecran(() => import('./repertoire/Repertoire'))
+const Commandes       = ecran(() => import('./commandes/Commandes'))
+const Paie            = ecran(() => import('./paie/Paie'))
+const Planning        = ecran(() => import('./planning/Planning'))
+const SavDefectueux   = ecran(() => import('./savdef/SavDefectueux'))
+const Factures        = ecran(() => import('./factures/Factures'))
+const Reassort        = ecran(() => import('./reassort/Reassort'))
+const AgendaBoard     = ecran(() => import('./agenda/AgendaBoard'))
 
 // Écrans réservés aux comptes Direction (la base refuse de toute façon les écritures sensibles aux comptes magasin)
 const DIRECTION_VIEWS = new Set(['reglement', 'parametres', 'achats'])
