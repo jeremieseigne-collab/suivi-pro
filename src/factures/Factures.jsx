@@ -4,9 +4,6 @@ import html2canvas from 'html2canvas'
 import Icone from '../components/ui/Icone'
 import { useMediaQuery, PHONE } from '../lib/useMediaQuery'
 import './factures.css'
-import { useVariantes } from '../shell/essai'
-import PanneauEssai from '../shell/PanneauEssai'
-import { POINTS_FACTURES } from './points'
 
 // Boutiques → société (B'Shoes : Les Deux Zèbres + By Albi ; JR Shoes : By Rouffiac)
 const BOUTIQUES = [
@@ -97,8 +94,7 @@ function FactureEditor({ boutique, onSelectBoutique }) {
 
   const [sending, setSending] = useState(false)
   const telephone = useMediaQuery(PHONE)
-  const v = useVariantes(POINTS_FACTURES)
-  const onglets = telephone && v.factures_onglets
+  const onglets = telephone   // décision F1 : sur téléphone, onglets « Saisie » / « Aperçu »
   const [onglet, setOnglet] = useState('saisie')
   async function envoyerMail() {
     commitSeq()
@@ -159,7 +155,7 @@ ${societe}`
             <label className="etiquette">N° facture<input className="champ" value={numero} onChange={e => setNumero(e.target.value)} /></label>
             <label className="etiquette">Date<input className="champ" type="date" value={date} onChange={e => setDate(e.target.value)} /></label>
           </div>
-          {v.factures_aide_numero && <div className="aide">Numéro suivant d’après cet appareil ({societe}).</div>}
+          <div className="aide">Numéro suivant d’après cet appareil ({societe}).</div>
 
           <label className="etiquette f-champ">Client<input className="champ" value={client.nom} onChange={e => setClientField('nom', e.target.value)} placeholder="Nom du client" /></label>
           <label className="etiquette f-champ">Adresse client (optionnel)<textarea className="champ" value={client.adresse} onChange={e => setClientField('adresse', e.target.value)} placeholder="Adresse" rows={2} style={{ resize: 'vertical' }} /></label>
@@ -183,12 +179,11 @@ ${societe}`
         {telephone ? (
           <>
             {/* Sur téléphone, l'aperçu est réduit à la largeur de l'écran ; la facture imprimée / le PDF partent de la version pleine taille */}
-            {(ongletAperçu || !onglets) && <ApercuReduit {...props} />}
+            {ongletAperçu && <ApercuReduit {...props} />}
             <div className="factures-pleine-taille" aria-hidden="true"><FacturePreview {...props} /></div>
           </>
         ) : <FacturePreview {...props} />}
       </div>
-      <div className="no-print"><PanneauEssai points={POINTS_FACTURES} /></div>
     </div>
   )
 }

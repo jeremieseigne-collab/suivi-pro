@@ -212,10 +212,10 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Agenda — détail d'un événement des calendriers | Même fiche en lecture seule (calendrier du magasin, heure ou « Journée entière », lieu, note, « Événement Google — lecture seule ») ; emojis 🕐 📆 📍 → icône au trait ; **ajout** « Du … au … » pour un événement sur plusieurs jours | ✅ accordé |
 | Agenda — message « Google non configuré » | ⚠️ « Google non configuré » → « Calendriers des magasins non configurés » (sans emoji) | ✅ accordé |
 | Agenda — choix G1 à G4 | ✅ décidé, **tous « avec »** : G1. événements de l'outil en **violet** (comme « À venir ») ; G2. semaine du **lundi au dimanche** ; G3. événement des calendriers sur plusieurs jours affiché **chaque jour**, avec « jusqu'au … » ; G4. bouton **« Nouvel événement »** toujours visible en haut | ✅ accordé |
-| Factures — saisie | Mêmes champs (boutique, n°, date, client, adresse, email, désignation, montant TTC) et même ligne HT / TVA / TTC ; boutiques en liste (icône au trait au lieu de 🏪) ; emojis des boutons retirés (🖨 Imprimer, 📄 Télécharger le PDF, ✉️ Envoyer par mail, 🆕 Nouvelle facture, ⏳) | ⏳ à valider |
-| Factures — aperçu, impression, PDF, mail | **Identiques** (même facture, mêmes mentions légales, mêmes couleurs fixes, même brouillon Gmail depuis l'adresse de la société) ; sur ordinateur, même mise en page qu'avant | ⏳ à valider |
-| Factures — téléphone | **Ajout** : utilisable sur téléphone (avant : formulaire et aperçu côte à côte, débordant) ; l'aperçu est réduit à la largeur de l'écran ; l'impression et le PDF partent d'une facture **pleine taille** (largeur fixe) | ⏳ à valider |
-| Factures — points F1, F2 | F1. téléphone : onglets « Saisie » / « Aperçu » (sans : l'aperçu sous la saisie) ; F2. mention « Numéro suivant d'après cet appareil » sous le n° — **chacun en « avec » / « sans »** | ⏸ à trancher |
+| Factures — saisie | Mêmes champs (boutique, n°, date, client, adresse, email, désignation, montant TTC) et même ligne HT / TVA / TTC ; boutiques en liste (icône au trait au lieu de 🏪) ; emojis des boutons retirés (🖨 Imprimer, 📄 Télécharger le PDF, ✉️ Envoyer par mail, 🆕 Nouvelle facture, ⏳) | ✅ accordé |
+| Factures — aperçu, impression, PDF, mail | **Identiques** (même facture, mêmes mentions légales, mêmes couleurs fixes, même brouillon Gmail depuis l'adresse de la société) ; sur ordinateur, même mise en page qu'avant | ✅ accordé |
+| Factures — téléphone | **Ajout** : utilisable sur téléphone (avant : formulaire et aperçu côte à côte, débordant) ; l'aperçu est réduit à la largeur de l'écran ; l'impression et le PDF partent d'une facture **pleine taille** (largeur fixe) | ✅ accordé |
+| Factures — choix F1, F2 | ✅ « avec » : sur téléphone, onglets « Saisie » / « Aperçu » ; mention « Numéro suivant d'après cet appareil » sous le n° | ✅ accordé |
 
 ## 2 ter. Codes couleur de l'outil actuel (conservés)
 
