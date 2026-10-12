@@ -1,28 +1,50 @@
-# Message aux équipes — nouvelle version de l'outil (brouillon)
+# Message aux équipes — nouvelle version de l'outil
 
-> Brouillon complété écran par écran pendant la construction ; il sera relu et daté à l'étape 4 (mise en ligne).
-> `[DATE]` = date de mise en ligne, à remplir.
+> Message final (12/10). `[DATE]` = date de mise en ligne, à remplir (2 fois). Version courte pour tout le monde, détail par écran en dessous.
+> Rien à faire pour les équipes : mêmes adresses et mots de passe, pas de reconnexion, données inchangées.
 
 ## Version courte (à envoyer)
 
 Bonjour à toutes,
 
-À partir du [DATE], l'outil change d'apparence pour être plus simple, sur téléphone comme sur ordinateur. Vos données ne bougent pas. Les principaux changements du **Cahier des entrées** :
+À partir du [DATE], l'outil change d'apparence pour être plus simple, sur téléphone comme sur ordinateur. **Vos données ne bougent pas**, votre adresse et votre mot de passe non plus, et vous n'avez pas à vous reconnecter.
 
-- Le Cahier s'ouvre directement sur la liste des **Entrées** (le suivi des livraisons est le 2ᵉ onglet).
+**Pour vous repérer**
+- Sur ordinateur et tablette, le **menu** reste à gauche ; sur téléphone, des **onglets en bas** : Accueil, Entrées, Clients (commandes et SAV), Réassorts, et « Plus » pour le reste.
+- Le **magasin de l'appareil** se choisit une fois, en haut du menu (ou dans « Plus ») : il vaut pour tous les écrans.
+- Après chaque modification, un message propose **« Annuler »** pendant quelques secondes.
+
+**Cahier des entrées**
+- Il s'ouvre sur la liste des **Entrées** (le suivi des livraisons est le 2ᵉ onglet).
 - Pour saisir les pointures, **touchez la pointure** : chaque toucher ajoute une paire (« − » pour corriger). Au clavier, on tape toujours le nombre.
-- Pour corriger une entrée, **touchez la ligne** : sa fiche s'ouvre (statut en un toucher, Modifier, Supprimer).
-- Pour un retour, choisissez **Retour** en haut de la saisie.
-- **Marque absente de la liste ?** Tapez son nom puis « Créer la marque ». Si une marque au nom proche existe déjà, l'outil vous la propose d'abord : vérifiez avant de créer, pour éviter les doublons.
-- **Plusieurs entrées d'un coup** : touchez « Sélectionner », cochez les lignes, puis « Statut » ou « Plus » (changer la date, la catégorie, copier un récapitulatif, supprimer).
+- Pour corriger une entrée, **touchez la ligne** : sa fiche s'ouvre. Pour un retour, choisissez **Retour** en haut de la saisie.
+- **Marque absente ?** Tapez son nom puis « Créer la marque » (l'outil vous propose d'abord une marque au nom proche, pour éviter les doublons).
+- **Plusieurs entrées d'un coup** : « Sélectionner », cochez, puis « Statut » ou « Plus ».
 
-Après chaque modification, un message propose **« Annuler »** pendant quelques secondes.
+**Accueil** : trois raccourcis (Saisir une entrée, Commande client, Dossier SAV), les compteurs qui ne sont pas à zéro, « En retard » et « À venir » (les prochains rendez-vous ; « Voir l'agenda » ouvre l'agenda complet).
 
-Sur l'**Accueil** :
-- trois raccourcis : **Saisir une entrée**, **Commande client**, **Dossier SAV** ;
-- les compteurs (réassorts, clients à prévenir, défectueux, SAV) — seuls ceux qui ne sont pas à zéro s'affichent ;
-- « **En retard** » : ce qui attend depuis trop longtemps (réassort en route depuis 10 jours, dossier SAV ouvert depuis 15 jours) ;
-- « **À venir** » : les prochains rendez-vous ; « Voir l'agenda » ouvre l'agenda complet, où l'on ajoute un événement.
+**Ailleurs**
+- **Réassorts** : « Commander par mail » met le réassort à **« Demandé »** ; quand la marque confirme, passez-le à « Commandé ».
+- **SAV et défectueux** sont réunis dans un seul écran à deux onglets.
+- **Planning** : « Reprendre la semaine précédente », « Annuler la dernière modification », et l'impression de 1, 2 ou 3 semaines.
+- **Paie** : la société est pré-remplie d'après votre magasin.
+- **Agenda** : la semaine va du lundi au dimanche, et le bouton « Nouvel événement » est toujours en haut.
+- **Factures** : utilisables sur téléphone (onglets « Saisie » et « Aperçu »).
+- **« Se déconnecter »** ne déconnecte que l'appareil sur lequel vous le touchez.
+
+Le détail de chaque écran est ci-dessous. En cas de doute, demandez à Jérémie ou à Raphaël.
+
+Merci,
+Jérémie
+
+---
+
+## Détail — Menu et magasin de l'appareil
+
+- Ordinateur et tablette : menu à gauche (il peut se replier en icônes : « Replier le menu »). Téléphone : onglets en bas ; « Plus » donne accès au reste, au choix du magasin et à l'apparence.
+- **Magasin de l'appareil** : choisi une fois (en haut du menu, ou dans « Plus ») ; le Cahier, les Réassorts, le SAV et les Commandes l'utilisent. Si aucun magasin n'est choisi, l'outil demande « Dans quel magasin es-tu ? ».
+- **Apparence** : Auto (suit l'appareil), Clair ou Sombre, en bas du menu (ou dans « Plus »).
+- Les pastilles du menu comptent ce qui attend (réassorts, défectueux, clients à prévenir) ; « À remplir avant le 25 » rappelle la paie du 15 au 25.
 
 ## Détail — Connexion
 
@@ -113,3 +135,9 @@ Sur l'**Accueil** :
 - « Annuler » remet les entrées à l'identique pendant 10 secondes ; ensuite la suppression est définitive.
 
 *(Direction uniquement : Pointer dans la barre ; dans « Plus » : Dépointer, changer le magasin, changer de saison, exporter en CSV.)*
+
+## Détail — Factures
+
+- Même facture qu'avant (même présentation, mêmes mentions, même calcul HT / TVA à partir du TTC), même PDF et même mail.
+- Sur téléphone : onglet **« Saisie »** pour remplir, onglet **« Aperçu »** pour vérifier la facture avant de l'imprimer, de télécharger le PDF ou de l'envoyer.
+- Le numéro proposé suit le compteur **de cet appareil** : vérifiez qu'il n'a pas déjà servi sur un autre appareil.
