@@ -2,7 +2,8 @@
 .ligne-cmd { flex-wrap: wrap; }
 .ligne-cmd .zone-ouvrir { flex: 1 1 100%; min-width: 0; }   /* téléphone : le bouton « étape suivante » passe sous la ligne */
 .article-cmd { color: var(--texte) !important; font-size: 15px !important; }
-.etape-suivante { margin: 0 12px 10px auto; }
+.etape-suivante { margin: 0 12px 10px auto; background: none; border: 1px solid var(--trait); color: var(--doux); font-weight: 500; font-size: 13px !important; min-height: 32px !important; padding: 0 10px !important; }   /* discret : petit, sans couleur forte */
+.etape-suivante:hover { color: var(--texte); background: var(--carte-2); }
 @media (min-width: 768px) { .ligne-cmd { flex-wrap: nowrap; } .ligne-cmd .zone-ouvrir { flex: 1 1 auto; } .etape-suivante { margin: 0 12px 0 0; flex-shrink: 0; } }
 a.btn { text-decoration: none; }
 .s-orange { color: #d97706 !important; } .s-bleu { color: #2563eb !important; } .s-indigo { color: #4f46e5 !important; }

@@ -8,11 +8,8 @@ import Confirmation from '../components/ui/Confirmation'
 import { useMagasin } from '../context/MagasinContext'
 import { PageShell, BoutonMagasin } from '../shell/EnTete'
 import { aller, actionDemandee, effacerAction } from '../shell/navigation'
-import { useVariantes } from '../shell/essai'
-import PanneauEssai from '../shell/PanneauEssai'
 import { Toast } from '../cahier/Reperes'
 import SaisieCommande from './SaisieCommande'
-import { POINTS_COMMANDES } from './points'
 import { magasinCommandes, memeMagasin, PROVENANCES, STATUTS, STATUTS_CLOS, SUIVANT, CLASSE_STATUT, CLASSE_PROVENANCE } from './constants'
 import '../cahier/cahier.css'
 import '../savdef/savdef.css'
@@ -30,12 +27,12 @@ const Statut = ({ s }) => <span className={`etat-mot ${CLASSE_STATUT[s] || ''}`}
 const telLien = t => (t || '').replace(/[^\d+]/g, '')
 
 // Fiche d'une commande : statut en un toucher (avec « Annuler »), appeler / SMS le client (U6), modifier, supprimer
-function FicheCommande({ r, magasinNom, v, onStatut, onModifier, onSupprimer, onFermer }) {
+function FicheCommande({ r, magasinNom, onStatut, onModifier, onSupprimer, onFermer }) {
   const [proposer, setProposer] = useState(false)
-  const sms = v.smsTexte
-    ? `Bonjour${r.clientPrenom ? ' ' + r.clientPrenom : ''}, votre commande${[r.marque, r.modele, r.pointure].some(Boolean) ? ' ' + [r.marque, r.modele, r.pointure].filter(Boolean).join(' ') : ''} est arrivée au magasin ${magasinNom}. À bientôt !`
-    : ''
-  const apresContact = () => { if (v.proposerPrevenu && r.statut === 'Reçue') setTimeout(() => setProposer(true), 600) }
+  // SMS pré-rempli, au vouvoiement (décision du 13/10)
+  const sms = `Bonjour${r.clientPrenom ? ' ' + r.clientPrenom : ''}, votre commande${[r.marque, r.modele, r.pointure].some(Boolean) ? ' ' + [r.marque, r.modele, r.pointure].filter(Boolean).join(' ') : ''} est arrivée au magasin ${magasinNom}. À bientôt !`
+  // Après Appeler ou SMS sur une commande « Reçue » : proposer « Client prévenu »
+  const apresContact = () => { if (r.statut === 'Reçue') setTimeout(() => setProposer(true), 600) }
   return (
     <>
       <div className="feuille-fond" onClick={onFermer} />
@@ -74,7 +71,6 @@ function FicheCommande({ r, magasinNom, v, onStatut, onModifier, onSupprimer, on
 export default function Commandes() {
   const { magasin: magasinCourant, setMagasin } = useMagasin()
   const magasinCmd = magasinCommandes(magasinCourant?.nom)
-  const v = useVariantes(POINTS_COMMANDES)
   const [rech, setRech] = useState('')
   const [vue, setVue] = useState(() => actionDemandee('recues') ? 'Reçue' : 'encours')   // 'encours' | un statut actif | 'closes'
   const [filtres, setFiltres] = useState({ provenance: '', salarie: '' })
@@ -132,7 +128,6 @@ export default function Commandes() {
         <BoutonMagasin nom={magasinCourant.nom} onClick={() => setMagasin(null)} />
         <button className="btn btn-prim seulement-grand" onClick={nouveau}><Icone nom="ajout" taille={20} />Nouvelle commande</button>
       </>}>
-      <PanneauEssai points={POINTS_COMMANDES} />
       <div className="recherche"><Icone nom="cherche" taille={20} style={{ color: 'var(--discret)' }} />
         <input className="champ" placeholder="Client, téléphone, marque, modèle, réf…" value={rech} onChange={e => setRech(e.target.value)} aria-label="Rechercher" /></div>
       <div className="barre-filtres">
@@ -162,7 +157,7 @@ export default function Commandes() {
                   </span>
                   <Statut s={r.statut} />
                 </button>
-                {v.etapeSuivante && suivant && <button className="btn petit etape-suivante" onClick={() => changerStatut(r, suivant)} title={`Passer à « ${suivant} »`}>→ {suivant}</button>}
+                {suivant && <button className="btn petit etape-suivante" onClick={() => changerStatut(r, suivant)} title={`Passer à « ${suivant} »`}>→ {suivant}</button>}
               </div>
             )
           })}
@@ -193,7 +188,7 @@ export default function Commandes() {
           </div>
         </>
       )}
-      {fiche && <FicheCommande r={fiche} magasinNom={magasinCourant.nom} v={v} onStatut={changerStatut} onModifier={r => { setFicheId(null); setSaisie({ commande: r }) }} onSupprimer={setASupprimer} onFermer={() => setFicheId(null)} />}
+      {fiche && <FicheCommande r={fiche} magasinNom={magasinCourant.nom} onStatut={changerStatut} onModifier={r => { setFicheId(null); setSaisie({ commande: r }) }} onSupprimer={setASupprimer} onFermer={() => setFicheId(null)} />}
       {saisie && <SaisieCommande key={saisie.commande?.id || 'n'} commande={saisie.commande} magasinCmd={magasinCmd} magasinNom={magasinCourant.nom} onFermer={() => setSaisie(null)} onToast={setToast} />}
       {aSupprimer && <Confirmation danger titre="Supprimer cette commande ?" confirmer="Supprimer" onAnnuler={() => setASupprimer(null)} onConfirmer={supprimer}
         texte={`${nomClient(aSupprimer) || 'Client'} · ${article(aSupprimer) || 'article'}. Cette suppression est définitive.`} />}

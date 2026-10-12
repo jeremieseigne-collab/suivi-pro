@@ -5,9 +5,7 @@ import { fmtTel } from '../components/shared'
 import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { ChoixSalarie } from '../savdef/Champs'
-import { useVariantes } from '../shell/essai'
 import { PROVENANCES, STATUTS, CLASSE_PROVENANCE, memeMagasin } from './constants'
-import { POINTS_COMMANDES } from './points'
 
 // Date du jour en heure française (l'outil actuel la calculait en heure anglaise : la veille entre minuit et 2 h)
 const aujourdhuiIso = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}` }
@@ -17,9 +15,8 @@ const cleSalarie = mag => `commandes_dernier_salarie::${mag}`
 // le dernier salarié est mémorisé sur l'appareil (U6).
 export default function SaisieCommande({ commande, magasinCmd, magasinNom, onFermer, onToast }) {
   const modif = !!commande?.id
-  const v = useVariantes(POINTS_COMMANDES)
   const salaries = useLiveQuery(() => db.salaries.orderBy('nom').toArray(), [])
-  const fournisseurs = useLiveQuery(() => v.marques ? db.fournisseurs.orderBy('nom').toArray() : Promise.resolve([]), [v.marques])
+  const fournisseurs = useLiveQuery(() => db.fournisseurs.orderBy('nom').toArray(), [])   // suggestions de marques (texte libre gardé)
   const [f, setF] = useState(() => ({
     magasin: commande?.magasin || magasinCmd, date: commande?.date || aujourdhuiIso(),
     salarie: commande?.salarie || (() => { try { return localStorage.getItem(cleSalarie(magasinCmd)) || '' } catch { return '' } })(),
@@ -61,10 +58,10 @@ export default function SaisieCommande({ commande, magasinCmd, magasinNom, onFer
           <div className="deux-champs">
             <label className="etiquette">Date
               <input className="champ" type="date" value={f.date} onChange={e => set('date', e.target.value)} /></label>
-            {(modif || v.etatCreation) && <label className="etiquette">État
+            <label className="etiquette">État
               <select className="champ" value={f.statut} onChange={e => set('statut', e.target.value)}>
                 {STATUTS.map(s => <option key={s}>{s}</option>)}
-              </select></label>}
+              </select></label>
           </div>
 
           <span className="etiquette">Provenance</span>
@@ -81,8 +78,8 @@ export default function SaisieCommande({ commande, magasinCmd, magasinNom, onFer
 
           <div className="deux-champs">
             <label className="etiquette">Marque
-              <input className="champ" value={f.marque} onChange={e => set('marque', e.target.value)} list={v.marques ? 'marques-repertoire' : undefined} autoComplete="off" />
-              {v.marques && <datalist id="marques-repertoire">{(fournisseurs || []).map(x => <option key={x.id} value={x.nom} />)}</datalist>}</label>
+              <input className="champ" value={f.marque} onChange={e => set('marque', e.target.value)} list="marques-repertoire" autoComplete="off" />
+              <datalist id="marques-repertoire">{(fournisseurs || []).map(x => <option key={x.id} value={x.nom} />)}</datalist></label>
             <label className="etiquette">Modèle<input className="champ" value={f.modele} onChange={e => set('modele', e.target.value)} /></label>
           </div>
           <div className="deux-champs">
