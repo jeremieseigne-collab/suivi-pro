@@ -1,0 +1,23 @@
+/* Factures — charte de la refonte (l'aperçu imprimé garde ses couleurs fixes) */
+.factures-grille { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 24px; align-items: start; }
+.factures-saisie .etiquette { margin-bottom: 6px; }
+.factures-saisie .f-champ { display: block; margin-top: 12px; }
+.factures-saisie .f-champ .champ, .deux-champs-factures .champ { margin-top: 6px; }
+.factures-boutiques { background: var(--carte-2); margin-bottom: 12px; }
+.factures-boutiques .ligne { min-height: 52px; }
+.factures-boutiques .ligne[aria-pressed="true"] .t1 { color: var(--action-texte); }
+.deux-champs-factures { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.deux-champs-factures .etiquette { margin: 0; }
+.factures-saisie .aide { margin-top: 4px; }
+.factures-totaux { margin-top: 14px; flex-wrap: wrap; gap: 4px 14px; }
+.factures-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.factures-apercu-reduit { overflow: hidden; border-radius: 10px; }
+/* Version pleine taille hors écran (téléphone) : c'est elle qui est imprimée et capturée pour le PDF */
+.factures-pleine-taille { position: fixed; left: -10000px; top: 0; width: 760px; }
+@media (max-width: 640px) {
+  .factures-grille { grid-template-columns: 1fr; gap: 12px; }
+  .factures-actions .btn { flex: 1 1 140px; }
+}
+@media print {
+  .factures-pleine-taille { position: absolute; left: 0; top: 0; width: 100%; }
+}

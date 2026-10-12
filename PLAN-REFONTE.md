@@ -106,7 +106,6 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Défectueux | Colonnes Magasin et Société ; champ « État » à la création | ✅ décidé (13/10) : **magasin** sur la ligne pour les comptes **Direction** (même règle que le Cahier ; la liste est toujours celle du magasin choisi) ; **société** retirée de la ligne, visible dans la **fiche** ; champ « État » **retiré à la création** (créé « À traiter », l'état se change dans la fiche ; il reste dans « Modifier ») |
 | SAV | Champ magasin à la création | ✅ décidé (13/10) : **toujours visible**, magasins en pastilles (un toucher) ; **pré-rempli** avec le magasin de l'appareil pour un compte magasin ; **à choisir** avec un compte Direction |
 | Planning | 4 lignes vides ajoutées d'office | ✅ retirées (décision D) — un remplaçant s'inscrit avec « Ajouter un remplaçant » en bas de la grille (et de la liste du jour sur téléphone) |
-| Factures | — | rien de retiré prévu à ce jour |
 | Socle — titres des pages | Emoji devant le titre (« 📥 Cahier des entrées » → « Cahier des entrées ») | ✅ accordé (12/10) |
 | Socle — onglets du Cahier | Emojis des onglets (« 📦 Suivi livraisons », « 📥 Entrées ») | ✅ accordé (12/10) |
 | Socle — menu | Groupes « Au quotidien » / « Gestion » → premier groupe sans titre, « Équipe », « Direction » ; Répertoire et Factures remontés dans le premier groupe ; logo 👟 → pastille « S » | ✅ accordé (12/10) |
@@ -213,6 +212,10 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Agenda — détail d'un événement des calendriers | Même fiche en lecture seule (calendrier du magasin, heure ou « Journée entière », lieu, note, « Événement Google — lecture seule ») ; emojis 🕐 📆 📍 → icône au trait ; **ajout** « Du … au … » pour un événement sur plusieurs jours | ✅ accordé |
 | Agenda — message « Google non configuré » | ⚠️ « Google non configuré » → « Calendriers des magasins non configurés » (sans emoji) | ✅ accordé |
 | Agenda — choix G1 à G4 | ✅ décidé, **tous « avec »** : G1. événements de l'outil en **violet** (comme « À venir ») ; G2. semaine du **lundi au dimanche** ; G3. événement des calendriers sur plusieurs jours affiché **chaque jour**, avec « jusqu'au … » ; G4. bouton **« Nouvel événement »** toujours visible en haut | ✅ accordé |
+| Factures — saisie | Mêmes champs (boutique, n°, date, client, adresse, email, désignation, montant TTC) et même ligne HT / TVA / TTC ; boutiques en liste (icône au trait au lieu de 🏪) ; emojis des boutons retirés (🖨 Imprimer, 📄 Télécharger le PDF, ✉️ Envoyer par mail, 🆕 Nouvelle facture, ⏳) | ⏳ à valider |
+| Factures — aperçu, impression, PDF, mail | **Identiques** (même facture, mêmes mentions légales, mêmes couleurs fixes, même brouillon Gmail depuis l'adresse de la société) ; sur ordinateur, même mise en page qu'avant | ⏳ à valider |
+| Factures — téléphone | **Ajout** : utilisable sur téléphone (avant : formulaire et aperçu côte à côte, débordant) ; l'aperçu est réduit à la largeur de l'écran ; l'impression et le PDF partent d'une facture **pleine taille** (largeur fixe) | ⏳ à valider |
+| Factures — points F1, F2 | F1. téléphone : onglets « Saisie » / « Aperçu » (sans : l'aperçu sous la saisie) ; F2. mention « Numéro suivant d'après cet appareil » sous le n° — **chacun en « avec » / « sans »** | ⏸ à trancher |
 
 ## 2 ter. Codes couleur de l'outil actuel (conservés)
 
@@ -397,6 +400,25 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 
 **Essais (base de test, compte magasin Albi, 12/10)** : vue Mois comparée à l'outil actuel sur 4 mois (oct. 2026 → janv. 2027), mêmes données : **identique** jour par jour (12 jours avec événements) ; ajout, modification, suppression avec confirmation, vus aussi dans l'outil actuel ; date proposée à 0 h 30 le 14/10 : **14/10** (l'ancien calcul donnait le 13) ; G2 (7 jours, dimanche visible) et G3 (événement du 19 au 21/10 visible le 21) avec et sans ; téléphone : les 4 vues sans défilement de côté. Événement d'essai effacé.
 
+## Règles métier — Factures (vérifiées dans le code de l'outil en ligne)
+
+**Ce que l'écran lit et écrit** : **rien dans la base**. Seulement, sur l'appareil (navigateur) : la dernière boutique choisie (`factures_boutique`) et un compteur de numéro par société (`factures_seq::B'Shoes`, `factures_seq::JR Shoes`). Les factures ne sont **pas enregistrées** : il reste le PDF téléchargé et le mail envoyé. **Aucun lien** avec le Plan de règlement, les achats ou le pointage.
+
+**Qui y a accès** : tous les comptes (magasins et Direction), comme aujourd'hui.
+
+| Règle | Outil actuel | Refonte |
+|---|---|---|
+| Boutiques → société | Les 2 Zèbres et Bailly Albi → B'Shoes ; Bailly Rouffiac → JR Shoes ; logo et mention légale (raison sociale, adresse, téléphone, SIREN, TVA, IBAN) par boutique | Identique |
+| Calcul | On saisit le TTC ; HT = TTC ÷ 1,20 arrondi au centime ; TVA = TTC − HT arrondie au centime | **Identique** (code inchangé) |
+| Numéro | Année + compteur à 4 chiffres par société, **propre à chaque appareil** ; modifiable ; le compteur avance à l'impression, à l'envoi par mail et à « Nouvelle facture » | Identique |
+| Date | Aujourd'hui en heure française, modifiable | Identique |
+| PDF | Capture de l'aperçu, A4, nom « Facture_[n°]_[société].pdf » | Identique ; sur téléphone, capture de la facture pleine taille |
+| Mail | Télécharge le PDF puis ouvre Gmail (adresse de la société : contact.baillyalbi@ pour B'Shoes, contact.baillyrouffiac@ pour JR Shoes), destinataire = email du client | Identique |
+
+**Comparaison (12/10)** : outil actuel et refonte côte à côte, mêmes saisies — 3 boutiques × 8 montants (0 ; 0,01 ; 15 ; 59,90 ; 79,99 ; 100 ; 249,50 ; 1 234,56) : **texte complet de la facture et totaux HT / TVA / TTC identiques** (24 cas) ; brouillon Gmail identique ; compteur identique. Téléphone : saisie et aperçu sans défilement de côté, PDF produit (Facture_2026-0050_JRShoes.pdf). Compte magasin et compte Direction : accès.
+
+**Constat à décider plus tard (rien changé)** : le compteur de numéro est **propre à chaque appareil**. Deux appareils de la même société (ex. Albi et Les 2 Zèbres, tous deux B'Shoes, ou deux postes d'un même magasin) proposent **le même numéro** ; vider les données du navigateur remet le compteur à zéro. Or les numéros de facture doivent se suivre sans doublon. Il faudrait un compteur partagé dans la base (et, si vous le souhaitez, un registre des factures émises) : modification de la base, à faire seulement avec votre accord écrit (voir « Idées pour plus tard »).
+
 ## Idées pour plus tard (non construites)
 
 | Idée | Pour quoi faire | Ce qu'il faudrait ajouter à la base |
@@ -406,6 +428,7 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 | **Dater l'avoir du jour de réception** | Aujourd'hui l'avoir du Plan de règlement est daté du jour de création de la ligne « Retour » ; le dater du jour où l'avoir est reçu | Une date de réception de l'avoir sur le défectueux (`defectueux.avoir_at`), remplie au passage à « Avoir reçu » ; le Plan l'utiliserait à la place de la date du retour (repli sur la date du retour si vide). Modification **additive** — à faire avec votre accord écrit |
 | **Avoir pour un retour saisi dans le Cahier** | Un retour saisi directement dans le Cahier (bouton Retour) n'a pas de défectueux, donc jamais d'avoir dans le Plan | Soit créer un défectueux lié à la saisie d'un retour au Cahier, soit un état d'avoir sur l'entrée elle-même (`entrees.avoir`, par ex. « attendu / reçu / refusé ») lu par le Plan. À concevoir — à faire avec votre accord écrit |
 | **Total d'heures du planning, pause déduite** | Total d'heures **réellement travaillées** par salarié et par semaine (écran, éventuellement impression) — refusé sans la pause (décision B) | Une **durée de pause par créneau** : colonne `planning.pause` (nombre de minutes, vide = pas de pause), saisie avec les horaires (« Pause : 0 / 30 min / 1 h / autre »), et le total = Σ (fin − début − pause). Les créneaux existants resteraient sans pause (total à vérifier pour le passé). Modification **additive**, sans perte — à faire avec votre accord écrit. Variante sans changer la base : une pause fixe par règle (ex. 1 h dès 7 h de présence), moins juste |
+| **Numéros de facture partagés (et registre des factures)** | Numéros qui se suivent sans doublon pour chaque société, quel que soit l'appareil ; retrouver une facture émise | Une table `factures` (société, numéro unique par société, date, client, désignation, montants, boutique) ou au minimum un compteur par société dans la base, lu et avancé au moment d'imprimer / envoyer. Ajout **sans perte** — à faire avec votre accord écrit |
 
 ---
 

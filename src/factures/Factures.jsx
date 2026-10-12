@@ -1,6 +1,12 @@
 import { useState, useMemo } from 'react'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import Icone from '../components/ui/Icone'
+import { useMediaQuery, PHONE } from '../lib/useMediaQuery'
+import './factures.css'
+import { useVariantes } from '../shell/essai'
+import PanneauEssai from '../shell/PanneauEssai'
+import { POINTS_FACTURES } from './points'
 
 // Boutiques → société (B'Shoes : Les Deux Zèbres + By Albi ; JR Shoes : By Rouffiac)
 const BOUTIQUES = [
@@ -13,6 +19,7 @@ const SENDER_BY_SOCIETE = {
   'JR Shoes': 'contact.baillyrouffiac@gmail.com',
 }
 const TVA_RATE = 0.20
+const LARGEUR_APERCU = 760   // largeur de l'aperçu pleine taille sur téléphone (impression et PDF)
 
 // Mention légale en pied de facture (fixe par boutique)
 const LEGAL_BY_BOUTIQUE = {
@@ -89,6 +96,10 @@ function FactureEditor({ boutique, onSelectBoutique }) {
   }
 
   const [sending, setSending] = useState(false)
+  const telephone = useMediaQuery(PHONE)
+  const v = useVariantes(POINTS_FACTURES)
+  const onglets = telephone && v.factures_onglets
+  const [onglet, setOnglet] = useState('saisie')
   async function envoyerMail() {
     commitSeq()
     setSending(true)
@@ -109,12 +120,10 @@ ${societe}`
     window.open(`${base}?view=cm&fs=1&to=${encodeURIComponent(client.email || '')}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank')
   }
 
-  const lab = { fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.4px', margin: '0 0 4px' }
-  const inp = { width: '100%', padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, background: 'var(--surface)', color: 'var(--text)', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }
-  const field = (label, node) => <div style={{ marginBottom: 10 }}><div style={lab}>{label}</div>{node}</div>
-
+  const props = { logo, societe, magasin: boutique.entete, legal: LEGAL_BY_BOUTIQUE[boutique.id], numero, date, client, designation, ht, tva, ttc }
+  const ongletAperçu = onglets && onglet === 'apercu'
   return (
-    <div>
+    <div className="factures">
       <style>{`
         @media print {
           .no-print { display: none !important; }
@@ -125,61 +134,90 @@ ${societe}`
         }
       `}</style>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 360px) 1fr', gap: 24, alignItems: 'start' }}>
-        {/* ── Formulaire ── */}
-        <div className="store-card no-print" style={{ padding: 18 }}>
-          {field('Boutique', (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {BOUTIQUES.map(b => (
-                <button key={b.id} onClick={() => onSelectBoutique(b.id)}
-                  style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
-                    border: `2px solid ${b.id === boutiqueId ? 'var(--accent)' : 'var(--border)'}`,
-                    background: b.id === boutiqueId ? 'var(--accent-bg)' : 'var(--surface)',
-                    color: b.id === boutiqueId ? 'var(--accent)' : 'var(--text-2)', fontWeight: b.id === boutiqueId ? 700 : 500, fontSize: 14,
-                  }}>
-                  <span>🏪 {b.label}</span>
-                  <span style={{ fontSize: 11, opacity: 0.8 }}>{b.societe}</span>
-                </button>
-              ))}
-            </div>
-          ))}
-
-          <div style={{ display: 'flex', gap: 10 }}>
-            <div style={{ flex: 1 }}>{field('N° facture', <input value={numero} onChange={e => setNumero(e.target.value)} style={inp} />)}</div>
-            <div style={{ flex: 1 }}>{field('Date', <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inp} />)}</div>
-          </div>
-
-          {field('Client', <input value={client.nom} onChange={e => setClientField('nom', e.target.value)} placeholder="Nom du client" style={inp} />)}
-          {field('Adresse client (optionnel)', <textarea value={client.adresse} onChange={e => setClientField('adresse', e.target.value)} placeholder="Adresse" rows={2} style={{ ...inp, resize: 'vertical' }} />)}
-          {field('Email client (pour l’envoi)', <input type="email" value={client.email} onChange={e => setClientField('email', e.target.value)} placeholder="client@email.com" style={inp} />)}
-
-          {field('Désignation', <textarea value={designation} onChange={e => setDesignation(e.target.value)} placeholder="Ex : 1 paire de chaussures … (texte libre)" rows={4} style={{ ...inp, resize: 'vertical' }} />)}
-          {field('Montant total TTC (€)', <input type="number" inputMode="decimal" value={ttcInput} onChange={e => setTtcInput(e.target.value)} placeholder="0,00" min="0" step="0.01" style={inp} />)}
-
-          <div style={{ fontSize: 13, color: 'var(--text-2)', background: 'var(--surface-2)', borderRadius: 8, padding: '8px 12px', marginBottom: 12 }}>
-            HT : <strong>{eur(ht)}</strong> · TVA 20 % : <strong>{eur(tva)}</strong> · TTC : <strong>{eur(ttc)}</strong>
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-            <button className="btn-primary" onClick={imprimer}>🖨 Imprimer</button>
-            <button className="btn-secondary" onClick={telechargerPdf}>📄 Télécharger le PDF</button>
-            <button className="btn-secondary" onClick={envoyerMail} disabled={sending}>{sending ? '⏳ PDF…' : '✉️ Envoyer par mail'}</button>
-            <button className="btn-secondary" onClick={nouvelleFacture}>🆕 Nouvelle facture</button>
-          </div>
+      {onglets && (
+        <div className="segment no-print" role="group" aria-label="Affichage" style={{ marginBottom: 12, width: '100%' }}>
+          <button aria-pressed={!ongletAperçu} onClick={() => setOnglet('saisie')} style={{ flex: 1 }}>Saisie</button>
+          <button aria-pressed={ongletAperçu} onClick={() => setOnglet('apercu')} style={{ flex: 1 }}>Aperçu</button>
         </div>
+      )}
 
-        {/* ── Aperçu (= ce qui s'imprime) ── */}
-        <FacturePreview {...{ logo, societe, magasin: boutique.entete, legal: LEGAL_BY_BOUTIQUE[boutique.id], numero, date, client, designation, ht, tva, ttc }} />
+      <div className="factures-grille">
+        {/* ── Saisie ── */}
+        <section className="carte no-print factures-saisie" hidden={ongletAperçu}>
+          <span className="etiquette">Boutique</span>
+          <div className="liste factures-boutiques">
+            {BOUTIQUES.map(b => (
+              <button key={b.id} className="ligne" aria-pressed={b.id === boutiqueId} onClick={() => onSelectBoutique(b.id)}>
+                <Icone nom="magasin" taille={20} style={{ color: b.id === boutiqueId ? 'var(--action-texte)' : 'var(--doux)' }} />
+                <span className="txt"><span className="t1">{b.label}</span><span className="t2" style={{ display: 'block' }}>{b.societe}</span></span>
+                {b.id === boutiqueId && <Icone nom="check" taille={18} style={{ color: 'var(--action-texte)' }} />}
+              </button>
+            ))}
+          </div>
+
+          <div className="deux-champs-factures">
+            <label className="etiquette">N° facture<input className="champ" value={numero} onChange={e => setNumero(e.target.value)} /></label>
+            <label className="etiquette">Date<input className="champ" type="date" value={date} onChange={e => setDate(e.target.value)} /></label>
+          </div>
+          {v.factures_aide_numero && <div className="aide">Numéro suivant d’après cet appareil ({societe}).</div>}
+
+          <label className="etiquette f-champ">Client<input className="champ" value={client.nom} onChange={e => setClientField('nom', e.target.value)} placeholder="Nom du client" /></label>
+          <label className="etiquette f-champ">Adresse client (optionnel)<textarea className="champ" value={client.adresse} onChange={e => setClientField('adresse', e.target.value)} placeholder="Adresse" rows={2} style={{ resize: 'vertical' }} /></label>
+          <label className="etiquette f-champ">Email client (pour l’envoi)<input className="champ" type="email" value={client.email} onChange={e => setClientField('email', e.target.value)} placeholder="client@email.com" /></label>
+          <label className="etiquette f-champ">Désignation<textarea className="champ" value={designation} onChange={e => setDesignation(e.target.value)} placeholder="Ex : 1 paire de chaussures … (texte libre)" rows={4} style={{ resize: 'vertical' }} /></label>
+          <label className="etiquette f-champ">Montant total TTC (€)<input className="champ" type="number" inputMode="decimal" value={ttcInput} onChange={e => setTtcInput(e.target.value)} placeholder="0,00" min="0" step="0.01" /></label>
+
+          <div className="encart neutre factures-totaux">
+            <span>HT : <strong>{eur(ht)}</strong></span><span>TVA 20 % : <strong>{eur(tva)}</strong></span><span>TTC : <strong>{eur(ttc)}</strong></span>
+          </div>
+
+          <div className="factures-actions">
+            <button className="btn btn-prim" onClick={imprimer}>Imprimer</button>
+            <button className="btn" onClick={telechargerPdf}>Télécharger le PDF</button>
+            <button className="btn" onClick={envoyerMail} disabled={sending}>{sending ? 'PDF…' : 'Envoyer par mail'}</button>
+            <button className="btn" onClick={nouvelleFacture}>Nouvelle facture</button>
+          </div>
+        </section>
+
+        {/* ── Aperçu (= ce qui s'imprime et ce qui part en PDF) ── */}
+        {telephone ? (
+          <>
+            {/* Sur téléphone, l'aperçu est réduit à la largeur de l'écran ; la facture imprimée / le PDF partent de la version pleine taille */}
+            {(ongletAperçu || !onglets) && <ApercuReduit {...props} />}
+            <div className="factures-pleine-taille" aria-hidden="true"><FacturePreview {...props} /></div>
+          </>
+        ) : <FacturePreview {...props} />}
+      </div>
+      <div className="no-print"><PanneauEssai points={POINTS_FACTURES} /></div>
+    </div>
+  )
+}
+
+// Aperçu réduit pour le téléphone : même contenu, à l'échelle de l'écran (sans l'identifiant d'impression)
+function ApercuReduit(props) {
+  const [echelle, setEchelle] = useState(0.45)
+  const [hauteur, setHauteur] = useState(0)
+  const mesurer = el => {
+    if (!el) return
+    const largeur = el.parentElement.clientWidth
+    const e = Math.min(1, largeur / LARGEUR_APERCU)
+    if (Math.abs(e - echelle) > 0.001) setEchelle(e)
+    const h = el.firstChild?.offsetHeight || 0
+    if (h && Math.abs(h * e - hauteur) > 1) setHauteur(h * e)
+  }
+  return (
+    <div className="factures-apercu-reduit" style={{ height: hauteur || undefined }}>
+      <div ref={mesurer} style={{ width: LARGEUR_APERCU, transform: `scale(${echelle})`, transformOrigin: 'top left' }}>
+        <FacturePreview {...props} sansId />
       </div>
     </div>
   )
 }
 
-function FacturePreview({ logo, societe, magasin, legal, numero, date, client, designation, ht, tva, ttc }) {
+function FacturePreview({ logo, societe, magasin, legal, numero, date, client, designation, ht, tva, ttc, sansId = false }) {
   const txt = '#1f2937', muted = '#6b7280', line = '#e5e7eb', accent = '#111827'
   return (
-    <div id="facture-print" style={{
+    <div id={sansId ? undefined : 'facture-print'} style={{
       background: '#fff', color: txt, borderRadius: 10, padding: '34px 38px',
       boxShadow: '0 1px 6px rgba(0,0,0,0.12)', fontSize: 13, lineHeight: 1.5,
       fontFamily: '"Helvetica Neue", Arial, sans-serif', minHeight: 560,
