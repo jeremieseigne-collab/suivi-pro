@@ -31,6 +31,7 @@ export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
   }))
   const [facturation, setFacturation] = useState(sav?.facturation ?? 'offert')
   const [prix, setPrix] = useState(sav?.prixReparation ? String(sav.prixReparation) : '')
+  const [prixManuel, setPrixManuel] = useState('')   // prix unitaire HT tapé, proposé seulement quand le prix calculé est 0 €
   const [infos, setInfos] = useState({ tailles: [], typeKey: 'F', categorie: '' })
   const [erreur, setErreur] = useState('')
   const [enCours, setEnCours] = useState(false)
@@ -93,7 +94,8 @@ export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
       let defectueuxId = null
       if (avecMarque(type)) {
         if (!deja.current.entreeId) {
-          const unit = await prixUnitaire(fournisseurId, magasinId, season, f.modele)
+          const tape = parseFloat(String(prixManuel).replace(',', '.')) || 0
+          const unit = tape > 0 ? tape : await prixUnitaire(fournisseurId, magasinId, season, f.modele)
           deja.current.entreeId = await db.entrees.add({
             statut: 'Retour', magasinId, fournisseurId, date: aujourdhuiFr(), modele: f.modele, numero: '', categorie: infos.categorie || '', typeKey: infos.typeKey || 'F',
             total: -1, pht: unit > 0 ? -Math.round(unit * 100) / 100 : 0, sizes: f.pointure ? { [f.pointure]: -1 } : {}, season,
@@ -194,7 +196,11 @@ export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
                   onChoisir={m => setF(x => ({ ...x, modele: m, pointure: x.modele === m ? x.pointure : '' }))} onAjouter={ajouterModele} />
                 <span className="etiquette">Pointure</span>
                 <ChoixPointure key={'p' + f.modele} tailles={infos.tailles} valeur={f.pointure} onChange={v => set('pointure', v)} desactive={!f.modele} />
-                {prixCalcule === 0 && <div className="encart att" style={{ marginTop: 12 }}>Prix à 0 € : aucun avoir n'apparaîtra dans le Plan de règlement.</div>}
+                {prixCalcule === 0 && <>
+                  {!(parseFloat(String(prixManuel).replace(',', '.')) > 0) && <div className="encart att" style={{ marginTop: 12 }}>Prix à 0 € : aucun avoir n'apparaîtra dans le Plan de règlement. Saisis le prix si tu le connais.</div>}
+                  <label className="etiquette">Prix unitaire HT (€, facultatif)
+                    <input className="champ" inputMode="decimal" value={prixManuel} onChange={e => setPrixManuel(e.target.value)} placeholder="Ex. 27,30" /></label>
+                </>}
                 <label className="etiquette">{type === 'retour' ? 'Description du problème' : 'Note / problème'}
                   <textarea className="champ" rows={3} value={f.probleme} onChange={e => set('probleme', e.target.value)}
                     placeholder={type === 'retour' ? 'Décris le défaut ou le problème signalé par le client…' : 'Décris les réparations à faire…'} /></label>
