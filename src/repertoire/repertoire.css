@@ -1,0 +1,15 @@
+/* Répertoire fournisseurs — charte de la refonte */
+.ligne-marque .zone-ouvrir { flex: 1; }
+.contacts-ligne { display: flex; flex-shrink: 0; padding-right: 8px; }
+.coordonnees .groupe-coord { margin-top: 12px; }
+.coordonnees .groupe-coord .etiquette { margin: 0 0 4px; }
+.champ-coord { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.champ-coord .lib { width: 96px; flex-shrink: 0; font-size: var(--t-meta); color: var(--doux); }
+.champ-coord .val { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 15px; }
+.champ-coord .val.manquant { color: var(--discret); }
+.champ-coord .champ { flex: 1; min-width: 0; }
+.coordonnees > .lien { margin-top: 12px; padding-left: 0; }
+.cartes-marques { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; margin-top: 10px; }
+.carte-marque h3 { margin: 0 0 4px; font-size: 17px; }
+a.icone-btn { text-decoration: none; }
+@media (max-width: 420px) { .champ-coord .lib { width: 76px; } }

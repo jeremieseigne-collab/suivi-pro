@@ -17,7 +17,7 @@ const Cahier          = lazy(() => import('./cahier/Cahier'))
 const Achats          = lazy(() => import('./tabs/Achats'))
 const PlanReglement   = lazy(() => import('./tabs/PlanReglement'))
 const Parametres      = lazy(() => import('./tabs/Parametres'))
-const Repertoire      = lazy(() => import('./tabs/Repertoire'))
+const Repertoire      = lazy(() => import('./repertoire/Repertoire'))
 const Commandes       = lazy(() => import('./commandes/Commandes'))
 const Paie            = lazy(() => import('./paie/Paie'))
 const Planning        = lazy(() => import('./planning/Planning'))
@@ -42,7 +42,7 @@ function Root() {
   else if (vue === 'commandes')  content = <Commandes onHome={home} />
   else if (vue === 'paie')       content = <PageShell title="Éléments variables de paie" withSeason={false}><Paie /></PageShell>
   else if (vue === 'achats')     content = <PageShell title="Achats"><Achats /></PageShell>
-  else if (vue === 'repertoire') content = <PageShell title="Répertoire fournisseurs" withSeason={false}><Repertoire /></PageShell>
+  else if (vue === 'repertoire') content = <Repertoire />
   else if (vue === 'reglement')  content = <PageShell title="Plan de règlement"><PlanReglement /></PageShell>
   else if (vue === 'parametres') content = <PageShell title="Paramètres"><Parametres /></PageShell>
   else if (vue === 'factures')   content = <PageShell title="Factures" withSeason={false}><Factures /></PageShell>

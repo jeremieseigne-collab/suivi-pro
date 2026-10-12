@@ -33,6 +33,11 @@ Sur l'**Accueil** :
 
 *(Direction uniquement : « En retard » indique aussi les entrées à pointer.)*
 
+## Détail — Répertoire
+
+- Choisissez le magasin en haut : commercial, SAV, n° client et espace BtoB sont propres à chaque magasin ; comptabilité, adresse et notes sont communes.
+- Touchez le téléphone ou le mail d'une marque pour appeler ou écrire en un toucher.
+
 ## Détail — Top modèles & réassorts
 
 - Les étapes : **À réassortir** (la commande est à passer) → **Demandé** (la demande est envoyée à la marque, on attend sa réponse) → **Commandé** (la marque a confirmé) → **En route** → **Reçu**.
