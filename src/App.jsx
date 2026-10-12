@@ -1,9 +1,7 @@
 import { useState, useRef, lazy, Suspense } from 'react'
-import { db } from './db'
 import StoreSelect      from './components/StoreSelect'
 import HomeScreen       from './home/HomeScreen'
 import { LoadingState } from './components/shared'
-import { confirmDanger } from './components/DangerConfirm'
 import Connexion from './components/Connexion'
 import { useCompte } from './context/CompteContext'
 import { useAlerts }    from './home/useAlerts'
@@ -34,13 +32,12 @@ const Reassort        = lazy(() => import('./reassort/Reassort'))
 const DIRECTION_VIEWS = new Set(['reglement', 'parametres', 'achats'])
 
 function SeasonBadge() {
-  const { estDirection } = useCompte()
-  const { season, setSeason, seasons, addSeason, removeSeason } = useSeason()
+  // Choix et ajout de saison ici ; la suppression est dans Paramètres → Saisons (Direction, nom à retaper)
+  const { season, setSeason, seasons, addSeason } = useSeason()
   const current       = seasons.find(s => s.id === season) || seasons[0]
   const [open,        setOpen]        = useState(false)
   const [adding,      setAdding]      = useState(false)
   const [newName,     setNewName]     = useState('')
-  const [deleting,    setDeleting]    = useState(false)
   const inputRef = useRef(null)
 
   function openAdd(e) {
@@ -54,32 +51,6 @@ function SeasonBadge() {
     e?.preventDefault()
     const id = addSeason(newName)
     if (id) { setSeason(id); setOpen(false); setAdding(false) }
-  }
-
-  // Suppression d'une saison : efface toutes ses entrées et lignes d'achats → réservée à la Direction, nom à retaper
-  async function handleDelete(id) {
-    const s = seasons.find(x => x.id === id)
-    setDeleting(true)
-    try {
-      const [nbEntrees, nbAchats] = await Promise.all([
-        db.entrees.where('season').equals(id).toArray().then(r => r.length),
-        db.parametres.where('season').equals(id).toArray().then(r => r.length),
-      ])
-      setOpen(false)
-      const ok = await confirmDanger({
-        title: `Supprimer la saison « ${s.label} » ?`,
-        message: `Seront effacées pour tous les magasins et tous les appareils :\n• ${nbEntrees} entrée(s) du Cahier\n• ${nbAchats} ligne(s) d'achats et de modèles`,
-        word: s.label,
-      })
-      if (!ok) return
-      await db.entrees.where('season').equals(id).delete()
-      await db.parametres.where('season').equals(id).delete()
-      removeSeason(id)
-    } catch (err) {
-      alert('La suppression a échoué : ' + (err.message || err) + '\nRien n\'a été retiré de la liste des saisons.')
-    } finally {
-      setDeleting(false)
-    }
   }
 
   function close() { setOpen(false); setAdding(false) }
@@ -102,12 +73,6 @@ function SeasonBadge() {
                   <span className="txt"><span className="t1" style={{ color: s.id === season ? s.color : 'var(--texte)', fontWeight: s.id === season ? 700 : 500 }}>{s.label}</span></span>
                   {s.id === season && <Icone nom="check" taille={18} style={{ color: s.color }} />}
                 </button>
-                {seasons.length > 1 && estDirection && (
-                  <button className="icone-btn" onClick={e => { e.stopPropagation(); setAdding(false); handleDelete(s.id) }} disabled={deleting}
-                    title="Supprimer cette saison" aria-label={`Supprimer la saison ${s.label}`}>
-                    <Icone nom="fermer" taille={18} />
-                  </button>
-                )}
               </div>
             ))}
             <div style={{ borderTop: '1px solid var(--trait)' }}>

@@ -12,7 +12,7 @@
 | Sécurité B6 étape 1 + plafond mails (`SECURITE.md`) | ✅ **EN LIGNE depuis le dimanche 11/10/2026** : code à 14h20, filtrage activé à 14h28 (fenêtre d'exposition ~6 min). Vérifié : anonyme = 0 ligne / écriture refusée ; comptes connectés OK ; mail sans connexion refusé ; vrai mail reçu et noté au journal |
 | **Sécurité B6 étape 2** — paie réservée aux comptes Direction, PIN supprimé | ✅ **faite et testée sur la base de test** (11/10, branche `securite-etape2`, `supabase-securite-etape2.sql`) ; ⏳ production : **nouvel accord écrit, après quelques jours de fonctionnement sans souci de l'étape 1 dans les 3 magasins** |
 | 2. Plan, charte, maquettes (`PLAN-REFONTE.md`, `maquettes/`) | ⏳ à valider |
-| 3. Construction écran par écran | ⏳ **socle commun fait** (12/10, en local : http://localhost:5174) — en attente de votre feu vert ; puis Cahier des entrées |
+| 3. Construction écran par écran | ✅ socle commun validé (12/10) · ⏳ **Cahier des entrées en cours** (feu vert du 12/10) |
 | 4. Préparation de la mise en ligne | à venir |
 
 ## Décisions prises
@@ -43,6 +43,8 @@
 - 11/10 — Ordre des statuts corrigé dans l'outil actuel (Aucun → Enregistré → Imp. Etiquettes), testé en local, **part avec l'étape 2**.
 - 12/10 — **Étape 3 lancée.** Socle : charte dans le code (`src/styles/charte.css`), icônes au trait (`src/components/ui/Icone.jsx`), coque (`src/shell/Coque.jsx` : barre latérale ≥ 768 px, onglets en bas + « Plus » sur téléphone, page « Clients »), liens directs par écran (`#/cahier`…, retour du navigateur), apparence Auto/Clair/Sombre, écrans chargés à la demande (chargement initial 1,4 Mo → 444 Ko), icône d'écran d'accueil (U14). Les écrans eux-mêmes ne sont pas encore refaits.
 - 12/10 — Copie de travail de la refonte : `node_modules` relié au projet principal, `.env.local` copié (base de test). Serveur local de la refonte : port **5174** (l'outil actuel reste sur 5173).
+- 12/10 — Socle validé (emojis des titres et onglets, groupes du menu, pastille « S », pastille de saison). Suppression de saison retirée de l'en-tête → Paramètres → Saisons (Direction, nom à retaper).
+- 12/10 — **Règle de méthode** : attendre le feu vert explicite de l'utilisateur avant chaque nouvelle étape de construction.
 - 10/10 — Les ~65 suppressions de marques en production depuis juin sont bien de vous (nettoyage et fusion de doublons) : pas d'activité suspecte.
 - 10/10 — Le rituel de fin de session du `CLAUDE.md` (déploiement automatique) est **suspendu** pendant le chantier.
 - 10/10 — En local, les mails ne partent jamais (affichés dans le terminal) ; `SEND_REAL_MAIL=1` pour réactiver.

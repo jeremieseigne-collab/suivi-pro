@@ -984,6 +984,54 @@ function SectionModes() {
 // ─── Onglet principal ────────────────────────────────────────────────────────
 // ─── Section Appareils : déconnecter à distance tous les appareils d'un compte ──────────
 // (salarié qui part, téléphone perdu). La base vérifie que le compte connecté est un compte Direction.
+// ─── Section Saisons : suppression d'une saison (déplacée de l'en-tête le 12/10) ────────────────
+// Efface toutes les entrées et lignes d'achats de la saison, pour tous les magasins : nom à retaper.
+function SectionSaisons() {
+  const { seasons, season, removeSeason } = useSeason()
+  const [busy, setBusy] = useState(null)
+
+  async function supprimer(s) {
+    setBusy(s.id)
+    try {
+      const [nbEntrees, nbAchats] = await Promise.all([
+        db.entrees.where('season').equals(s.id).toArray().then(r => r.length),
+        db.parametres.where('season').equals(s.id).toArray().then(r => r.length),
+      ])
+      const ok = await confirmDanger({
+        title: `Supprimer la saison « ${s.label} » ?`,
+        message: `Seront effacées pour tous les magasins et tous les appareils :\n• ${nbEntrees} entrée(s) du Cahier\n• ${nbAchats} ligne(s) d'achats et de modèles`,
+        word: s.label,
+      })
+      if (!ok) return
+      await db.entrees.where('season').equals(s.id).delete()
+      await db.parametres.where('season').equals(s.id).delete()
+      removeSeason(s.id)
+    } catch (err) {
+      alert('La suppression a échoué : ' + (err.message || err) + '\nRien n\'a été retiré de la liste des saisons.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <div className="store-card" style={{ padding: 18 }}>
+      <h3 style={{ margin: '0 0 6px', fontSize: 16, color: 'var(--text)' }}>Saisons</h3>
+      <p style={{ margin: '0 0 14px', fontSize: 14, color: 'var(--text-3)', lineHeight: 1.5 }}>
+        On choisit et on ajoute une saison depuis la pastille de saison en haut des pages. Ici, la Direction peut <strong>supprimer</strong> une saison :
+        toutes ses entrées et lignes d'achats sont effacées, pour tous les magasins. Il faudra retaper son nom.
+      </p>
+      {seasons.map(s => (
+        <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderTop: '1px solid var(--border)' }}>
+          <span style={{ flex: 1, fontWeight: 600, color: s.color }}>{s.label}{s.id === season && <span style={{ fontWeight: 400, color: 'var(--text-4)', fontSize: 13 }}> · saison affichée</span>}</span>
+          <button className="btn-secondary" disabled={seasons.length <= 1 || busy === s.id} onClick={() => supprimer(s)}
+            title={seasons.length <= 1 ? 'Il faut garder au moins une saison' : undefined}
+            style={{ minHeight: 40, color: '#dc2626' }}>{busy === s.id ? '…' : 'Supprimer la saison'}</button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function SectionAppareils() {
   const [adresse, setAdresse] = useState('')
   const [msg, setMsg]         = useState(null)
@@ -1031,6 +1079,7 @@ export default function Parametres() {
     { id: 'salaries',     label: '👤 Salariés' },
     { id: 'fournisseurs', label: '🏷️ Marques' },
     { id: 'modes',        label: '💳 Modes de règlement' },
+    { id: 'saisons',      label: '🗓 Saisons' },
     { id: 'appareils',    label: '📱 Appareils connectés' },
   ]
 
@@ -1041,6 +1090,7 @@ export default function Parametres() {
       {section === 'salaries'     && <SectionSalaries />}
       {section === 'fournisseurs' && <SectionFournisseurs />}
       {section === 'modes'        && <SectionModes />}
+      {section === 'saisons'      && <SectionSaisons />}
       {section === 'appareils'    && <SectionAppareils />}
     </div>
   )
