@@ -3,6 +3,7 @@ import { db } from '../db'
 import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { nomPropre, formeComparaison, marquesSemblables } from '../cahier/commun'
+import { coordMarque, enregistrerEmailMagasin } from '../reassort/mail'
 
 // Champs partagés des saisies SAV et défectueux (charte de la refonte)
 
@@ -137,19 +138,19 @@ export function ChoixPointure({ tailles, valeur, onChange, libre = true, desacti
 }
 
 // Étapes après l'enregistrement : proposer le mail au SAV de la marque, puis enregistrer l'adresse tapée dans le répertoire
-export function EtapesMail({ texteEnregistre, fournisseur, onEnvoyer, onTerminer }) {
+export function EtapesMail({ texteEnregistre, fournisseur, magasinId, onEnvoyer, onTerminer }) {
   const [email, setEmail] = useState('')
   const [etape, setEtape] = useState('mail')     // 'mail' | 'contact'
-  const connu = fournisseur?.email || ''
+  const connu = coordMarque(fournisseur, magasinId, 'email')   // adresse du magasin, sinon de la marque
   if (etape === 'contact') return (
     <>
       <div className="feuille-corps">
         <p style={{ marginTop: 0 }}>Le mail est préparé pour <b>{email}</b>.</p>
-        <p>Enregistrer cette adresse dans la fiche SAV de <b>{fournisseur?.nom}</b> (Répertoire) ?</p>
+        <p>Enregistrer cette adresse dans le Répertoire de <b>{fournisseur?.nom}</b>, pour ce magasin ?</p>
       </div>
       <div className="feuille-pied">
         <button className="btn" onClick={onTerminer}>Non, terminer</button>
-        <button className="btn btn-prim" onClick={async () => { try { await db.fournisseurs.update(fournisseur.id, { email: email.trim() }) } catch { /* ignore */ } onTerminer() }}>Enregistrer dans le répertoire</button>
+        <button className="btn btn-prim" onClick={async () => { try { await db.fournisseurs.update(fournisseur.id, { coordsMagasin: enregistrerEmailMagasin(fournisseur, magasinId, email) }) } catch { /* ignore */ } onTerminer() }}>Enregistrer dans le répertoire</button>
       </div>
     </>
   )

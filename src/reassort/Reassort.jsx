@@ -85,6 +85,8 @@ function FicheTop({ t, act, onFermer }) {
               <div className="aide" style={{ marginTop: 6 }}>
                 {sortSizes(Object.keys(r.sizes || {})).map(s => { const reste = (r.sizes[s] || 0) - (r.recu?.[s] || 0); return <span key={s} className={reste <= 0 ? 'barre-texte' : ''} style={{ marginRight: 10 }}>{s}×{r.sizes[s]}</span> })}
                 {r.par && <> · demandé par {r.par}</>} · depuis le {fmtDate(r.createdAt)}
+                {r.statut === 'Demandé' && r.etapes?.['Demandé'] && <> · demandé le {fmtDate(r.etapes['Demandé'])}</>}
+                {r.etapes?.Relance && <> · <b>relancé le {fmtDate(r.etapes.Relance)}</b></>}
               </div>
               {r.note && <div className="aide">{r.note}</div>}
               {n && <div className={`retard-texte retard-${n}`}>{r.statut === 'Demandé' ? `Demandé depuis ${joursEtape(r)} jours, sans confirmation — relancer la marque ?` : `En route depuis ${joursEtape(r)} jours — relancer la marque ?`}</div>}
@@ -222,7 +224,7 @@ export default function Reassort() {
       // Règle du 13/10 (accord écrit) : le mail fait passer « À réassortir » à « Demandé » ; « Commandé » quand la marque confirme (étape suivante).
       // Renvoyer le mail d'un réassort « Demandé » ne change ni l'étape ni sa date (le retard continue de courir jusqu'à la confirmation).
       if (r.statut === 'À réassortir') changerEtape(r, 'Demandé', `${r.modele} : « Demandé » — en attente de la confirmation de la marque`)
-      else setToast({ texte: `Mail de relance préparé pour ${r.modele}` })
+      else relancer(r)
     },
     reception: (t, r) => setSaisie({ type: 'reception', top: t, reassort: r }),
     modifierReassort: (t, r) => setSaisie({ type: 'reassort', top: t, reassort: r }),
@@ -235,6 +237,12 @@ export default function Reassort() {
     supprimerTop: t => setConfirm({ danger: true, titre: 'Supprimer ce top modèle ?', confirmer: 'Supprimer',
       texte: `${t.marque} · ${t.modele}.${t.histo.length ? ` Ses ${t.histo.length} réassort${t.histo.length > 1 ? 's seront aussi supprimés' : ' sera aussi supprimé'}.` : ''} Les entrées déjà créées dans le Cahier restent. Cette suppression est définitive.`,
       action: async () => { try { await supprimerTop(t.id); setFicheId(null); setToast({ texte: 'Top modèle supprimé' }) } catch (e) { setToast({ texte: 'Suppression impossible : ' + e.message }) } } }),
+  }
+  // Relance d'un réassort « Demandé » : on note la date de la dernière relance dans l'historique des dates (etapes.Relance),
+  // sans changer l'étape ni la date de la demande (le retard se compte depuis la première demande). Pas de nouvelle colonne.
+  async function relancer(r) {
+    try { await db.reassorts.update(r.id, { etapes: { ...(r.etapes || {}), Relance: new Date().toISOString() } }); setToast({ texte: `${r.modele} : relance notée`, annuler: () => db.reassorts.update(r.id, { etapes: r.etapes || {} }) }) }
+    catch (e) { setToast({ texte: 'Relance non notée : ' + (e.message || 'vérifie la connexion.') }) }
   }
   async function majTop(t, changes, texte, avant) {
     try { await db.topModeles.update(t.id, changes); setToast({ texte: `${t.modele} : ${texte}`, annuler: () => db.topModeles.update(t.id, avant) }) } catch (e) { setToast({ texte: 'Impossible : ' + e.message }) }

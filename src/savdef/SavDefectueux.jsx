@@ -7,6 +7,7 @@ import { LoadingState } from '../components/shared'
 import StoreSelect from '../components/StoreSelect'
 import Icone from '../components/ui/Icone'
 import { PageShell, BoutonMagasin } from '../shell/EnTete'
+import { coordMarque } from '../reassort/mail'
 import { aller, actionDemandee, effacerAction } from '../shell/navigation'
 import { Toast } from '../cahier/Reperes'
 import ListeSav from './ListeSav'
@@ -31,7 +32,7 @@ export default function SavDefectueux({ vue }) {
     const recents = (a, b) => b.id - a.id
     return {
       savs: savs.sort(recents).map(s => ({ ...s, magasinNom: mag[s.magasinId] || '—', marqueNom: four[s.fournisseurId]?.nom || '',
-        fournisseurEmail: four[s.fournisseurId]?.email || '', fournisseurNumeroClient: four[s.fournisseurId]?.numeroClient || '' })),
+        fournisseurEmail: coordMarque(four[s.fournisseurId], s.magasinId, 'email'), fournisseurNumeroClient: coordMarque(four[s.fournisseurId], s.magasinId, 'numeroClient') })),
       defs: defs.sort(recents).map(d => ({ ...d, magasin: mag[d.magasinId] || '—', marque: four[d.fournisseurId]?.nom || '—', societe: getSociete(mag[d.magasinId] || ''), fournisseurObj: four[d.fournisseurId] || null })),
     }
   }, [])

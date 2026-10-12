@@ -6,11 +6,8 @@ import RepertoireImportModal from '../components/RepertoireImportModal'
 import Icone from '../components/ui/Icone'
 import { useMagasin } from '../context/MagasinContext'
 import { PageShell } from '../shell/EnTete'
-import { useVariantes } from '../shell/essai'
-import PanneauEssai from '../shell/PanneauEssai'
 import { Toast } from '../cahier/Reperes'
 import { ChoixMarque } from '../savdef/Champs'
-import { POINTS_REPERTOIRE } from './points'
 import '../cahier/cahier.css'
 import '../savdef/savdef.css'
 import './repertoire.css'
@@ -94,7 +91,7 @@ function Coordonnees({ f, magId, modeBouton, onToast, ouvertCommun = false }) {
   )
 }
 
-function FicheMarque({ f, magId, magNom, v, onToast, onFermer }) {
+function FicheMarque({ f, magId, magNom, onToast, onFermer }) {
   return (
     <>
       <div className="feuille-fond" onClick={onFermer} />
@@ -102,7 +99,7 @@ function FicheMarque({ f, magId, magNom, v, onToast, onFermer }) {
         <div className="feuille-entete"><h2>{f.nom}</h2><button className="icone-btn" onClick={onFermer} aria-label="Fermer"><Icone nom="fermer" /></button></div>
         <div className="feuille-corps">
           <div className="aide" style={{ marginBottom: 6 }}>Commercial, SAV et compte : propres à <b>{magNom}</b>.</div>
-          <Coordonnees key={f.id + '-' + magId} f={f} magId={magId} modeBouton={v.modifierEnregistrer} onToast={onToast} />
+          <Coordonnees key={f.id + '-' + magId} f={f} magId={magId} modeBouton onToast={onToast} />   {/* « Modifier » puis « Enregistrer » (décision du 13/10) */}
         </div>
       </div>
     </>
@@ -139,7 +136,6 @@ function NouvelleMarque({ fournisseurs, gardeFou, onCree, onFermer }) {
 }
 
 export default function Repertoire() {
-  const v = useVariantes(POINTS_REPERTOIRE)
   const fournisseurs = useLiveQuery(() => db.fournisseurs.orderBy('nom').toArray(), [])
   const magasins = useLiveQuery(() => db.magasins.orderBy('nom').toArray(), [])
   const { magasin: magasinCourant } = useMagasin()
@@ -164,7 +160,6 @@ export default function Repertoire() {
     const magNom = (magasins.find(m => m.id === mId) || {}).nom || ''
     const fiche = ficheId && fournisseurs.find(f => f.id === ficheId)
     return <>
-      <PanneauEssai points={POINTS_REPERTOIRE} />
       <div className="chips" style={{ marginBottom: 10 }}>
         {magasins.map(m => <button key={m.id} className="chip" aria-pressed={m.id === mId} onClick={() => choisirMag(m.id)}><Icone nom="magasin" taille={16} />{m.nom}</button>)}
       </div>
@@ -172,7 +167,7 @@ export default function Repertoire() {
         <input className="champ" placeholder="Marque, contact, mail, n° client…" value={rech} onChange={e => setRech(e.target.value)} aria-label="Rechercher" /></div>
       <div className="sous-info">{magNom} · {liste.length} marque{liste.length > 1 ? 's' : ''} · commercial, SAV et compte propres à ce magasin ; comptabilité, adresse et notes communes</div>
       {!liste.length ? <div className="vide">{fournisseurs.length ? 'Aucune marque ne correspond.' : 'Aucune marque — touche « Nouvelle marque ».'}</div>
-        : v.listeCompacte ? (
+        : (   /* liste compacte qui ouvre la fiche (décision du 13/10) */
           <div className="liste" style={{ marginTop: 10 }}>
             {liste.map(f => {
               const contact = valeur(f, mId, 'contact'), tel = valeur(f, mId, 'telephone') || valeur(f, mId, 'telephoneFixe'), mail = valeur(f, mId, 'email')
@@ -188,17 +183,13 @@ export default function Repertoire() {
               )
             })}
           </div>
-        ) : (
-          <div className="cartes-marques">
-            {liste.map(f => <div key={f.id + '-' + mId} className="carte carte-marque"><h3>{f.nom}</h3><Coordonnees f={f} magId={mId} modeBouton={v.modifierEnregistrer} onToast={setToast} /></div>)}
-          </div>
         )}
       <div style={{ textAlign: 'center', marginTop: 24 }} className="seulement-petit"><button className="btn btn-ghost" onClick={() => setImporter(true)}>Importer des contacts (CSV)</button></div>
       <div style={{ height: 72 }} className="seulement-petit" aria-hidden="true" />
       <button className="btn btn-prim action-flottante" onClick={() => setNouvelle(true)}><Icone nom="ajout" taille={20} />Marque</button>
-      {fiche && <FicheMarque f={fiche} magId={mId} magNom={magNom} v={v} onToast={setToast} onFermer={() => setFicheId(null)} />}
-      {nouvelle && <NouvelleMarque fournisseurs={fournisseurs} gardeFou={v.gardeFou} onFermer={() => setNouvelle(false)}
-        onCree={(id, nom) => { setNouvelle(false); setToast({ texte: `Marque « ${nom} »` }); if (v.listeCompacte) setFicheId(id); else setRech(nom) }} />}
+      {fiche && <FicheMarque f={fiche} magId={mId} magNom={magNom} onToast={setToast} onFermer={() => setFicheId(null)} />}
+      {nouvelle && <NouvelleMarque fournisseurs={fournisseurs} gardeFou onFermer={() => setNouvelle(false)}
+        onCree={(id, nom) => { setNouvelle(false); setToast({ texte: `Marque « ${nom} »` }); setFicheId(id) }} />}
       {importer && <RepertoireImportModal onClose={() => setImporter(false)} onDone={() => setImporter(false)} />}
     </>
   })()

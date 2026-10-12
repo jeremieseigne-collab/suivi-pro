@@ -7,6 +7,7 @@ import { fmtTel } from '../components/shared'
 import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { buildSavRetourMailUrl } from '../sav/mail'
+import { coordMarque } from '../reassort/mail'
 import { ChoixSalarie, ChoixMarque, ChoixModele, ChoixPointure, EtapesMail } from './Champs'
 import { TYPES_SAV, avecMarque, aujourdhuiFr, prixUnitaire, infosModele, marquerMailSav } from './regles'
 import { useCompte } from '../context/CompteContext'
@@ -128,7 +129,7 @@ export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
 
   const urlMail = email => buildSavRetourMailUrl({
     modele: f.modele, pointure: f.pointure, probleme: f.probleme, salarie: f.salarie, societe: cree?.societe || societe || '',
-    email, numeroClient: (cree?.fournisseur || fournisseur)?.numeroClient,
+    email, numeroClient: coordMarque(cree?.fournisseur || fournisseur, Number(f.magasinId), 'numeroClient'),
   })
   function envoyer(email) {
     window.open(urlMail(email), '_blank')
@@ -143,7 +144,7 @@ export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
         <div className="feuille-entete"><h2>{titre}</h2><button className="icone-btn" onClick={fermer} aria-label="Fermer"><Icone nom="fermer" /></button></div>
 
         {etape === 'mail' ? (
-          <EtapesMail texteEnregistre="Le dossier est enregistré, le défectueux est créé et l'entrée « Retour » est ajoutée au Cahier." fournisseur={cree?.fournisseur} onEnvoyer={envoyer} onTerminer={onFermer} />
+          <EtapesMail texteEnregistre="Le dossier est enregistré, le défectueux est créé et l'entrée « Retour » est ajoutée au Cahier." fournisseur={cree?.fournisseur} magasinId={Number(f.magasinId)} onEnvoyer={envoyer} onTerminer={onFermer} />
         ) : etape === 'attente' ? (
           <>
             <div className="feuille-corps">
@@ -215,7 +216,7 @@ export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
               {erreur && <div className="encart err" style={{ marginTop: 14 }}>{erreur}</div>}
             </div>
             <div className="feuille-pied">
-              {modif && avecMarque(type) && <button className="btn" onClick={() => window.open(urlMail(fournisseur?.email), '_blank')}><Icone nom="mail" taille={20} />Mail à la marque</button>}
+              {modif && avecMarque(type) && <button className="btn" onClick={() => window.open(urlMail(coordMarque(fournisseur, Number(f.magasinId), 'email')), '_blank')}><Icone nom="mail" taille={20} />Mail à la marque</button>}
               <span className="total" />
               <button className="btn btn-prim" onClick={enregistrer} disabled={enCours}>{enCours ? 'Enregistrement…' : modif ? 'Enregistrer' : 'Créer le dossier'}</button>
             </div>

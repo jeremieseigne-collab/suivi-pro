@@ -23,9 +23,17 @@ Société ${societe}`
   return `${base}?view=cm&fs=1&to=${encodeURIComponent(email || '')}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
 }
 
-// Coordonnée de la marque pour un magasin (répertoire par magasin, sinon valeur commune)
+// Coordonnée de la marque pour un magasin (répertoire par magasin, sinon valeur commune), sans espaces en trop.
+// Utilisée par les mails de réassort, SAV et défectueux (correctif du 13/10, aussi dans l'outil en ligne).
 export function coordMarque(f, magasinId, key) {
   if (!f) return ''
   const cm = f.coordsMagasin && f.coordsMagasin[magasinId]
-  return (cm && cm[key]) || f[key] || ''
+  return String((cm && cm[key] && String(cm[key]).trim()) || f[key] || '').trim()
+}
+
+// « Enregistrer dans le répertoire » : l'adresse tapée est enregistrée pour le magasin du dossier (et non plus pour toute la marque)
+export function enregistrerEmailMagasin(f, magasinId, email) {
+  const cm = { ...(f?.coordsMagasin || {}) }
+  cm[magasinId] = { ...(cm[magasinId] || {}), email: (email || '').trim() }
+  return cm
 }

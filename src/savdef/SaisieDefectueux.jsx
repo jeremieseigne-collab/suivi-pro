@@ -6,6 +6,7 @@ import { getSociete } from '../data/societes'
 import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { buildDefectueuxMailUrl } from '../defectueux/mail'
+import { coordMarque } from '../reassort/mail'
 import { ChoixSalarie, ChoixMarque, ChoixModele, ChoixPointure, EtapesMail } from './Champs'
 import { STATUTS_DEF, aujourdhuiFr, prixUnitaire, infosModele, changerEtatDefectueux } from './regles'
 
@@ -102,7 +103,7 @@ export default function SaisieDefectueux({ defect, magasinAppareil, onFermer, on
   }
 
   function envoyer(email) {
-    window.open(buildDefectueuxMailUrl({ modele: f.modele, pointure: f.pointure, note: f.note, salarie: f.salarie, societe: cree?.societe || '', email, numeroClient: cree?.fournisseur?.numeroClient }), '_blank')
+    window.open(buildDefectueuxMailUrl({ modele: f.modele, pointure: f.pointure, note: f.note, salarie: f.salarie, societe: cree?.societe || '', email, numeroClient: coordMarque(cree?.fournisseur, Number(f.magasinId), 'numeroClient') }), '_blank')
     return db.defectueux.update(cree.defId, { statut: 'Mail envoyé' }).catch(() => {})
   }
 
@@ -113,7 +114,7 @@ export default function SaisieDefectueux({ defect, magasinAppareil, onFermer, on
       <div className="feuille saisie-sav" role="dialog" aria-label={titre}>
         <div className="feuille-entete"><h2>{titre}</h2><button className="icone-btn" onClick={fermer} aria-label="Fermer"><Icone nom="fermer" /></button></div>
         {etape === 'mail' ? (
-          <EtapesMail texteEnregistre="Le défectueux est enregistré et l'entrée « Retour » est ajoutée au Cahier." fournisseur={cree?.fournisseur} onEnvoyer={envoyer} onTerminer={onFermer} />
+          <EtapesMail texteEnregistre="Le défectueux est enregistré et l'entrée « Retour » est ajoutée au Cahier." fournisseur={cree?.fournisseur} magasinId={Number(f.magasinId)} onEnvoyer={envoyer} onTerminer={onFermer} />
         ) : (
           <>
             <div className="feuille-corps champs-sav">

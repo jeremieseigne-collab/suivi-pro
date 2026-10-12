@@ -4,6 +4,7 @@ import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { Numero } from '../cahier/Reperes'
 import { buildDefectueuxMailUrl } from '../defectueux/mail'
+import { coordMarque } from '../reassort/mail'
 import { STATUTS_DEF, DEF_TERMINES, DEF_FIN, CLASSE_DEF, fmtDate, changerEtatDefectueux, cloturerSav } from './regles'
 import { useCompte } from '../context/CompteContext'
 
@@ -91,7 +92,7 @@ export default function ListeDefectueux({ rows, magasinNom, onModifier, onToast 
     appliquer(d, statut, null)
   }
   function mail(d) {
-    window.open(buildDefectueuxMailUrl({ modele: d.modele, pointure: d.pointure, note: d.note, salarie: d.salarie, societe: d.societe, email: d.fournisseurObj?.email, numeroClient: d.fournisseurObj?.numeroClient }), '_blank')
+    window.open(buildDefectueuxMailUrl({ modele: d.modele, pointure: d.pointure, note: d.note, salarie: d.salarie, societe: d.societe, email: coordMarque(d.fournisseurObj, d.magasinId, 'email'), numeroClient: coordMarque(d.fournisseurObj, d.magasinId, 'numeroClient') }), '_blank')
     if (d.statut === 'À traiter') changerEtatDefectueux(d.id, 'Mail envoyé').catch(() => {})
   }
   function modifier(d) { setFicheId(null); if (DEF_TERMINES.includes(d.statut)) setARouvrir(d); else onModifier(d) }

@@ -9,7 +9,5 @@
 .champ-coord .val.manquant { color: var(--discret); }
 .champ-coord .champ { flex: 1; min-width: 0; }
 .coordonnees > .lien { margin-top: 12px; padding-left: 0; }
-.cartes-marques { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; margin-top: 10px; }
-.carte-marque h3 { margin: 0 0 4px; font-size: 17px; }
 a.icone-btn { text-decoration: none; }
 @media (max-width: 420px) { .champ-coord .lib { width: 76px; } }
