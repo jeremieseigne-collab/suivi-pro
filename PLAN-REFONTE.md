@@ -390,7 +390,7 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 | Couleurs | Albi bleu, Rouffiac vert, 2 Zèbres orange (trait) ; événements de l'outil : bleu de l'outil | Magasins identiques ; événements de l'outil : point G1 |
 | Date proposée à l'ajout | Le jour touché, sinon aujourd'hui **en heure anglaise** (la veille entre minuit et 2 h) | Le jour touché, sinon aujourd'hui **en heure française** (correctif) |
 | Heure d'un événement Google | Heure française de l'appareil | Identique |
-| Événement Google sur plusieurs jours | Affiché seulement le **1er jour** ; s'il commence avant la période affichée, il n'apparaît pas (34 événements de sept. 2026 à juin 2027 en lecture seule, surtout journées entières à Albi et Rouffiac) | Point G3 |
+| Événement Google sur plusieurs jours | Affiché seulement le **1er jour** ; s'il commence avant la période affichée, il n'apparaît pas (34 événements entre janvier 2026 et juin 2027, lus en lecture seule : 33 journées entières — 21 à Albi, 11 à Rouffiac, 1 aux 2 Zèbres — et 1 rendez-vous qui finit le lendemain) | Point G3 |
 | Clé Google absente | Agenda utilisable sans les calendriers des magasins, message | Identique |
 
 **Essais (base de test, compte magasin Albi, 12/10)** : vue Mois comparée à l'outil actuel sur 4 mois (oct. 2026 → janv. 2027), mêmes données : **identique** jour par jour (12 jours avec événements) ; ajout, modification, suppression avec confirmation, vus aussi dans l'outil actuel ; date proposée à 0 h 30 le 14/10 : **14/10** (l'ancien calcul donnait le 13) ; G2 (7 jours, dimanche visible) et G3 (événement du 19 au 21/10 visible le 21) avec et sans ; téléphone : les 4 vues sans défilement de côté. Événement d'essai effacé.
