@@ -43,8 +43,8 @@ export default function Cahier() {
     return lignes.map(e => ({ ...e, magasin: mag[e.magasinId] || '', marque: four[e.fournisseurId] || '', societe: getSociete(mag[e.magasinId] || '') }))
   }, [season])
 
-  // Le message du bas disparaît seul après 5 s
-  useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 5000); return () => clearTimeout(t) }, [toast])
+  // Le message du bas disparaît seul après 5 s (ou la durée demandée, ex. 10 s après une suppression en lot)
+  useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), toast.duree || 5000); return () => clearTimeout(t) }, [toast])
 
   const estPointe = useCallback(e => (e.id in pointeLocal ? pointeLocal[e.id] : !!e.pointe), [pointeLocal])
   async function pointer(ids, val) {

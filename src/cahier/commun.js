@@ -39,3 +39,26 @@ export const pluriel = (n, mot) => `${n} ${mot}${Math.abs(n) > 1 ? 's' : ''}`
 
 // Jauge : seuils de l'outil actuel — 0 % gris, < 50 % orange, ≥ 50 % bleu, 100 % vert
 export const niveauJauge = pc => pc <= 0 ? 'zero' : pc >= 100 ? 'ok' : pc >= 50 ? 'bleu' : 'orange'
+
+// ─── Noms de marque : présentation propre et détection des doublons ───
+// Nom tel qu'il sera enregistré : espaces en trop retirés, majuscule au début de chaque mot (le reste tel que tapé)
+export function nomPropre(s) {
+  return (s || '').trim().replace(/\s+/g, ' ').replace(/(^|[\s\-'&/])(\p{L})/gu, (m, sep, l) => sep + l.toUpperCase())
+}
+// Forme de comparaison : sans majuscules, accents, espaces ni ponctuation (« Dr. Martens » = « dr martens » = « DrMartens »)
+export const formeComparaison = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '')
+function ecart(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return 3
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)])
+  for (let j = 1; j <= b.length; j++) d[0][j] = j
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
+  return d[a.length][b.length]
+}
+// Marques existantes qui ressemblent au nom tapé : même forme, ou 1 lettre d'écart (noms courts) / 2 lettres (noms de 6 lettres et plus)
+export function marquesSemblables(nom, marques) {
+  const f = formeComparaison(nom); if (!f) return []
+  const seuil = f.length >= 6 ? 2 : 1
+  return marques.map(m => ({ m, d: formeComparaison(m) === f ? 0 : ecart(f, formeComparaison(m)) }))
+    .filter(x => x.d <= seuil).sort((a, b) => a.d - b.d || a.m.localeCompare(b.m)).map(x => x.m)
+}

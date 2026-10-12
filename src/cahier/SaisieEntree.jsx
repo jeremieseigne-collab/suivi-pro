@@ -7,7 +7,7 @@ import { getClipboard, setClipboard } from '../data/clipboard'
 import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { Numero, Statut } from './Reperes'
-import { STATUTS, CATEGORIES, CAT_TO_KEY, CAT_DE_GRILLE, libelleStatut, aujourdhuiFr, frVersIso, isoVersFr, classeNumero, fmtEur, pluriel } from './commun'
+import { STATUTS, CATEGORIES, CAT_TO_KEY, CAT_DE_GRILLE, libelleStatut, aujourdhuiFr, frVersIso, isoVersFr, classeNumero, fmtEur, pluriel, nomPropre, formeComparaison, marquesSemblables } from './commun'
 
 // Quantités par pointure { [pointure]: nombre } ; gardées par pointure (et non par position) pour ne rien perdre
 // quand on change de grille. Les quantités peuvent être négatives (retours créés par le SAV / les défectueux).
@@ -43,6 +43,7 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
   const [presse, setPresse]     = useState(() => getClipboard())
   const [confirmFermer, setConfirmFermer] = useState(false)
   const [creationMarque, setCreationMarque] = useState(false)
+  const [confirmMarque, setConfirmMarque] = useState(false)
   const [initial] = useState(() => JSON.stringify([f, tailles]))
   const saisieClavier = useRef('')   // chiffres tapés au clavier sur une pointure
 
@@ -196,18 +197,25 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
   const commencee = modif ? JSON.stringify([f, tailles]) !== initial : (!!f.modele || Object.values(tailles).some(Boolean))
   const fermer = () => { if (commencee && !enCours) setConfirmFermer(true); else onFermer() }
 
-  // Créer une marque absente de la liste, sans quitter la saisie (comme depuis le SAV ou les défectueux)
-  const rechMarqueNette = rechMarque.trim().replace(/\s+/g, ' ')
-  const marqueExistante = (params?.fournisseurs || []).find(m => m.toLowerCase() === rechMarqueNette.toLowerCase())
+  // Créer une marque absente de la liste, sans quitter la saisie (comme depuis le SAV ou les défectueux).
+  // Garde-fous contre les doublons : même nom à la casse, aux accents, aux espaces ou à la ponctuation près → c'est la marque existante ;
+  // nom proche (1 ou 2 lettres d'écart) → « Vouliez-vous dire … ? » d'abord ; puis confirmation avec le nom exact enregistré.
+  const nomNouveau = nomPropre(rechMarque)
+  const toutesMarques = params?.fournisseurs || []
+  const marqueExistante = nomNouveau ? toutesMarques.find(m => formeComparaison(m) === formeComparaison(nomNouveau)) : null
+  const semblables = marqueExistante ? [] : marquesSemblables(nomNouveau, toutesMarques).filter(m => !marques.includes(m))
+  const procheDe = marquesSemblables(nomNouveau, toutesMarques)   // rappel dans la confirmation
   async function creerMarque() {
-    if (!rechMarqueNette || creationMarque) return
-    if (marqueExistante) { choisirMarque(marqueExistante); return }
+    setConfirmMarque(false)
+    if (!nomNouveau || creationMarque) return
     setCreationMarque(true); setErreur('')
     try {
-      const deja = await db.fournisseurs.where('nom').equals(rechMarqueNette).first()
-      if (!deja) await db.fournisseurs.add({ nom: rechMarqueNette, modelesBySeason: {} })
-      choisirMarque(rechMarqueNette)
-      onToast?.({ texte: `Marque « ${rechMarqueNette} » créée` })
+      // Revérifie sur la liste à jour (une marque a pu être créée entre-temps sur un autre appareil)
+      const deja = (await db.fournisseurs.toArray()).find(m => formeComparaison(m.nom) === formeComparaison(nomNouveau))
+      if (deja) { choisirMarque(deja.nom); onToast?.({ texte: `La marque « ${deja.nom} » existait déjà : elle est choisie` }); return }
+      await db.fournisseurs.add({ nom: nomNouveau, modelesBySeason: {} })
+      choisirMarque(nomNouveau)
+      onToast?.({ texte: `Marque « ${nomNouveau} » créée` })
     } catch (err) {
       setErreur('Création de la marque impossible : ' + (err.message || 'vérifiez la connexion et réessayez.'))
     } finally {
@@ -251,20 +259,33 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
           {panneau === 'marque' ? (
             <div className="choix-liste">
               <input className="champ" autoFocus placeholder="Rechercher ou créer une marque" value={rechMarque} onChange={e => setRechMarque(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') { if (marques.length === 1) choisirMarque(marques[0]); else if (rechMarqueNette && !marqueExistante) creerMarque() } }} />
+                onKeyDown={e => { if (e.key === 'Enter') { if (marques.length === 1) choisirMarque(marques[0]); else if (marqueExistante) choisirMarque(marqueExistante); else if (nomNouveau && !semblables.length && !marques.length) setConfirmMarque(true) } }} />
               <div className="liste" style={{ background: 'var(--carte-2)', marginTop: 8, maxHeight: 280, overflowY: 'auto' }}>
                 {marques.map(m => (
                   <button key={m} className="ligne" style={{ minHeight: 48 }} onClick={() => choisirMarque(m)}>
                     <span className="txt"><span className="t1">{m}</span></span>{m === f.marque && <Icone nom="check" taille={18} style={{ color: 'var(--action-texte)' }} />}
                   </button>
                 ))}
-                {rechMarqueNette && !marqueExistante && (
-                  <button className="ligne" style={{ minHeight: 52, color: 'var(--action-texte)' }} onClick={creerMarque} disabled={creationMarque}>
-                    <Icone nom="ajout" taille={18} /><span className="txt"><span className="t1" style={{ color: 'inherit' }}>{creationMarque ? 'Création…' : `Créer la marque « ${rechMarqueNette} »`}</span>
+                {marqueExistante && !marques.includes(marqueExistante) && (
+                  <button className="ligne" style={{ minHeight: 48 }} onClick={() => choisirMarque(marqueExistante)}>
+                    <span className="txt"><span className="t1">{marqueExistante}</span><div className="t2">Marque déjà enregistrée sous ce nom</div></span>
+                  </button>
+                )}
+                {semblables.length > 0 && <>
+                  <div className="etiquette" style={{ padding: '10px 14px 4px', margin: 0 }}>Vouliez-vous dire… ?</div>
+                  {semblables.map(m => (
+                    <button key={'s-' + m} className="ligne" style={{ minHeight: 48 }} onClick={() => choisirMarque(m)}>
+                      <span className="txt"><span className="t1">{m}</span><div className="t2">Marque existante au nom proche</div></span>
+                    </button>
+                  ))}
+                </>}
+                {nomNouveau && !marqueExistante && (
+                  <button className="ligne" style={{ minHeight: 52, color: 'var(--action-texte)' }} onClick={() => setConfirmMarque(true)} disabled={creationMarque}>
+                    <Icone nom="ajout" taille={18} /><span className="txt"><span className="t1" style={{ color: 'inherit' }}>{creationMarque ? 'Création…' : `${semblables.length || marques.length ? 'Non, créer' : 'Créer'} la marque « ${nomNouveau} »`}</span>
                       <div className="t2">Marque absente de la liste : elle sera ajoutée pour tous les magasins</div></span>
                   </button>
                 )}
-                {!marques.length && !rechMarqueNette && <div className="vide" style={{ padding: 16 }}>Aucune marque enregistrée.</div>}
+                {!marques.length && !nomNouveau && <div className="vide" style={{ padding: 16 }}>Aucune marque enregistrée.</div>}
               </div>
             </div>
           ) : (
@@ -417,6 +438,13 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
         <Confirmation danger titre={modif ? 'Abandonner les modifications ?' : 'Abandonner cette saisie ?'}
           texte={modif ? 'Les changements faits sur cette entrée ne seront pas enregistrés.' : `La saisie en cours (${f.marque || 'marque'}${f.modele ? ' · ' + f.modele : ''}${total ? ', ' + pluriel(total, 'paire') : ''}) ne sera pas enregistrée.`}
           confirmer="Abandonner" annuler="Continuer la saisie" onAnnuler={() => setConfirmFermer(false)} onConfirmer={() => { setConfirmFermer(false); onFermer() }} />
+      )}
+      {confirmMarque && (
+        <Confirmation titre="Créer cette marque ?"
+          texte={<>La marque sera enregistrée exactement ainsi :<span className="nom-exact">{nomNouveau}</span>
+            {procheDe.length > 0 ? <>Attention, des marques proches existent déjà : <b>{procheDe.join(', ')}</b>. Si c'est la même, choisissez-la plutôt.<br /></> : null}
+            Elle apparaîtra dans la liste des marques de tous les magasins.</>}
+          confirmer="Créer la marque" annuler="Revenir" onAnnuler={() => setConfirmMarque(false)} onConfirmer={creerMarque} />
       )}
       {confirmSuppr && (
         <Confirmation danger titre="Supprimer cette entrée ?"

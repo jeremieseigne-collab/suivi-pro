@@ -138,3 +138,8 @@ button.ligne:hover { background: color-mix(in srgb, var(--texte) 3%, transparent
 .confirmation-boutons .btn { flex: 1; }
 .btn-danger-plein { background: var(--err); color: #fff; }
 .btn-danger-plein:hover { background: color-mix(in srgb, #000 12%, var(--err)); }
+.confirmation .nom-exact { display: block; margin: 10px 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--carte-2); border: 1px solid var(--trait); color: var(--texte); font-size: 18px; font-weight: 700; word-break: break-word; }
+.confirmation .champ-confirmer { margin: 0 0 16px; }
+.confirmation .liste-resume { margin: 0 0 14px; padding: 0; list-style: none; font-size: 14px; color: var(--texte); border-top: 1px solid var(--trait); }
+.confirmation .liste-resume li { padding: 7px 0; border-bottom: 1px solid var(--trait); display: flex; gap: 8px; justify-content: space-between; }
+.confirmation .liste-resume li span:last-child { color: var(--doux); white-space: nowrap; }

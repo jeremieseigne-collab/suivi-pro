@@ -31,8 +31,13 @@
 .compte-selection { font-size: 15px; }
 .actions-selection { display: flex; flex-wrap: wrap; gap: 8px; }
 .actions-selection .btn { min-height: 44px; padding: 0 14px; }
+/* Supprimer : en rouge, à part des autres actions (trait de séparation, à droite) pour ne pas le toucher par erreur */
+.action-danger-selection { display: flex; justify-content: flex-end; border-top: 1px solid var(--trait); padding-top: 8px; }
+.action-danger-selection .btn { min-height: 44px; padding: 0 16px; }
 @media (min-width: 768px) {
   .barre-selection { left: calc(248px + 24px); right: 24px; bottom: 16px; flex-direction: row; align-items: center; justify-content: space-between; }
+  .actions-selection { flex: 1; justify-content: flex-end; }
+  .action-danger-selection { border-top: 0; padding-top: 0; border-left: 1px solid var(--trait); padding-left: 16px; margin-left: 8px; }
   .coque:has(.barre-laterale.replie) .barre-selection { left: calc(68px + 24px); }
 }
 .champs-filtres .etiquette { margin-top: 12px; }
