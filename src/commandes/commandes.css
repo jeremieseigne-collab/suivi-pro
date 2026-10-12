@@ -1,0 +1,16 @@
+/* Commandes clients — mêmes teintes de statut et de provenance que l'outil actuel, en mot coloré (sans badge ni point) */
+.ligne-cmd { flex-wrap: wrap; }
+.ligne-cmd .zone-ouvrir { flex: 1 1 100%; min-width: 0; }   /* téléphone : le bouton « étape suivante » passe sous la ligne */
+.article-cmd { color: var(--texte) !important; font-size: 15px !important; }
+.etape-suivante { margin: 0 12px 10px auto; }
+@media (min-width: 768px) { .ligne-cmd { flex-wrap: nowrap; } .ligne-cmd .zone-ouvrir { flex: 1 1 auto; } .etape-suivante { margin: 0 12px 0 0; flex-shrink: 0; } }
+a.btn { text-decoration: none; }
+.s-orange { color: #d97706 !important; } .s-bleu { color: #2563eb !important; } .s-indigo { color: #4f46e5 !important; }
+.s-cyan { color: #0891b2 !important; } .s-vert { color: #059669 !important; } .s-rouge { color: #dc2626 !important; }
+.p-albi { color: #2563eb; } .p-rouffiac { color: #059669; } .p-zebres { color: #d97706; } .p-btob { color: #7c3aed; }
+html[data-theme="dark"] .s-orange { color: #fbbf24 !important; } html[data-theme="dark"] .s-bleu, html[data-theme="dark"] .p-albi { color: #60a5fa !important; }
+html[data-theme="dark"] .s-indigo { color: #a5b4fc !important; } html[data-theme="dark"] .s-cyan { color: #22d3ee !important; }
+html[data-theme="dark"] .s-vert, html[data-theme="dark"] .p-rouffiac { color: #34d399 !important; } html[data-theme="dark"] .s-rouge { color: #f87171 !important; }
+html[data-theme="dark"] .p-zebres { color: #fbbf24; } html[data-theme="dark"] .p-btob { color: #c4b5fd; }
+.chip.p-albi, .chip.p-rouffiac, .chip.p-zebres, .chip.p-btob { font-weight: 600; }
+.chip[aria-pressed="true"].p-albi, .chip[aria-pressed="true"].p-rouffiac, .chip[aria-pressed="true"].p-zebres, .chip[aria-pressed="true"].p-btob { color: var(--fond); }

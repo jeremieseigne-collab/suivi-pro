@@ -33,6 +33,13 @@ Sur l'**Accueil** :
 
 *(Direction uniquement : « En retard » indique aussi les entrées à pointer.)*
 
+## Détail — Commandes clients
+
+- La liste montre les **commandes en cours** ; les commandes retirées ou annulées sont rangées dans le filtre « Retirées / annulées ».
+- Touchez une commande pour ouvrir sa fiche : changer l'état d'un toucher, **appeler** ou envoyer un **SMS** au client, modifier, supprimer.
+- La saisie est la même qu'avant ; votre prénom est retenu pour la commande suivante.
+- Sur l'accueil, « Clients à prévenir » ouvre directement les commandes reçues.
+
 ## Détail — SAV & défectueux
 
 - Le SAV et les défectueux sont réunis dans **un seul écran** à deux onglets : « SAV » et « Défectueux » (menu « SAV & défectueux », ou « Clients » sur téléphone).

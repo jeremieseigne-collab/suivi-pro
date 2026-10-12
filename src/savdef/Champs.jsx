@@ -9,12 +9,14 @@ import { nomPropre, formeComparaison, marquesSemblables } from '../cahier/commun
 // Salarié : un toucher sur son prénom (salariés du magasin) ; « Autre » pour taper un nom
 export function ChoixSalarie({ valeur, onChange, salaries }) {
   const noms = salaries.map(s => s.nom)
-  const [libre, setLibre] = useState(!!valeur && !noms.includes(valeur))
+  // « Autre » : choisi par l'utilisateur, ou nom absent de la liste (une fois la liste chargée)
+  const [autre, setAutre] = useState(false)
+  const libre = autre || (!!valeur && noms.length > 0 && !noms.includes(valeur))
   return (
     <>
       <div className="chips" style={{ flexWrap: 'wrap' }}>
-        {noms.map(n => <button key={n} type="button" className="chip" aria-pressed={!libre && valeur === n} onClick={() => { setLibre(false); onChange(valeur === n ? '' : n) }}>{n}</button>)}
-        <button type="button" className="chip" aria-pressed={libre} onClick={() => { setLibre(!libre); onChange('') }}>Autre</button>
+        {noms.map(n => <button key={n} type="button" className="chip" aria-pressed={!libre && valeur === n} onClick={() => { setAutre(false); onChange(valeur === n ? '' : n) }}>{n}</button>)}
+        <button type="button" className="chip" aria-pressed={libre} onClick={() => { setAutre(!libre); onChange('') }}>Autre</button>
       </div>
       {libre && <input className="champ" style={{ marginTop: 8 }} autoFocus value={valeur} onChange={e => onChange(e.target.value)} placeholder="Nom et prénom" />}
     </>
@@ -118,7 +120,9 @@ export function ChoixModele({ modeles, valeur, onChoisir, onAjouter, desactive }
 // Pointure : pointures reçues du modèle (Cahier) ; « Autre » pour taper une pointure si libre est permis
 export function ChoixPointure({ tailles, valeur, onChange, libre = true, desactive }) {
   const liste = valeur && !tailles.includes(valeur) && !libre ? [valeur, ...tailles] : tailles
-  const [saisie, setSaisie] = useState(!!valeur && !tailles.includes(valeur) && libre)
+  const [autre, setAutre] = useState(false)   // pointures reçues chargées après coup : « Autre » seulement si la pointure n'y est pas
+  const saisie = libre && (autre || (!!valeur && tailles.length > 0 && !tailles.includes(valeur)))
+  const setSaisie = setAutre
   if (desactive) return <div className="champ valeur" style={{ color: 'var(--discret)' }}>Choisis d'abord le modèle</div>
   return (
     <>

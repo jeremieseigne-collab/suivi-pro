@@ -31,6 +31,8 @@ const TRACES = {
   crayon:     'M4 20h4L19 9l-4-4L4 16z M13.5 6.5l4 4',
   corbeille:  'M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6',
   horloge:    'M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18z M12 7v5l3 2',
+  telephone:  'M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z',
+  message:    'M4 4h16v12H8l-4 4z',
   apparence:  'M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z',
 }
 

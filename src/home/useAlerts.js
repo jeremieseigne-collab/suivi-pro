@@ -1,7 +1,7 @@
 import { db } from '../db'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { isActif, retard, joursDepuis } from '../reassort/constants'
-import { magasinCommandes } from '../commandes/constants'
+import { magasinCommandes, memeMagasin } from '../commandes/constants'
 
 // Dossier SAV (retour client ou réparation) non clôturé au-delà de ce délai → tâche « En retard » sur l'accueil
 export const SAV_ATTENTE_JOURS = 15
@@ -15,7 +15,7 @@ export function useAlerts(magasin) {
     const nomMarque = Object.fromEntries(fournisseurs.map(f => [f.id, f.nom]))
     const mine = r => !magasin || r.magasinId === magasin.id
     const nomCmd = magasinCommandes(magasin?.nom)
-    const cmdMine = c => !magasin || c.magasin === nomCmd
+    const cmdMine = c => !magasin || memeMagasin(c.magasin, nomCmd)
     const actifs = reassorts.filter(r => isActif(r) && mine(r))
     // Tâches en retard : réassorts « En route » depuis 10 jours ou plus ; dossiers SAV ouverts depuis 15 jours ou plus
     const retards = actifs.filter(r => retard(r))

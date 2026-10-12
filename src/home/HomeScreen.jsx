@@ -31,7 +31,7 @@ export default function HomeScreen({ alerts }) {
   const compteurs = [
     { n: alerts?.aCommander, label: 'Réassorts à commander', couleur: '#ef4444', vue: 'reassort' },
     { n: alerts?.enRoute, label: 'Réassorts en route', couleur: '#8b5cf6', vue: 'reassort', sous: alerts?.retard ? { texte: `dont ${alerts.retard} en retard`, urgent: true } : null },
-    { n: alerts?.cmdAPrevenir, label: 'Clients à prévenir', couleur: '#0891b2', vue: 'commandes', sous: alerts?.cmdACommander ? { texte: `${alerts.cmdACommander} à commander` } : null },
+    { n: alerts?.cmdAPrevenir, label: 'Clients à prévenir', couleur: '#0891b2', vue: 'commandes', action: 'recues', sous: alerts?.cmdACommander ? { texte: `${alerts.cmdACommander} à commander` } : null },
     { n: alerts?.defATraiter, label: 'Défectueux à traiter', couleur: '#e11d48', vue: 'defectueux' },
     { n: alerts?.savEnCours, label: 'Dossiers SAV en cours', couleur: '#0e7490', vue: 'sav' },
   ].filter(c => c.n > 0)
@@ -68,7 +68,7 @@ export default function HomeScreen({ alerts }) {
       {compteurs.length > 0 && (
         <div className="compteurs">
           {compteurs.map(c => (
-            <button key={c.label} className="compteur" style={{ '--c': c.couleur }} onClick={() => aller(c.vue)}>
+            <button key={c.label} className="compteur" style={{ '--c': c.couleur }} onClick={() => c.action ? ouvrirAvec(c.vue, c.action) : aller(c.vue)}>
               <b>{c.n}</b><span>{c.label}</span>{c.sous && <em className={c.sous.urgent ? 'urgent' : ''}>{c.sous.texte}</em>}
             </button>
           ))}

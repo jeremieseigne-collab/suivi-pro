@@ -1,274 +1,203 @@
 import { useState, useMemo, useEffect } from 'react'
-import { actionDemandee, effacerAction } from '../shell/navigation'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { LoadingState, fmtTel } from '../components/shared'
-import CommandeModal from './CommandeModal'
 import StoreSelect from '../components/StoreSelect'
+import Icone from '../components/ui/Icone'
+import Confirmation from '../components/ui/Confirmation'
 import { useMagasin } from '../context/MagasinContext'
-import { magasinCommandes, PROVENANCES, STATUTS, STATUTS_CLOS, STATUT_COLOR, PROVENANCE_COLOR } from './constants'
+import { PageShell, BoutonMagasin } from '../shell/EnTete'
+import { aller, actionDemandee, effacerAction } from '../shell/navigation'
+import { useVariantes } from '../shell/essai'
+import PanneauEssai from '../shell/PanneauEssai'
+import { Toast } from '../cahier/Reperes'
+import SaisieCommande from './SaisieCommande'
+import { POINTS_COMMANDES } from './points'
+import { magasinCommandes, memeMagasin, PROVENANCES, STATUTS, STATUTS_CLOS, SUIVANT, CLASSE_STATUT, CLASSE_PROVENANCE } from './constants'
+import '../cahier/cahier.css'
+import '../savdef/savdef.css'
+import './commandes.css'
 
-function Pill({ map, value }) {
-  if (!value) return <span style={{ color: 'var(--text-5)' }}>—</span>
-  const c = map[value] || { bg: '#f1f5f9', text: 'var(--text-3)' }
-  return (
-    <span style={{ padding: '3px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: c.bg, color: c.text, whiteSpace: 'nowrap' }}>
-      {value}
-    </span>
-  )
+// Date enregistrée en AAAA-MM-JJ (sinon date de création) → JJ/MM/AA, comme l'outil actuel
+function fmtDate(r) {
+  const m = /^(\d{4})-(\d\d)-(\d\d)$/.exec(r.date || '')
+  if (m) return `${m[3]}/${m[2]}/${m[1].slice(2)}`
+  const d = new Date(r.createdAt); return isNaN(d) ? '—' : d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
+const nomClient = r => [r.clientPrenom, r.clientNom].filter(Boolean).join(' ')
+const article = r => [r.marque, r.modele, r.reference && `réf. ${r.reference}`, r.pointure].filter(Boolean).join(' · ')
+const Statut = ({ s }) => <span className={`etat-mot ${CLASSE_STATUT[s] || ''}`}>{s || '—'}</span>
+const telLien = t => (t || '').replace(/[^\d+]/g, '')
 
-function fmtDate(val) {
-  if (!val) return '—'
-  const d = new Date(val)
-  if (isNaN(d)) return '—'
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })
-}
-
-// ─── Popup d'affichage d'une note ─────────────────────────────────────────────
-function NoteView({ commande, onClose }) {
+// Fiche d'une commande : statut en un toucher (avec « Annuler »), appeler / SMS le client (U6), modifier, supprimer
+function FicheCommande({ r, magasinNom, v, onStatut, onModifier, onSupprimer, onFermer }) {
+  const [proposer, setProposer] = useState(false)
+  const sms = v.smsTexte
+    ? `Bonjour${r.clientPrenom ? ' ' + r.clientPrenom : ''}, votre commande${[r.marque, r.modele, r.pointure].some(Boolean) ? ' ' + [r.marque, r.modele, r.pointure].filter(Boolean).join(' ') : ''} est arrivée au magasin ${magasinNom}. À bientôt !`
+    : ''
+  const apresContact = () => { if (v.proposerPrevenu && r.statut === 'Reçue') setTimeout(() => setProposer(true), 600) }
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 460 }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>📝 Note — {[commande.clientPrenom, commande.clientNom].filter(Boolean).join(' ') || 'commande'}</h2>
-          <button className="modal-close" onClick={onClose}>✕</button>
-        </div>
-        <div className="modal-body">
-          <p style={{ whiteSpace: 'pre-wrap', fontSize: 15, color: 'var(--text)', lineHeight: 1.5 }}>
-            {commande.note}
-          </p>
+    <>
+      <div className="feuille-fond" onClick={onFermer} />
+      <div className="feuille" role="dialog" aria-label={`Commande ${nomClient(r)}`}>
+        <div className="feuille-entete"><h2>{nomClient(r) || 'Commande'}</h2><button className="icone-btn" onClick={onFermer} aria-label="Fermer"><Icone nom="fermer" /></button></div>
+        <div className="feuille-corps">
+          <div style={{ fontWeight: 600, fontSize: 16 }}>{article(r) || 'Article non renseigné'}</div>
+          <div className="resume-saisie" style={{ marginTop: 6 }}>
+            <span>Le <b>{fmtDate(r)}</b></span><span>Salarié <b>{r.salarie || '—'}</b></span>
+            <span>Provenance <b className={CLASSE_PROVENANCE[r.provenance] || ''}>{r.provenance || '—'}</b></span>
+            {r.telephone && <span>Téléphone <b>{fmtTel(r.telephone)}</b></span>}
+          </div>
+          {r.telephone && (
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 14 }}>
+              <a className="btn btn-prim" href={`tel:${telLien(r.telephone)}`} onClick={apresContact}><Icone nom="telephone" taille={20} />Appeler</a>
+              <a className="btn" href={`sms:${telLien(r.telephone)}${sms ? `?&body=${encodeURIComponent(sms)}` : ''}`} onClick={apresContact}><Icone nom="message" taille={20} />SMS</a>
+            </div>
+          )}
+          {r.note && <><span className="etiquette" style={{ marginTop: 16 }}>Note</span><div className="carte" style={{ background: 'var(--carte-2)', whiteSpace: 'pre-wrap' }}>{r.note}</div></>}
+          <span className="etiquette" style={{ marginTop: 16 }}>État</span>
+          <div className="chips" style={{ flexWrap: 'wrap' }}>
+            {STATUTS.map(s => <button key={s} className="chip" aria-pressed={r.statut === s} onClick={() => onStatut(r, s)}>{s}</button>)}
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 20 }}>
+            <button className="btn" onClick={() => onModifier(r)}>Modifier</button>
+            <button className="btn btn-danger" onClick={() => onSupprimer(r)}>Supprimer</button>
+          </div>
         </div>
       </div>
-    </div>
+      {proposer && <Confirmation titre="Client prévenu ?" texte={`Passer la commande de ${nomClient(r) || 'ce client'} à « Client prévenu » ?`} confirmer="Oui, client prévenu" annuler="Pas encore"
+        onAnnuler={() => setProposer(false)} onConfirmer={() => { setProposer(false); onStatut(r, 'Client prévenu') }} />}
+    </>
   )
 }
 
-export default function Commandes({ onHome }) {
-  const { magasin: magasinCourant, setMagasin: setMagasinCourant } = useMagasin()
-  const magasin = magasinCommandes(magasinCourant?.nom)
-  const [search,     setSearch]     = useState('')
-  const [fStatut,    setFStatut]    = useState('')
-  const [fProv,      setFProv]      = useState('')
-  const [fSalarie,   setFSalarie]   = useState('')
-  const [showForm,   setShowForm]   = useState(() => actionDemandee('nouveau'))   // raccourci « Commande client » de l'accueil
+export default function Commandes() {
+  const { magasin: magasinCourant, setMagasin } = useMagasin()
+  const magasinCmd = magasinCommandes(magasinCourant?.nom)
+  const v = useVariantes(POINTS_COMMANDES)
+  const [rech, setRech] = useState('')
+  const [vue, setVue] = useState(() => actionDemandee('recues') ? 'Reçue' : 'encours')   // 'encours' | un statut actif | 'closes'
+  const [filtres, setFiltres] = useState({ provenance: '', salarie: '' })
+  const [feuilleFiltres, setFeuilleFiltres] = useState(false)
+  const [saisie, setSaisie] = useState(() => actionDemandee('nouveau') ? {} : null)
+  const [ficheId, setFicheId] = useState(null)
+  const [aSupprimer, setASupprimer] = useState(null)
+  const [toast, setToast] = useState(null)
   useEffect(() => { effacerAction() }, [])
-  const [editCmd,    setEditCmd]    = useState(null)
-  const [confirmDel, setConfirmDel] = useState(null)
-  const [noteView,   setNoteView]   = useState(null)
-  const [hoverNote,  setHoverNote]  = useState(null)
+  useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), toast.duree || 5000); return () => clearTimeout(t) }, [toast])
 
-
-  const data = useLiveQuery(async () => {
-    const rows = await db.commandes.toArray()
-    rows.sort((a, b) => b.id - a.id) // plus récentes en premier
-    return rows
-  }, [])
-
+  const data = useLiveQuery(async () => (await db.commandes.toArray()).sort((a, b) => b.id - a.id), [])
   const salaries = useLiveQuery(() => db.salaries.orderBy('nom').toArray(), [])
-  const salarieNames = useMemo(() =>
-    (salaries || []).filter(s => !s.magasin || s.magasin === magasin).map(s => s.nom),
-    [salaries, magasin]
-  )
-
-  const rows = useMemo(() => (data ?? []).filter(r => r.magasin === magasin), [data, magasin])
-
-  const filtered = useMemo(() => rows.filter(r => {
-    if (fStatut  && r.statut     !== fStatut)  return false
-    if (fProv    && r.provenance !== fProv)    return false
-    if (fSalarie && r.salarie    !== fSalarie) return false
-    if (search) {
-      const q = search.toLowerCase()
-      const hay = [r.clientNom, r.clientPrenom, r.telephone, r.marque, r.modele, r.reference, r.pointure]
-        .map(v => (v || '').toLowerCase()).join(' ')
-      if (!hay.includes(q)) return false
+  const nomMag = magasinCourant?.nom
+  const nomsSalaries = useMemo(() => (salaries || []).filter(s => !s.magasin || memeMagasin(s.magasin, nomMag)).map(s => s.nom), [salaries, nomMag])
+  // Commandes du magasin : les deux écritures du nom (« Bailly Rouffiac Tolosan » / « Bailly Rouffiac-Tolosan ») sont reconnues
+  const rows = useMemo(() => (data ?? []).filter(r => memeMagasin(r.magasin, magasinCmd)), [data, magasinCmd])
+  const filtrees = useMemo(() => rows.filter(r => {
+    if (vue === 'encours' && STATUTS_CLOS.includes(r.statut)) return false
+    if (vue === 'closes' && !STATUTS_CLOS.includes(r.statut)) return false
+    if (vue !== 'encours' && vue !== 'closes' && r.statut !== vue) return false
+    if (filtres.provenance && r.provenance !== filtres.provenance) return false
+    if (filtres.salarie && r.salarie !== filtres.salarie) return false
+    if (rech) {
+      const hay = [r.clientNom, r.clientPrenom, r.telephone, r.marque, r.modele, r.reference, r.pointure].map(x => (x || '').toLowerCase()).join(' ')
+      if (!hay.includes(rech.toLowerCase())) return false
     }
     return true
-  }), [rows, search, fStatut, fProv, fSalarie])
+  }), [rows, vue, filtres, rech])
 
-  const enCours  = rows.filter(r => !STATUTS_CLOS.includes(r.statut)).length
-  const retirees = rows.filter(r => r.statut === 'Retirée').length
-
-  async function changeStatut(id, statut) {
-    try { await db.commandes.update(id, { statut }) }
-    catch (e) { alert('Erreur : ' + (e.message || e)) }
-  }
-
-  async function handleDelete(id) {
-    try { await db.commandes.delete(id) }
-    catch (e) { alert('Erreur : ' + (e.message || e)) }
-    finally { setConfirmDel(null) }
-  }
-
-  // Tant qu'aucun magasin n'est choisi → écran de sélection
-  if (!magasin) return <StoreSelect onSelect={setMagasinCourant} onHome={onHome}
+  if (!magasinCourant) return <StoreSelect onSelect={m => setMagasin(m)} onHome={() => aller('home')}
     theme={{ accent: '#6d28d9', border: '#c4b5fd', shadow: 'rgba(109,40,217,0.18)', gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', icon: '🛍️' }} />
 
+  const enCours = rows.filter(r => !STATUTS_CLOS.includes(r.statut)).length
+  const retirees = rows.filter(r => r.statut === 'Retirée').length
+  const closes = rows.length - enCours
+  const nbFiltres = [filtres.provenance, filtres.salarie].filter(Boolean).length
+  const fiche = ficheId && rows.find(r => r.id === ficheId)
+
+  async function changerStatut(r, statut) {
+    if (statut === r.statut) return
+    const avant = r.statut
+    try { await db.commandes.update(r.id, { statut }); setToast({ texte: `${nomClient(r) || 'Commande'} : « ${statut} »`, annuler: () => db.commandes.update(r.id, { statut: avant }) }) }
+    catch (e) { setToast({ texte: 'Changement impossible : ' + (e.message || 'vérifie la connexion.') }) }
+  }
+  async function supprimer() {
+    const r = aSupprimer; setASupprimer(null); setFicheId(null)
+    try { await db.commandes.delete(r.id); setToast({ texte: 'Commande supprimée' }) } catch (e) { setToast({ texte: 'Suppression impossible : ' + e.message }) }
+  }
+  const nouveau = () => setSaisie({})
+
   return (
-    <div className="app">
-      {showForm && <CommandeModal defaultMagasin={magasin} salaries={salarieNames} onClose={() => setShowForm(false)} onSaved={() => setShowForm(false)} />}
-      {editCmd  && <CommandeModal commande={editCmd} defaultMagasin={magasin} salaries={salarieNames} onClose={() => setEditCmd(null)} onSaved={() => setEditCmd(null)} />}
-      {noteView && <NoteView commande={noteView} onClose={() => setNoteView(null)} />}
-      {hoverNote && (
-        <div style={{
-          position: 'fixed', top: hoverNote.top, left: hoverNote.left, width: 300, maxWidth: '90vw', zIndex: 500,
-          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
-          boxShadow: '0 8px 24px var(--shadow-lg)', padding: '10px 14px', fontSize: 13, color: 'var(--text)',
-          whiteSpace: 'pre-wrap', lineHeight: 1.45, pointerEvents: 'none',
-        }}>
-          {hoverNote.client && <div style={{ fontWeight: 700, marginBottom: 4, fontSize: 12, color: 'var(--text-3)' }}>📝 {hoverNote.client}</div>}
-          {hoverNote.text}
+    <PageShell title="Commandes clients" withSeason={false}
+      rightExtra={<>
+        <BoutonMagasin nom={magasinCourant.nom} onClick={() => setMagasin(null)} />
+        <button className="btn btn-prim seulement-grand" onClick={nouveau}><Icone nom="ajout" taille={20} />Nouvelle commande</button>
+      </>}>
+      <PanneauEssai points={POINTS_COMMANDES} />
+      <div className="recherche"><Icone nom="cherche" taille={20} style={{ color: 'var(--discret)' }} />
+        <input className="champ" placeholder="Client, téléphone, marque, modèle, réf…" value={rech} onChange={e => setRech(e.target.value)} aria-label="Rechercher" /></div>
+      <div className="barre-filtres">
+        <div className="chips" style={{ flex: 1 }}>
+          <button className="chip" aria-pressed={vue === 'encours'} onClick={() => setVue('encours')}>En cours <span style={{ opacity: .6 }}>{enCours}</span></button>
+          {STATUTS.filter(s => !STATUTS_CLOS.includes(s)).map(s => <button key={s} className="chip" aria-pressed={vue === s} onClick={() => setVue(s)}>{s}</button>)}
+          <button className="chip" aria-pressed={vue === 'closes'} onClick={() => setVue('closes')}>Retirées / annulées <span style={{ opacity: .6 }}>{closes}</span></button>
+        </div>
+        <button className="chip" aria-pressed={nbFiltres > 0} onClick={() => setFeuilleFiltres(true)}><Icone nom="filtre" taille={18} />Filtres{nbFiltres ? ` · ${nbFiltres}` : ''}</button>
+      </div>
+      <div className="sous-info">{magasinCourant.nom} · {rows.length} commande{rows.length > 1 ? 's' : ''} · {enCours} en cours · {retirees} retirée{retirees > 1 ? 's' : ''}{vue === 'encours' && closes ? ' · retirées et annulées masquées' : ''}</div>
+
+      {data === undefined ? <LoadingState /> : !filtrees.length ? (
+        <div className="vide">{rows.length ? 'Aucune commande ne correspond.' : 'Aucune commande pour ce magasin — touche « Nouvelle commande ».'}</div>
+      ) : (
+        <div className="liste" style={{ marginTop: 10 }}>
+          {filtrees.map(r => {
+            const clos = STATUTS_CLOS.includes(r.statut), suivant = SUIVANT[r.statut]
+            return (
+              <div key={r.id} className={`ligne ligne-entree ligne-cmd${clos ? ' faible termine' : ''}`}>
+                <button className="zone-ouvrir" onClick={() => setFicheId(r.id)}>
+                  <span className="txt">
+                    <span className="t1">{nomClient(r) || '—'}{r.telephone && <span> · {fmtTel(r.telephone)}</span>}</span>
+                    <span className="t2 article-cmd">{article(r) || '—'}</span>
+                    <span className="t2">{fmtDate(r)}{r.salarie ? ' · ' + r.salarie : ''}{r.provenance && <> · <span className={CLASSE_PROVENANCE[r.provenance] || ''}>{r.provenance}</span></>}</span>
+                    {r.note && <span className="t2 note-def">{r.note}</span>}
+                  </span>
+                  <Statut s={r.statut} />
+                </button>
+                {v.etapeSuivante && suivant && <button className="btn petit etape-suivante" onClick={() => changerStatut(r, suivant)} title={`Passer à « ${suivant} »`}>→ {suivant}</button>}
+              </div>
+            )
+          })}
         </div>
       )}
+      <div style={{ height: 72 }} className="seulement-petit" aria-hidden="true" />
+      <button className="btn btn-prim action-flottante" onClick={nouveau}><Icone nom="ajout" taille={20} />Commande</button>
 
-      <header className="app-header">
-        <div className="header-top" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button
-              onClick={onHome}
-              title="Retour à l'accueil"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 34, height: 34, borderRadius: 9, border: '1px solid var(--border)',
-                background: 'var(--surface)', cursor: 'pointer', fontSize: 17, color: 'var(--text-2)', lineHeight: 1,
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--accent)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.color = 'var(--text-2)' }}
-            >←</button>
-            <h1>🛍️ Commandes Clients</h1>
-            <button
-              onClick={() => setMagasinCourant(null)}
-              title="Changer de magasin"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20,
-                border: '2px solid #c4b5fd', background: '#ede9fe', color: '#6d28d9',
-                fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
-              }}
-            >🏪 {magasin} ▾</button>
-          </div>
-          <button className="btn-primary" onClick={() => setShowForm(true)}>+ Nouvelle commande</button>
-        </div>
-        <div style={{ height: 16 }} />
-      </header>
-
-      <main className="app-main">
-        <div className="tab-stats" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-          {[
-            { value: rows.length, label: 'Commandes' },
-            { value: enCours,     label: 'En cours' },
-            { value: retirees,    label: 'Retirées' },
-          ].map(s => (
-            <div key={s.label} className="stat-card">
-              <span className="stat-value">{s.value}</span>
-              <span className="stat-label">{s.label}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="controls" style={{ flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-          <input
-            type="text" placeholder="🔍 Client, téléphone, marque, modèle, réf…" value={search}
-            onChange={e => setSearch(e.target.value)} className="search-input"
-          />
-          <select value={fStatut} onChange={e => setFStatut(e.target.value)} className="sel">
-            <option value="">Tous les états</option>
-            {STATUTS.map(s => <option key={s}>{s}</option>)}
-          </select>
-          <select value={fProv} onChange={e => setFProv(e.target.value)} className="sel">
-            <option value="">Toutes provenances</option>
-            {PROVENANCES.map(p => <option key={p}>{p}</option>)}
-          </select>
-          <select value={fSalarie} onChange={e => setFSalarie(e.target.value)} className="sel">
-            <option value="">Tous les salariés</option>
-            {salarieNames.map(s => <option key={s}>{s}</option>)}
-          </select>
-        </div>
-
-        {data === undefined ? <LoadingState /> : (
-          <div className="store-card" style={{ marginTop: 0, padding: 0, overflow: 'hidden' }}>
-            <div style={{ overflowX: 'auto' }}>
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>État</th><th>Date</th><th>Salarié</th><th>Provenance</th><th>Client</th>
-                    <th>Téléphone</th><th>Marque</th><th>Modèle</th><th>Réf N°</th><th>Pointure</th>
-                    <th>Note</th><th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.length === 0 && (
-                    <tr><td colSpan={12} style={{ textAlign: 'center', padding: 40, color: 'var(--text-4)' }}>
-                      {rows.length === 0 ? 'Aucune commande pour ce magasin — cliquez sur « + Nouvelle commande ».' : 'Aucun résultat.'}
-                    </td></tr>
-                  )}
-                  {filtered.map(r => {
-                    const clientName = [r.clientPrenom, r.clientNom].filter(Boolean).join(' ')
-                    return (
-                    <tr key={r.id}
-                      style={{
-                        background: STATUTS_CLOS.includes(r.statut) ? 'var(--surface-3)' : undefined,
-                        opacity: STATUTS_CLOS.includes(r.statut) ? 0.55 : undefined,
-                      }}
-                      onMouseEnter={e => {
-                        if (!r.note) return
-                        const cell = e.currentTarget.querySelector('[data-note-cell]')
-                        if (!cell) return
-                        const rect = cell.getBoundingClientRect()
-                        setHoverNote({ text: r.note, client: clientName, top: rect.bottom + 6, left: Math.max(8, rect.right - 300) })
-                      }}
-                      onMouseLeave={() => setHoverNote(null)}
-                    >
-                      <td>
-                        <select
-                          value={r.statut}
-                          onChange={e => changeStatut(r.id, e.target.value)}
-                          style={{
-                            border: 'none', borderRadius: 999, padding: '4px 8px', fontSize: 12, fontWeight: 600,
-                            cursor: 'pointer', outline: 'none',
-                            background: (STATUT_COLOR[r.statut] || {}).bg || 'var(--surface-3)',
-                            color: (STATUT_COLOR[r.statut] || {}).text || 'var(--text-3)',
-                          }}
-                        >
-                          {STATUTS.map(s => <option key={s} value={s} style={{ background: 'var(--surface)', color: 'var(--text)' }}>{s}</option>)}
-                        </select>
-                      </td>
-                      <td style={{ whiteSpace: 'nowrap', fontSize: 13, color: 'var(--text-3)' }}>{fmtDate(r.date || r.createdAt)}</td>
-                      <td style={{ fontSize: 13 }}>{r.salarie || '—'}</td>
-                      <td><Pill map={PROVENANCE_COLOR} value={r.provenance} /></td>
-                      <td><strong>{clientName || '—'}</strong></td>
-                      <td style={{ whiteSpace: 'nowrap', fontSize: 13 }}>{r.telephone ? fmtTel(r.telephone) : '—'}</td>
-                      <td>{r.marque || '—'}</td>
-                      <td style={{ fontSize: 13 }}>{r.modele || '—'}</td>
-                      <td style={{ fontSize: 13 }}>{r.reference || '—'}</td>
-                      <td style={{ fontSize: 13 }}>{r.pointure || '—'}</td>
-                      <td data-note-cell onClick={() => r.note && setNoteView(r)} style={{ cursor: r.note ? 'pointer' : 'default' }}>
-                        {r.note
-                          ? <span style={{ display: 'inline-block', maxWidth: 170, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, color: 'var(--accent-2)', background: 'var(--accent-bg)', padding: '3px 8px', borderRadius: 6, verticalAlign: 'middle' }}>📝 {r.note}</span>
-                          : <span style={{ color: 'var(--text-5)' }}>—</span>}
-                      </td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        {confirmDel === r.id ? (
-                          <span style={{ display: 'inline-flex', gap: 4 }}>
-                            <button onClick={() => handleDelete(r.id)}
-                              style={{ padding: '3px 8px', borderRadius: 6, border: 'none', background: '#dc2626', color: '#fff', cursor: 'pointer', fontSize: 12 }}>Oui</button>
-                            <button onClick={() => setConfirmDel(null)}
-                              style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 12 }}>Non</button>
-                          </span>
-                        ) : (
-                          <>
-                            <button className="edit-btn" onClick={() => setEditCmd(r)} title="Modifier">✏️</button>
-                            <button className="edit-btn" onClick={() => setConfirmDel(r.id)} title="Supprimer">🗑</button>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  )})}
-                </tbody>
-              </table>
+      {feuilleFiltres && (
+        <>
+          <div className="feuille-fond" onClick={() => setFeuilleFiltres(false)} />
+          <div className="feuille bas lot" role="dialog" aria-label="Filtres">
+            <div className="feuille-entete"><h2>Filtres</h2><button className="icone-btn" onClick={() => setFeuilleFiltres(false)} aria-label="Fermer"><Icone nom="fermer" /></button></div>
+            <div className="feuille-corps champs-filtres">
+              <label className="etiquette">Provenance
+                <select className="champ" value={filtres.provenance} onChange={e => setFiltres(x => ({ ...x, provenance: e.target.value }))}>
+                  <option value="">Toutes provenances</option>{PROVENANCES.map(p => <option key={p}>{p}</option>)}
+                </select></label>
+              <label className="etiquette">Salarié
+                <select className="champ" value={filtres.salarie} onChange={e => setFiltres(x => ({ ...x, salarie: e.target.value }))}>
+                  <option value="">Tous les salariés</option>{nomsSalaries.map(s => <option key={s}>{s}</option>)}
+                </select></label>
+              <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+                <button className="btn" onClick={() => setFiltres({ provenance: '', salarie: '' })}>Tout effacer</button>
+                <button className="btn btn-prim" onClick={() => setFeuilleFiltres(false)}>Voir {filtrees.length} commande{filtrees.length > 1 ? 's' : ''}</button>
+              </div>
             </div>
           </div>
-        )}
-      </main>
-    </div>
+        </>
+      )}
+      {fiche && <FicheCommande r={fiche} magasinNom={magasinCourant.nom} v={v} onStatut={changerStatut} onModifier={r => { setFicheId(null); setSaisie({ commande: r }) }} onSupprimer={setASupprimer} onFermer={() => setFicheId(null)} />}
+      {saisie && <SaisieCommande key={saisie.commande?.id || 'n'} commande={saisie.commande} magasinCmd={magasinCmd} magasinNom={magasinCourant.nom} onFermer={() => setSaisie(null)} onToast={setToast} />}
+      {aSupprimer && <Confirmation danger titre="Supprimer cette commande ?" confirmer="Supprimer" onAnnuler={() => setASupprimer(null)} onConfirmer={supprimer}
+        texte={`${nomClient(aSupprimer) || 'Client'} · ${article(aSupprimer) || 'article'}. Cette suppression est définitive.`} />}
+      <Toast toast={toast} onFermer={() => setToast(null)} />
+    </PageShell>
   )
 }

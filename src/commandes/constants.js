@@ -2,12 +2,17 @@
 
 export const MAGASINS = ['Bailly Albi', 'Bailly Rouffiac-Tolosan', 'Les 2 Zèbres']
 
-// Nom « Commandes » d'un magasin de la base (ex. « Bailly Rouffiac » → « Bailly Rouffiac-Tolosan »)
+// Comparaison de noms de magasin sans tenir compte des majuscules, accents, espaces ni tirets
+// (« Bailly Rouffiac Tolosan » = « Bailly Rouffiac-Tolosan ») : les deux écritures existent dans les commandes (correctif du 13/10).
+export const formeMagasin = nom => (nom || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '')
+export const memeMagasin = (a, b) => !!a && !!b && formeMagasin(a) === formeMagasin(b)
+
+// Nom « Commandes » d'un magasin de la base (ex. « Bailly Rouffiac Tolosan » ou « Bailly Rouffiac » → « Bailly Rouffiac-Tolosan »)
 export function magasinCommandes(nom) {
   if (!nom) return ''
-  const n = nom.trim().toLowerCase()
-  return MAGASINS.find(m => m.toLowerCase() === n)
-    || MAGASINS.find(m => m.toLowerCase().startsWith(n) || n.startsWith(m.toLowerCase()))
+  const n = formeMagasin(nom)
+  return MAGASINS.find(m => formeMagasin(m) === n)
+    || MAGASINS.find(m => formeMagasin(m).startsWith(n) || n.startsWith(formeMagasin(m)))
     || nom
 }
 
@@ -35,3 +40,9 @@ export const PROVENANCE_COLOR = {
   'Les 2 Zèbres':    { bg: '#fef3c7', text: '#d97706' },
   'BtoB':            { bg: '#ede9fe', text: '#7c3aed' },
 }
+
+// Étape suivante d'une commande (bouton rapide) : À commander → Commandée → Reçue → Client prévenu → Retirée
+export const SUIVANT = { 'À commander': 'Commandée', 'Commandée': 'Reçue', 'Reçue': 'Client prévenu', 'Client prévenu': 'Retirée' }
+// Couleur du mot de statut (classe CSS) : mêmes teintes que l'outil actuel
+export const CLASSE_STATUT = { 'À commander': 's-orange', 'Commandée': 's-bleu', 'Reçue': 's-indigo', 'Client prévenu': 's-cyan', 'Retirée': 's-vert', 'Annulée': 's-rouge' }
+export const CLASSE_PROVENANCE = { 'Bailly Albi': 'p-albi', 'Bailly Rouffiac': 'p-rouffiac', 'Les 2 Zèbres': 'p-zebres', 'BtoB': 'p-btob' }

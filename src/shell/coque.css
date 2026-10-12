@@ -60,3 +60,9 @@
   font: inherit; font-weight: 700; font-size: 13px; white-space: nowrap; }
 .saison-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 200; min-width: 230px; background: var(--carte); border: 1px solid var(--trait);
   border-radius: 12px; box-shadow: var(--ombre-douce); overflow: hidden; }
+
+/* Panneau d'essai local (points à trancher, visible seulement en local) */
+.panneau-variantes { border: 1px dashed var(--discret); border-radius: 12px; padding: 8px 12px; margin-bottom: 12px; font-size: 14px; color: var(--doux); }
+.panneau-variantes summary { cursor: pointer; font-weight: 600; }
+.ligne-variante { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--trait); }
+.ligne-variante span { color: var(--texte); }
