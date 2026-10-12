@@ -64,6 +64,20 @@ Sur l'**Accueil** :
 - Si le prix du retour est à 0 €, un avertissement s'affiche : aucun avoir ne sera compté (saisissez le prix si vous le connaissez).
 - **Défectueux** : touchez une ligne pour ouvrir sa fiche (changer l'état, envoyer le mail, modifier, supprimer).
 
+## Détail — Planning
+
+- Choisissez le magasin en haut, puis la semaine (‹ ›, « Aujourd'hui »).
+- Touchez une case pour saisir l'horaire (9h30 → 17h30 proposés), une note si besoin, puis OK ; « Repos » efface la case. Sur téléphone, la saisie s'ouvre en bas de l'écran.
+- Copier un horaire : « Copier » dans la saisie (ou au survol de la case sur ordinateur), puis « Coller » dans une autre case.
+- **Nouveau** : un bouton « Annuler la dernière modification » (Ctrl+Z fonctionne toujours sur ordinateur).
+- *(selon les choix restant à faire : « Reprendre la semaine précédente », total d'heures de la semaine, impression de 1, 2 ou 3 semaines, affichage jour par jour sur téléphone)*
+
+## Détail — Éléments de paie
+
+- Rien ne change dans le fonctionnement : chaque salariée remplit sa fiche du mois, vérifie sa saisie, puis confirme. Une fois confirmée, la fiche ne peut plus être relue ni modifiée ; pour une correction, touchez votre prénom et envoyez une demande à la direction.
+- Rappel dans le menu du 15 au 25 : « À remplir avant le 25 ».
+- *(selon les choix restant à faire : société pré-remplie d'après votre magasin, avertissement si une date n'est pas dans le mois)*
+
 ## Détail — Cahier des entrées
 
 **Créer une marque depuis la saisie**

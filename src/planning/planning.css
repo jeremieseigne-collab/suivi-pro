@@ -1,0 +1,59 @@
+/* Planning — charte de la refonte */
+.planning .barre-semaine { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 10px; }
+.planning .libelle-semaine { font-weight: 700; font-size: var(--t-corps); min-width: 0; text-align: center; }
+.planning .barre-semaine .chip { margin-left: 8px; }
+.planning .outils-planning { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.planning .chip.copie { background: var(--action-teinte); color: var(--action-texte); font-weight: 600; padding-right: 4px; }
+.icone-btn.petit { width: 32px; height: 32px; }
+
+/* Grille de la semaine (ordinateur, tablette ; téléphone sans le « jour par jour ») */
+.grille-planning-zone { overflow-x: auto; background: var(--carte); border-radius: var(--rayon); }
+.grille-planning { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 760px; }
+.grille-planning th { font-size: var(--t-meta); font-weight: 600; color: var(--doux); padding: 10px 6px; text-align: center; border-bottom: 1px solid var(--trait); }
+.grille-planning th .date { display: block; font-weight: 400; color: var(--discret); margin-top: 2px; }
+.grille-planning th.aujourdhui { color: var(--action-texte); }
+.grille-planning th.aujourdhui .date { color: var(--action-texte); }
+.grille-planning td { border-bottom: 1px solid var(--trait); height: 58px; text-align: center; vertical-align: middle; padding: 4px; }
+.grille-planning td.aujourdhui { background: color-mix(in srgb, var(--action) 5%, transparent); }
+.grille-planning .col-nom { position: sticky; left: 0; z-index: 1; background: var(--carte); text-align: left; min-width: 150px; max-width: 190px; padding-left: 12px;
+  border-right: 1px solid var(--trait); }
+.grille-planning th.col-nom { z-index: 2; }
+.grille-planning .col-total { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 64px; color: var(--texte); }
+.grille-planning th.col-total { color: var(--doux); }
+.nom-planning { display: flex; align-items: center; gap: 10px; }
+.nom-planning .txt { flex: 1; min-width: 0; }
+.nom-planning .t1 { font-weight: 600; display: block; overflow-wrap: anywhere; }
+.nom-planning .t2 { display: block; font-size: var(--t-meta); color: var(--doux); }
+.barre-couleur { width: 4px; align-self: stretch; min-height: 28px; border-radius: 2px; flex-shrink: 0; }
+.case-planning { cursor: pointer; position: relative; }
+.case-planning:hover, .case-planning.active { background: var(--action-teinte) !important; }
+.case-planning:focus-visible { outline: 2px solid var(--action); outline-offset: -2px; }
+.case-planning .plus { color: var(--discret); font-size: 20px; opacity: .5; }
+.creneau { display: inline-flex; flex-direction: column; align-items: center; border-left: 3px solid; border-radius: 6px; padding: 4px 9px; font-weight: 700;
+  font-size: 14px; color: var(--texte); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.creneau .note { font-size: 11px; font-weight: 400; color: var(--doux); white-space: normal; max-width: 110px; }
+/* « Copier » au survol de la souris (ordinateur) ; sur tablette et téléphone : « Copier » dans la saisie du créneau */
+.copier-survol { display: none; position: absolute; top: 3px; right: 3px; font: inherit; font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 6px;
+  border: 0; background: var(--carte); color: var(--action-texte); box-shadow: 0 1px 3px rgba(0, 0, 0, .15); cursor: pointer; }
+@media (hover: hover) { .case-planning:hover .copier-survol { display: block; } }
+.ligne-fantome td { height: 58px; }
+.ligne-ajout td { text-align: left; padding: 8px 12px; border-bottom: 0; height: auto; }
+.ajout-remplacant { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; max-width: 520px; }
+.ajout-remplacant .champ { flex: 1; min-width: 160px; }
+
+/* Téléphone : jour par jour */
+.jours-planning { margin-bottom: 4px; }
+.jours-planning .chip.aujourdhui:not([aria-pressed="true"]) { color: var(--action-texte); font-weight: 700; }
+.planning .liste .ligne .barre-couleur { min-height: 36px; }
+
+/* Saisie d'un créneau */
+.voile-creneau { position: fixed; inset: 0; z-index: 940; }
+.pop-creneau { position: fixed; z-index: 941; width: 280px; background: var(--carte); color: var(--texte); border-radius: 14px; box-shadow: var(--ombre-douce), 0 0 0 1px var(--trait); padding: 14px; }
+.pop-creneau .titre { font-weight: 700; margin-bottom: 10px; }
+.saisie-creneau .heures { display: flex; align-items: flex-end; gap: 8px; }
+.saisie-creneau .heures .etiquette { flex: 1; margin: 0; }
+.saisie-creneau .heures .champ { margin-top: 4px; font-variant-numeric: tabular-nums; }
+.saisie-creneau .fleche { color: var(--discret); padding-bottom: 12px; }
+.saisie-creneau .coller { width: 100%; margin-bottom: 10px; background: var(--action-teinte); color: var(--action-texte); }
+.saisie-creneau .actions { display: flex; gap: 8px; margin-top: 12px; }
+.saisie-creneau .aide.att { margin-top: 6px; }

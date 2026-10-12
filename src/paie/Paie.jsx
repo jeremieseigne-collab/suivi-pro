@@ -2,24 +2,33 @@ import { useState, useMemo } from 'react'
 import { db } from '../db'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { LoadingState } from '../components/shared'
+import Icone from '../components/ui/Icone'
+import PanneauEssai from '../shell/PanneauEssai'
+import { POINTS_PAIE } from './points'
 import { currentPeriode, periodeLabel, shiftPeriode, isGerant } from './constants'
 import { sendPaieRecap, buildRecapText, sendModificationRequest, modificationGmailUrl, sendPaieCompleteNotification } from './mail'
 import { supabase } from '../lib/supabase'
 import { useCompte } from '../context/CompteContext'
 import PaieForm from './PaieForm'
+import './paie.css'
 
 // ⚠️ Ces adresses doivent aussi figurer dans la liste autorisée du serveur (api/_send.js → ALLOWED)
 const RECAP_EMAIL = 'marion.fouquereau@lecussan.fr'   // récap mensuel → comptable
 const ADMIN_EMAIL = 'jeremie.seigne@gmail.com'        // demandes de modification → direction
+
+const Retour = ({ onClick, label = 'Retour à la liste' }) => (
+  <button className="icone-btn" onClick={onClick} aria-label={label}><Icone nom="chevron" style={{ transform: 'rotate(180deg)' }} /></button>
+)
 
 // ─── Document déjà validé : verrouillé + demande de modification ──────────────
 function LockedView({ salarie, periode, onBack }) {
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [sent, setSent] = useState(false)
+  const [erreur, setErreur] = useState('')
 
   async function envoyer() {
-    if (!message.trim()) { alert('Merci de décrire la modification souhaitée.'); return }
+    if (!message.trim()) { setErreur('Merci de décrire la modification souhaitée.'); return }
     setBusy(true)
     try {
       await sendModificationRequest({ salarie, periode, message, toEmail: ADMIN_EMAIL })
@@ -33,57 +42,36 @@ function LockedView({ salarie, periode, onBack }) {
 
   if (sent) {
     return (
-      <div style={{ maxWidth: 520, margin: '40px auto 0', textAlign: 'center',
-        background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '40px 28px', boxShadow: '0 4px 16px var(--shadow)' }}>
-        <div style={{ fontSize: 48, marginBottom: 10 }}>📨</div>
-        <h2 style={{ margin: '0 0 10px', fontSize: 22, fontWeight: 800, color: 'var(--text)' }}>Demande envoyée</h2>
-        <p style={{ margin: '0 0 24px', fontSize: 15, color: 'var(--text-3)', lineHeight: 1.5 }}>
-          Ta demande de modification a bien été transmise à la direction. Tu seras recontacté(e) si besoin.
-        </p>
-        <button onClick={onBack}
-          style={{ padding: '12px 26px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, #fff)', cursor: 'pointer', fontWeight: 700, fontSize: 15 }}>
-          Retour à la liste
-        </button>
+      <div className="carte paie-message">
+        <div className="grand-signe" aria-hidden="true">📨</div>
+        <h2>Demande envoyée</h2>
+        <p>Ta demande de modification a bien été transmise à la direction. Tu seras recontacté(e) si besoin.</p>
+        <button className="btn btn-prim" onClick={onBack}>Retour à la liste</button>
       </div>
     )
   }
 
   return (
-    <div style={{ maxWidth: 560, margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-        <button onClick={onBack} style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', fontSize: 16, color: 'var(--text-2)' }}>←</button>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>{salarie}</h2>
+    <div className="paie-page etroite">
+      <div className="paie-titre"><Retour onClick={onBack} /><h2>{salarie}</h2></div>
+      <div className="encart att" style={{ display: 'block', marginBottom: 16 }}>
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>🔒 Document déjà validé</div>
+        Ce document a été enregistré et <strong>ne peut plus être modifié</strong>, pour garantir la confidentialité des informations transmises à la comptabilité.
+        Si une information est erronée ou doit être complétée, décris ta demande ci-dessous : elle sera <strong>transmise directement à la direction</strong> qui effectuera la correction.
       </div>
-
-      <div style={{ background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 12, padding: '16px 18px', marginBottom: 16 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: '#92400e', marginBottom: 6 }}>🔒 Document déjà validé</div>
-        <p style={{ margin: 0, fontSize: 14, color: '#92400e', lineHeight: 1.5 }}>
-          Ce document a été enregistré et <strong>ne peut plus être modifié</strong>, pour garantir la confidentialité des informations transmises à la comptabilité.
-          Si une information est erronée ou doit être complétée, décris ta demande ci-dessous : elle sera <strong>transmise directement à la direction</strong> qui effectuera la correction.
-        </p>
-      </div>
-
-      <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Demande de modification</label>
-      <textarea value={message} onChange={e => setMessage(e.target.value)} rows={5}
-        placeholder="Décris précisément ce qui doit être corrigé (ex. : ajouter 2 h supplémentaires le 12/06)…"
-        style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14,
-          outline: 'none', background: 'var(--surface)', color: 'var(--text)', resize: 'vertical', fontFamily: 'inherit' }} />
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
-        <button onClick={onBack} disabled={busy}
-          style={{ padding: '12px 20px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 15 }}>
-          Annuler
-        </button>
-        <button onClick={envoyer} disabled={busy}
-          style={{ padding: '12px 28px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, #fff)', cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
-          {busy ? 'Envoi…' : '📨 Envoyer la demande'}
-        </button>
+      <label className="etiquette" htmlFor="paie-demande">Demande de modification</label>
+      <textarea id="paie-demande" className="champ" value={message} onChange={e => { setMessage(e.target.value); setErreur('') }} rows={5}
+        placeholder="Décris précisément ce qui doit être corrigé (ex. : ajouter 2 h supplémentaires le 12/06)…" style={{ resize: 'vertical' }} />
+      {erreur && <div className="encart err" style={{ marginTop: 12 }}>{erreur}</div>}
+      <div className="paie-boutons">
+        <button className="btn" onClick={onBack} disabled={busy}>Annuler</button>
+        <button className="btn btn-prim" onClick={envoyer} disabled={busy}>{busy ? 'Envoi…' : 'Envoyer la demande'}</button>
       </div>
     </div>
   )
 }
 
-// ─── Vue récap (admin) ───────────────────────────────────────────────────────
+// ─── Vue récap (Direction) ───────────────────────────────────────────────────
 function RecapView({ periode, rows, envoi, onBack, onEdit }) {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(null)
@@ -113,49 +101,34 @@ function RecapView({ periode, rows, envoi, onBack, onEdit }) {
   }
 
   return (
-    <div style={{ maxWidth: 760, margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-        <button onClick={onBack} style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', fontSize: 16, color: 'var(--text-2)' }}>←</button>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>Récap — {periodeLabel(periode)}</h2>
+    <div className="paie-page large">
+      <div className="paie-titre"><Retour onClick={onBack} /><h2>Récap — {periodeLabel(periode)}</h2></div>
+
+      {envoi && <p className="mot-ok" style={{ margin: '0 0 12px' }}>✅ Récap déjà envoyé pour ce mois.</p>}
+
+      <div className="paie-actions-recap">
+        <button className="btn btn-prim" onClick={envoyer} disabled={busy || !rows.length}>
+          <Icone nom="mail" taille={18} />{busy ? 'Envoi…' : (envoi ? 'Renvoyer (auto)' : 'Envoyer (auto)')}
+        </button>
+        <button className="btn" onClick={gmail} disabled={!rows.length}>Ouvrir dans Gmail</button>
+        <button className="btn" onClick={copier} disabled={!rows.length}>Copier</button>
       </div>
+      <div className="aide" style={{ margin: '-4px 0 12px' }}>Destinataire : {RECAP_EMAIL}</div>
 
-      {envoi && <p style={{ margin: '0 0 12px', fontSize: 14, color: '#059669', fontWeight: 600 }}>✅ Récap déjà envoyé pour ce mois.</p>}
-
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
-        <button onClick={envoyer} disabled={busy || !rows.length}
-          style={{ padding: '10px 18px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, #fff)', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
-          {busy ? 'Envoi…' : (envoi ? '📧 Renvoyer (auto)' : '📧 Envoyer (auto)')}
-        </button>
-        <button onClick={gmail} disabled={!rows.length}
-          style={{ padding: '10px 18px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
-          ✉️ Ouvrir dans Gmail
-        </button>
-        <button onClick={copier} disabled={!rows.length}
-          style={{ padding: '10px 18px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 14 }}>
-          📋 Copier
-        </button>
-      </div>
-
-      {msg &&<p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 600, color: msg.ok ? '#059669' : '#dc2626' }}>{msg.text}</p>}
+      {msg && <div className={`encart ${msg.ok ? 'ok' : 'err'}`} style={{ marginBottom: 12 }}>{msg.text}</div>}
 
       {onEdit && rows.length > 0 && (
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Corriger une saisie (réservé direction) :</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <div className="etiquette">Corriger une saisie (réservé direction) :</div>
+          <div className="chips" style={{ flexWrap: 'wrap' }}>
             {rows.slice().sort((a, b) => a.salarie.localeCompare(b.salarie)).map(r => (
-              <button key={r.id} onClick={() => onEdit(r)}
-                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer', fontSize: 13 }}>
-                ✏️ {r.salarie}
-              </button>
+              <button key={r.id} className="chip" onClick={() => onEdit(r)}><Icone nom="crayon" taille={16} />{r.salarie}</button>
             ))}
           </div>
         </div>
       )}
 
-      <pre style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 12, padding: 16,
-        fontSize: 13, color: 'var(--text)', whiteSpace: 'pre-wrap', fontFamily: 'ui-monospace, monospace', lineHeight: 1.5 }}>
-        {rows.length ? recapText : 'Aucune saisie pour ce mois.'}
-      </pre>
+      <pre className="carte paie-recap-texte">{rows.length ? recapText : 'Aucune saisie pour ce mois.'}</pre>
     </div>
   )
 }
@@ -163,19 +136,22 @@ function RecapView({ periode, rows, envoi, onBack, onEdit }) {
 // ─── App principale ──────────────────────────────────────────────────────────
 export default function Paie() {
   const [periode, setPeriode] = useState(currentPeriode())
-  const [editing, setEditing] = useState(null)   // { salarie, existing }
+  const [editing, setEditing] = useState(null)   // { salarie, magasin, existing }
   const [locked, setLocked] = useState(null)     // nom du salarié dont le doc est verrouillé
   const [justSaved, setJustSaved] = useState(false)
   const [recapOpen, setRecapOpen] = useState(false)
   const { estDirection } = useCompte()
+  // Relecture après chaque enregistrement : un compte magasin n'est pas prévenu des changements de fiches (confidentialité),
+  // la liste « Rempli / À remplir » ne se mettait donc pas à jour seule (défaut de l'étape 2, corrigé ici)
+  const [maj, setMaj] = useState(0)
 
   const salaries = useLiveQuery(async () => (await db.salaries.orderBy('nom').toArray()).filter(s => !isGerant(s.nom)), [])
   // Direction : saisies complètes. Magasin : seulement les prénoms déjà remplis (la base ne donne pas le contenu).
   const rows     = useLiveQuery(async () => (estDirection
     ? await db.paieVariables.where('periode').equals(periode).toArray()
     : await prenomsRemplis(periode)
-  ).filter(r => !isGerant(r.salarie)), [periode, estDirection])
-  const envoi    = useLiveQuery(() => estDirection ? db.paieEnvois.where('periode').equals(periode).first() : null, [periode, estDirection])
+  ).filter(r => !isGerant(r.salarie)), [periode, estDirection, maj])
+  const envoi    = useLiveQuery(() => estDirection ? db.paieEnvois.where('periode').equals(periode).first() : null, [periode, estDirection, maj])
 
   const byName = useMemo(() => {
     const m = new Map()
@@ -187,6 +163,7 @@ export default function Paie() {
 
   const filledCount = salaries.filter(s => byName.has(s.nom)).length
   const allFilled = salaries.length > 0 && filledCount === salaries.length
+  const magasinDe = nom => (salaries.find(s => s.nom === nom) || {}).magasin || ''
 
   function openSalarie(nom) {
     const existing = byName.get(nom)
@@ -199,6 +176,7 @@ export default function Paie() {
   async function handleSaved() {
     const fromRecap = recapOpen
     setEditing(null)
+    setMaj(x => x + 1)
     if (!fromRecap) setJustSaved(true)   // confirmation salarié uniquement ; depuis le récap on y retourne
     if (estDirection) return
     try {
@@ -217,7 +195,7 @@ export default function Paie() {
 
   // ── Formulaire de saisie ──
   if (editing) {
-    return <PaieForm salarie={editing.salarie} periode={periode} existing={editing.existing}
+    return <PaieForm salarie={editing.salarie} magasinSalarie={magasinDe(editing.salarie)} periode={periode} existing={editing.existing}
       onSaved={handleSaved} onCancel={() => setEditing(null)} />
   }
 
@@ -229,17 +207,11 @@ export default function Paie() {
   // ── Confirmation après enregistrement ──
   if (justSaved) {
     return (
-      <div style={{ maxWidth: 520, margin: '40px auto 0', textAlign: 'center',
-        background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '40px 28px', boxShadow: '0 4px 16px var(--shadow)' }}>
-        <div style={{ fontSize: 48, marginBottom: 10 }}>✅</div>
-        <h2 style={{ margin: '0 0 10px', fontSize: 22, fontWeight: 800, color: 'var(--text)' }}>C’est bien pris en compte</h2>
-        <p style={{ margin: '0 0 24px', fontSize: 15, color: 'var(--text-3)', lineHeight: 1.5 }}>
-          Tes éléments seront transmis à la comptabilité une fois que <strong>tous les salariés</strong> auront rempli leur document.
-        </p>
-        <button onClick={() => setJustSaved(false)}
-          style={{ padding: '12px 26px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, #fff)', cursor: 'pointer', fontWeight: 700, fontSize: 15 }}>
-          Retour à la liste
-        </button>
+      <div className="carte paie-message">
+        <div className="grand-signe ok" aria-hidden="true"><Icone nom="check" taille={30} /></div>
+        <h2>C’est bien pris en compte</h2>
+        <p>Tes éléments seront transmis à la comptabilité une fois que <strong>tous les salariés</strong> auront rempli leur document.</p>
+        <button className="btn btn-prim" onClick={() => setJustSaved(false)}>Retour à la liste</button>
       </div>
     )
   }
@@ -251,29 +223,26 @@ export default function Paie() {
   }
 
   // ── Liste des salariés ──
+  const pc = salaries.length ? Math.round(100 * filledCount / salaries.length) : 0
   return (
-    <div style={{ maxWidth: 680, margin: '0 auto' }}>
-      {/* Sélecteur de mois + récap admin */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button onClick={() => changePeriode(-1)} style={navBtn}>◀</button>
-          <span style={{ minWidth: 150, textAlign: 'center', fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>{periodeLabel(periode)}</span>
-          <button onClick={() => changePeriode(1)} style={navBtn}>▶</button>
-        </div>
+    <div className="paie-page">
+      <div className="paie-mois">
+        <button className="icone-btn" onClick={() => changePeriode(-1)} aria-label="Mois précédent"><Icone nom="chevron" style={{ transform: 'rotate(180deg)' }} /></button>
+        <span className="libelle-mois">{periodeLabel(periode)}</span>
+        <button className="icone-btn" onClick={() => changePeriode(1)} aria-label="Mois suivant"><Icone nom="chevron" /></button>
+        <span style={{ flex: 1 }} />
         {estDirection && (
-          <button onClick={() => setRecapOpen(true)}
-            style={{ padding: '7px 14px', borderRadius: 9, border: '1px solid var(--border)', background: allFilled && !envoi ? 'var(--accent)' : 'var(--surface)', color: allFilled && !envoi ? 'var(--on-accent, #fff)' : 'var(--text-3)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+          <button className={`btn ${allFilled && !envoi ? 'btn-prim' : ''}`} onClick={() => setRecapOpen(true)}>
             {allFilled && !envoi ? 'Récap à envoyer →' : 'Récap'}
           </button>
         )}
       </div>
 
       {/* Progression */}
-      <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', marginBottom: 8 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
-          {filledCount} / {salaries.length} salarié{salaries.length > 1 ? 's' : ''} ont rempli
-        </div>
-        <div style={{ fontSize: 13, color: allFilled ? '#059669' : 'var(--text-3)', marginTop: 4 }}>
+      <div className="carte paie-progression">
+        <div style={{ fontWeight: 700 }}>{filledCount} / {salaries.length} salarié{salaries.length > 1 ? 's' : ''} ont rempli</div>
+        {salaries.length > 0 && <div className="barre" style={{ margin: '8px 0' }}><i className={pc === 100 ? 'ok' : pc === 0 ? 'zero' : pc < 50 ? 'orange' : ''} style={{ width: `${pc}%` }} /></div>}
+        <div className={allFilled ? 'mot-ok' : 'aide'} style={{ fontSize: 14 }}>
           {salaries.length === 0
             ? 'Aucun salarié — ajoute-les dans Paramètres → Salariés.'
             : allFilled
@@ -283,26 +252,23 @@ export default function Paie() {
       </div>
 
       {/* Liste */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="liste">
         {salaries.map(s => {
           const done = byName.has(s.nom)
           return (
-            <button key={s.id} onClick={() => openSalarie(s.nom)}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 12,
-                border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', textAlign: 'left' }}>
-              <span style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 15, background: done ? '#d1fae5' : 'var(--surface-3)', color: done ? '#059669' : 'var(--text-4)' }}>
-                {done ? '✓' : '○'}
+            <button key={s.id} className="ligne" onClick={() => openSalarie(s.nom)}>
+              <span className="txt">
+                <span className="t1">{s.nom}</span>
+                {s.magasin && <span className="t2" style={{ display: 'block' }}>{s.magasin}</span>}
               </span>
-              <span style={{ flex: 1, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{s.nom}</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: done ? '#059669' : 'var(--accent)' }}>
-                {done ? 'Rempli' : 'À remplir →'}
-              </span>
+              <span className={done ? 'mot-ok' : 'mot-action'}>{done ? 'Rempli' : 'À remplir'}</span>
+              <Icone nom={done ? 'check' : 'chevron'} taille={18} style={{ color: done ? 'var(--ok)' : 'var(--discret)' }} />
             </button>
           )
         })}
       </div>
 
+      <PanneauEssai points={POINTS_PAIE} />
     </div>
   )
 }
@@ -312,9 +278,4 @@ async function prenomsRemplis(periode) {
   const { data, error } = await supabase.rpc('paie_remplies', { p_periode: periode })
   if (error) throw error
   return data || []
-}
-
-const navBtn = {
-  width: 34, height: 34, borderRadius: 9, border: '1px solid var(--border)',
-  background: 'var(--surface)', cursor: 'pointer', fontSize: 13, color: 'var(--text-2)',
 }

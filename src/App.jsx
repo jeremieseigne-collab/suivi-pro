@@ -46,7 +46,7 @@ function Root() {
   else if (vue === 'reglement')  content = <PageShell title="Plan de règlement"><PlanReglement /></PageShell>
   else if (vue === 'parametres') content = <PageShell title="Paramètres"><Parametres /></PageShell>
   else if (vue === 'factures')   content = <PageShell title="Factures" withSeason={false}><Factures /></PageShell>
-  else if (vue === 'planning')   content = <Planning onHome={home} />
+  else if (vue === 'planning')   content = <Planning />
   else if (vue === 'sav' || vue === 'defectueux') content = <SavDefectueux vue={vue} />
   else if (vue === 'reassort')   content = <Reassort />
   else if (vue === 'clients')    content = <VueClients alerts={alerts} />

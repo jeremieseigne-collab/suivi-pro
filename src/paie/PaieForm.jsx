@@ -2,44 +2,33 @@ import { useState } from 'react'
 import { db } from '../db'
 import { supabase } from '../lib/supabase'
 import { useCompte } from '../context/CompteContext'
-import { SOCIETES, SOCIETE_MAGASINS, HOUR_SECTIONS, RANGE_SECTIONS } from './constants'
+import { getSociete, SOCIETE_MAP } from '../data/societes'
+import Icone from '../components/ui/Icone'
+import { useVariantes } from '../shell/essai'
+import { POINTS_PAIE } from './points'
+import { SOCIETES, SOCIETE_MAGASINS, HOUR_SECTIONS, RANGE_SECTIONS, periodeLabel } from './constants'
 
-const inputStyle = {
-  padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 8,
-  fontSize: 14, outline: 'none', background: 'var(--surface)', color: 'var(--text)',
+const num = v => parseFloat(String(v).replace(',', '.')) || 0
+const fmt = d => { if (!d) return '?'; const [y, m, j] = d.split('-'); return `${j}/${m}/${y}` }
+
+// Société d'après le magasin de la salariée (P1) ; « Bailly Rouffiac », « Bailly Rouffiac-Tolosan »… reconnus. Rien si le magasin est inconnu.
+const normMag = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+function deduireSociete(magasin) {
+  if (!magasin) return ''
+  const s = getSociete(magasin)
+  if (SOCIETES.includes(s)) return s
+  const m = normMag(magasin)
+  const cle = Object.keys(SOCIETE_MAP).find(k => { const n = normMag(k); return n.startsWith(m) || m.startsWith(n) })
+  return cle ? SOCIETE_MAP[cle] : ''
 }
 
-function SectionCard({ icon, title, children }) {
-  return (
-    <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, marginBottom: 14 }}>
-      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>{icon} {title}</div>
-      {children}
-    </div>
-  )
-}
-
-function AddBtn({ onClick }) {
-  return (
-    <button type="button" onClick={onClick}
-      style={{ marginTop: 4, padding: '6px 12px', borderRadius: 8, border: '1px dashed var(--border)',
-        background: 'var(--surface)', color: 'var(--accent)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-      ＋ Ajouter
-    </button>
-  )
-}
-
-function DelBtn({ onClick }) {
-  return (
-    <button type="button" onClick={onClick} title="Supprimer cette ligne"
-      style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#cbd5e1', fontSize: 16, lineHeight: 1, padding: '0 4px' }}
-      onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-      onMouseLeave={e => e.currentTarget.style.color = '#cbd5e1'}>🗑</button>
-  )
-}
-
-export default function PaieForm({ salarie, periode, existing, onSaved, onCancel }) {
+// Saisie des éléments variables d'une salariée pour le mois, puis écran « Vérifie ta saisie » avant l'enregistrement définitif.
+// Règles d'accès de l'étape 2 : un compte magasin dépose la fiche sans pouvoir la relire ; seule la Direction corrige.
+export default function PaieForm({ salarie, magasinSalarie, periode, existing, onSaved, onCancel }) {
+  const v = useVariantes(POINTS_PAIE)
   const init = existing?.data || {}
-  const [societe, setSociete] = useState(existing?.societe || '')
+  const societeDeduite = deduireSociete(magasinSalarie)
+  const [societe, setSociete] = useState(existing?.societe || (v.paie_societe_auto ? societeDeduite : ''))
   const [data, setData] = useState({
     heuresSupp: init.heuresSupp || [],
     dimanche:   init.dimanche   || [],
@@ -49,7 +38,8 @@ export default function PaieForm({ salarie, periode, existing, onSaved, onCancel
     commentaire: init.commentaire || '',
   })
   const [saving, setSaving] = useState(false)
-  const [verif, setVerif]   = useState(false)   // écran « Vérifiez votre saisie » avant l'enregistrement définitif
+  const [verif, setVerif]   = useState(false)   // écran « Vérifie ta saisie » avant l'enregistrement définitif
+  const [erreur, setErreur] = useState('')
   const { estDirection } = useCompte()
 
   const addRow = (key, blank) => setData(d => ({ ...d, [key]: [...d[key], blank] }))
@@ -66,7 +56,8 @@ export default function PaieForm({ salarie, periode, existing, onSaved, onCancel
   }
 
   function verifier() {
-    if (!societe) { alert('Merci de choisir ta société.'); return }
+    if (!societe) { setErreur('Merci de choisir ta société.'); return }
+    setErreur('')
     setVerif(true)
     window.scrollTo(0, 0)
   }
@@ -90,119 +81,114 @@ export default function PaieForm({ salarie, periode, existing, onSaved, onCancel
     }
   }
 
-  if (verif) return <Verification salarie={salarie} societe={societe} data={clean} saving={saving} onBack={() => setVerif(false)} onConfirm={save} />
+  if (verif) return <Verification salarie={salarie} societe={societe} data={clean} periode={periode} v={v} saving={saving} onBack={() => setVerif(false)} onConfirm={save} />
 
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-        <button onClick={onCancel}
-          style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', fontSize: 16, color: 'var(--text-2)' }}>←</button>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>{salarie}</h2>
+    <div className="paie-page">
+      <div className="paie-titre">
+        <button className="icone-btn" onClick={onCancel} aria-label="Retour à la liste"><Icone nom="chevron" style={{ transform: 'rotate(180deg)' }} /></button>
+        <div><h2>{salarie}</h2><div className="aide">{periodeLabel(periode)}</div></div>
       </div>
-      <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-3)' }}>
-        Document confidentiel — il disparaît de l’écran dès que tu valides.
-      </p>
+      <p className="aide" style={{ margin: '0 0 16px' }}>Document confidentiel — il disparaît de l’écran dès que tu valides.</p>
 
-      {/* Société */}
-      <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, marginBottom: 14 }}>
-        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Société *</label>
-        <select value={societe} onChange={e => setSociete(e.target.value)} style={{ ...inputStyle, width: '100%' }}>
+      <section className="carte paie-section">
+        <label className="etiquette" htmlFor="paie-societe">Société *</label>
+        <select id="paie-societe" className="champ" value={societe} onChange={e => { setSociete(e.target.value); setErreur('') }}>
           <option value="">— Choisir —</option>
           {SOCIETES.map(s => (
             <option key={s} value={s}>{s}{SOCIETE_MAGASINS[s] ? ` (${SOCIETE_MAGASINS[s]})` : ''}</option>
           ))}
         </select>
-      </div>
+        {v.paie_societe_auto && !existing && societeDeduite && societe === societeDeduite && <div className="aide" style={{ marginTop: 6 }}>D’après ton magasin ({magasinSalarie}) — change-la si besoin.</div>}
+      </section>
 
-      {/* Sections heures (date + heures) */}
+      {/* Rubriques heures (date + heures) */}
       {HOUR_SECTIONS.map(s => (
-        <SectionCard key={s.key} icon={s.icon} title={s.label}>
-          {data[s.key].length === 0 && <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--text-4)' }}>Aucune ligne.</p>}
+        <section key={s.key} className="carte paie-section">
+          <h3>{s.icon} {s.label}</h3>
+          {data[s.key].length === 0 && <p className="aide" style={{ margin: '0 0 6px' }}>Aucune ligne.</p>}
           {data[s.key].map((row, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <input type="date" value={row.date || ''} onChange={e => setRow(s.key, i, 'date', e.target.value)} style={{ ...inputStyle, flex: 1 }} />
-              <input type="number" min="0" step="0.5" placeholder="heures" value={row.heures || ''} onChange={e => setRow(s.key, i, 'heures', e.target.value)} style={{ ...inputStyle, width: 100 }} />
-              <span style={{ fontSize: 13, color: 'var(--text-3)' }}>h</span>
-              <DelBtn onClick={() => delRow(s.key, i)} />
+            <div key={i} className="paie-rang">
+              <input className="champ" type="date" value={row.date || ''} onChange={e => setRow(s.key, i, 'date', e.target.value)} aria-label="Date" style={{ flex: 1 }} />
+              <input className="champ heures" type="number" min="0" step="0.5" inputMode="decimal" placeholder="heures" value={row.heures || ''} onChange={e => setRow(s.key, i, 'heures', e.target.value)} aria-label="Heures" />
+              <span className="aide">h</span>
+              <button type="button" className="icone-btn" onClick={() => delRow(s.key, i)} aria-label="Supprimer cette ligne" title="Supprimer cette ligne"><Icone nom="corbeille" taille={20} /></button>
             </div>
           ))}
-          <AddBtn onClick={() => addRow(s.key, { date: '', heures: '' })} />
-        </SectionCard>
+          <button type="button" className="lien" onClick={() => addRow(s.key, { date: '', heures: '' })}><Icone nom="ajout" taille={16} style={{ verticalAlign: '-3px' }} /> Ajouter</button>
+        </section>
       ))}
 
-      {/* Sections période (du / au) */}
+      {/* Rubriques période (du / au) */}
       {RANGE_SECTIONS.map(s => (
-        <SectionCard key={s.key} icon={s.icon} title={s.label}>
-          {data[s.key].length === 0 && <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--text-4)' }}>Aucune ligne.</p>}
+        <section key={s.key} className="carte paie-section">
+          <h3>{s.icon} {s.label}</h3>
+          {data[s.key].length === 0 && <p className="aide" style={{ margin: '0 0 6px' }}>Aucune ligne.</p>}
           {data[s.key].map((row, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 13, color: 'var(--text-3)' }}>du</span>
-              <input type="date" value={row.du || ''} onChange={e => setRow(s.key, i, 'du', e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 130 }} />
-              <span style={{ fontSize: 13, color: 'var(--text-3)' }}>au</span>
-              <input type="date" value={row.au || ''} onChange={e => setRow(s.key, i, 'au', e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 130 }} />
-              <DelBtn onClick={() => delRow(s.key, i)} />
+            <div key={i} className="paie-rang">
+              <span className="aide">du</span>
+              <input className="champ" type="date" value={row.du || ''} onChange={e => setRow(s.key, i, 'du', e.target.value)} aria-label="Du" style={{ flex: 1, minWidth: 130 }} />
+              <span className="aide">au</span>
+              <input className="champ" type="date" value={row.au || ''} onChange={e => setRow(s.key, i, 'au', e.target.value)} aria-label="Au" style={{ flex: 1, minWidth: 130 }} />
+              <button type="button" className="icone-btn" onClick={() => delRow(s.key, i)} aria-label="Supprimer cette ligne" title="Supprimer cette ligne"><Icone nom="corbeille" taille={20} /></button>
             </div>
           ))}
-          <AddBtn onClick={() => addRow(s.key, { du: '', au: '' })} />
-        </SectionCard>
+          <button type="button" className="lien" onClick={() => addRow(s.key, { du: '', au: '' })}><Icone nom="ajout" taille={16} style={{ verticalAlign: '-3px' }} /> Ajouter</button>
+        </section>
       ))}
 
-      {/* Commentaire */}
-      <SectionCard icon="📝" title="Commentaire libre">
-        <textarea value={data.commentaire} onChange={e => setData(d => ({ ...d, commentaire: e.target.value }))}
-          rows={3} placeholder="Toute information utile pour la paie…"
-          style={{ ...inputStyle, width: '100%', resize: 'vertical', fontFamily: 'inherit' }} />
-      </SectionCard>
+      <section className="carte paie-section">
+        <h3>📝 Commentaire libre</h3>
+        <textarea className="champ" value={data.commentaire} onChange={e => setData(d => ({ ...d, commentaire: e.target.value }))}
+          rows={3} placeholder="Toute information utile pour la paie…" style={{ resize: 'vertical' }} />
+      </section>
 
-      {/* Enregistrer */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>
-        <button onClick={onCancel} disabled={saving}
-          style={{ padding: '12px 20px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 15 }}>
-          Annuler
-        </button>
-        <button onClick={verifier} disabled={saving}
-          style={{ padding: '12px 28px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, #fff)', cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
-          Vérifier ma saisie →
-        </button>
+      {erreur && <div className="encart err" style={{ marginBottom: 12 }}>{erreur}</div>}
+      <div className="paie-boutons">
+        <button className="btn" onClick={onCancel} disabled={saving}>Annuler</button>
+        <button className="btn btn-prim" onClick={verifier} disabled={saving}>Vérifier ma saisie →</button>
       </div>
     </div>
   )
 }
 
-// ─── Écran « Vérifiez votre saisie » : dernier contrôle avant l'enregistrement définitif ───
-const fmt = d => { if (!d) return '?'; const [y, m, j] = d.split('-'); return `${j}/${m}/${y}` }
-
-function Verification({ salarie, societe, data, saving, onBack, onConfirm }) {
+// ─── Écran « Vérifie ta saisie » : dernier contrôle avant l'enregistrement définitif ───
+function Verification({ salarie, societe, data, periode, v, saving, onBack, onConfirm }) {
+  const horsMois = d => !!d && d.slice(0, 7) !== periode
+  const touche = (du, au) => du.slice(0, 7) <= periode && au.slice(0, 7) >= periode
+  const mois = periodeLabel(periode).split(' ')[0].toLowerCase()
   const lignes = [
-    ...HOUR_SECTIONS.map(s => [s, data[s.key].map(r => `${fmt(r.date)} : ${r.heures || '?'} h`)]),
-    ...RANGE_SECTIONS.map(s => [s, data[s.key].map(r => `du ${fmt(r.du)} au ${fmt(r.au)}`)]),
+    ...HOUR_SECTIONS.map(s => [s, data[s.key].map(r => ({ t: `${fmt(r.date)} : ${r.heures || '?'} h`, hors: horsMois(r.date) })),
+      data[s.key].reduce((t, r) => t + num(r.heures), 0)]),
+    // une période qui touche le mois (ex. congés du 28/09 au 03/10 pour octobre) n'est pas signalée
+    ...RANGE_SECTIONS.map(s => [s, data[s.key].map(r => ({ t: `du ${fmt(r.du)} au ${fmt(r.au)}`, hors: !touche(r.du || r.au, r.au || r.du) })), null]),
   ].filter(([, l]) => l.length)
+  const nbHors = v.paie_dates_mois ? lignes.reduce((n, [, l]) => n + l.filter(x => x.hors).length, 0) : 0
   return (
-    <div style={{ maxWidth: 620, margin: '0 auto' }}>
-      <h2 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>Vérifie ta saisie — {salarie}</h2>
-      <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--text-3)' }}>
+    <div className="paie-page etroite">
+      <h2 style={{ margin: '0 0 6px', fontSize: 20 }}>Vérifie ta saisie — {salarie}</h2>
+      <p className="aide" style={{ margin: '0 0 16px', fontSize: 14 }}>
         Une fois confirmée, ta fiche ne pourra plus être modifiée ni relue (seulement via une demande à la direction).
       </p>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, fontSize: 15, color: 'var(--text)', lineHeight: 1.6 }}>
+      {nbHors > 0 && (
+        <div className="encart att" style={{ marginBottom: 12 }}>
+          {nbHors === 1 ? 'Une ligne n’est pas' : `${nbHors} lignes ne sont pas`} en {mois} ({nbHors === 1 ? 'signalée' : 'signalées'} ci-dessous). Si c’est voulu, tu peux confirmer ; sinon, touche « Corriger ».
+        </div>
+      )}
+      <div className="carte paie-verif">
         <div><strong>Société :</strong> {societe}</div>
-        {lignes.length === 0 && <div style={{ marginTop: 8, color: 'var(--text-3)' }}>Rien à signaler ce mois-ci.</div>}
-        {lignes.map(([s, l]) => (
+        {lignes.length === 0 && <div className="aide" style={{ marginTop: 8, fontSize: 15 }}>Rien à signaler ce mois-ci.</div>}
+        {lignes.map(([s, l, total]) => (
           <div key={s.key} style={{ marginTop: 10 }}>
-            <strong>{s.icon} {s.label} :</strong>
-            {l.map((t, i) => <div key={i} style={{ paddingLeft: 12 }}>• {t}</div>)}
+            <strong>{s.icon} {s.label}{v.paie_total_verif && total != null ? ` (${total} h)` : ''} :</strong>
+            {l.map((x, i) => <div key={i} style={{ paddingLeft: 12 }}>• {x.t}{v.paie_dates_mois && x.hors && <span className="hors-mois"> — pas en {mois}</span>}</div>)}
           </div>
         ))}
         {data.commentaire && <div style={{ marginTop: 10 }}><strong>📝 Commentaire :</strong> {data.commentaire}</div>}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
-        <button onClick={onBack} disabled={saving}
-          style={{ minHeight: 44, padding: '0 20px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 15 }}>
-          ← Corriger
-        </button>
-        <button onClick={onConfirm} disabled={saving}
-          style={{ minHeight: 44, padding: '0 28px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, #fff)', cursor: 'pointer', fontSize: 15, fontWeight: 700 }}>
-          {saving ? 'Enregistrement…' : '✓ Confirmer et enregistrer'}
-        </button>
+      <div className="paie-boutons entre">
+        <button className="btn" onClick={onBack} disabled={saving}>← Corriger</button>
+        <button className="btn btn-prim" onClick={onConfirm} disabled={saving}>{saving ? 'Enregistrement…' : '✓ Confirmer et enregistrer'}</button>
       </div>
     </div>
   )

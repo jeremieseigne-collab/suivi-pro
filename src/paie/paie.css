@@ -1,0 +1,32 @@
+/* Éléments variables de paie — charte de la refonte */
+.paie-page { max-width: 720px; margin: 0 auto; }
+.paie-page.etroite { max-width: 620px; }
+.paie-page.large { max-width: 780px; }
+.paie-titre { display: flex; align-items: center; gap: 6px; margin: 0 0 6px -8px; }
+.paie-titre h2 { margin: 0; font-size: 20px; font-weight: 700; }
+.paie-mois { display: flex; align-items: center; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+.paie-mois .libelle-mois { font-weight: 700; font-size: var(--t-titre); min-width: 140px; text-align: center; }
+.paie-progression { margin-bottom: 12px; }
+.paie-section { margin-bottom: 12px; }
+.paie-section h3 { margin: 0 0 10px; font-size: 15px; font-weight: 700; }
+.paie-rang { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.paie-rang .champ.heures { width: 100px; flex: 0 0 100px; }
+.paie-boutons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.paie-boutons.entre { justify-content: space-between; }
+.paie-verif { font-size: 15px; line-height: 1.6; }
+.paie-verif .hors-mois { color: var(--att); font-weight: 600; }
+.paie-message { max-width: 520px; margin: 32px auto 0; text-align: center; padding: 32px 24px; }
+.paie-message h2 { margin: 0 0 10px; font-size: 22px; }
+.paie-message p { margin: 0 0 22px; color: var(--doux); font-size: 15px; line-height: 1.5; }
+.paie-message .grand-signe { font-size: 44px; margin-bottom: 8px; }
+.paie-message .grand-signe.ok { width: 56px; height: 56px; margin: 0 auto 12px; border-radius: 50%; background: var(--ok-teinte); color: var(--ok);
+  display: flex; align-items: center; justify-content: center; }
+.paie-actions-recap { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.paie-recap-texte { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; line-height: 1.5; margin: 0; overflow-wrap: anywhere; }
+.mot-ok { color: var(--ok); font-weight: 600; font-size: 14px; }
+.mot-action { color: var(--action-texte); font-weight: 600; font-size: 14px; }
+.encart.ok { background: var(--ok-teinte); color: var(--ok); }
+@media (max-width: 640px) {
+  .paie-rang .champ[type="date"] { min-width: 0; }
+  .paie-boutons .btn { flex: 1 1 140px; }
+}
