@@ -1,21 +1,20 @@
-import { useState, useRef, lazy, Suspense } from 'react'
+import { lazy, Suspense } from 'react'
 import StoreSelect      from './components/StoreSelect'
 import HomeScreen       from './home/HomeScreen'
 import { LoadingState } from './components/shared'
 import Connexion from './components/Connexion'
 import { useCompte } from './context/CompteContext'
 import { useAlerts }    from './home/useAlerts'
-import { SeasonProvider, useSeason } from './context/SeasonContext'
+import { SeasonProvider } from './context/SeasonContext'
 import { MagasinProvider, useMagasin } from './context/MagasinContext'
 import Coque, { VueClients } from './shell/Coque'
 import { useVue, aller } from './shell/navigation'
-import Icone from './components/ui/Icone'
+import { PageShell, BoutonMagasin } from './shell/EnTete'
 import './App.css'
 import './styles/charte.css'
 
 // Chaque écran n'est chargé qu'au moment où on l'ouvre (ouverture de l'outil plus rapide, surtout sur téléphone)
-const SuiviLivraisons = lazy(() => import('./tabs/SuiviLivraisons'))
-const Entrees         = lazy(() => import('./tabs/Entrees'))
+const Cahier          = lazy(() => import('./cahier/Cahier'))
 const Achats          = lazy(() => import('./tabs/Achats'))
 const PlanReglement   = lazy(() => import('./tabs/PlanReglement'))
 const Parametres      = lazy(() => import('./tabs/Parametres'))
@@ -30,124 +29,6 @@ const Reassort        = lazy(() => import('./reassort/Reassort'))
 
 // Écrans réservés aux comptes Direction (la base refuse de toute façon les écritures sensibles aux comptes magasin)
 const DIRECTION_VIEWS = new Set(['reglement', 'parametres', 'achats'])
-
-function SeasonBadge() {
-  // Choix et ajout de saison ici ; la suppression est dans Paramètres → Saisons (Direction, nom à retaper)
-  const { season, setSeason, seasons, addSeason } = useSeason()
-  const current       = seasons.find(s => s.id === season) || seasons[0]
-  const [open,        setOpen]        = useState(false)
-  const [adding,      setAdding]      = useState(false)
-  const [newName,     setNewName]     = useState('')
-  const inputRef = useRef(null)
-
-  function openAdd(e) {
-    e.stopPropagation()
-    setAdding(true)
-    setNewName('')
-    setTimeout(() => inputRef.current?.focus(), 50)
-  }
-
-  function confirmAdd(e) {
-    e?.preventDefault()
-    const id = addSeason(newName)
-    if (id) { setSeason(id); setOpen(false); setAdding(false) }
-  }
-
-  function close() { setOpen(false); setAdding(false) }
-  const couleur = current?.color ?? 'var(--discret)'
-
-  return (
-    <div style={{ position: 'relative' }}>
-      <button className="saison-btn" onClick={() => { setOpen(o => !o); setAdding(false) }} aria-expanded={open}
-        style={{ color: couleur, background: `color-mix(in srgb, ${couleur} 14%, transparent)` }}>
-        {current?.label ?? '—'} <Icone nom="bas" taille={14} />
-      </button>
-
-      {open && (
-        <>
-          <div className="voile" style={{ zIndex: 199 }} onClick={close} />
-          <div className="saison-menu">
-            {seasons.map(s => (
-              <div key={s.id} style={{ display: 'flex', alignItems: 'center' }}>
-                <button className="ligne" style={{ minHeight: 44, flex: 1 }} onClick={() => { setSeason(s.id); close() }}>
-                  <span className="txt"><span className="t1" style={{ color: s.id === season ? s.color : 'var(--texte)', fontWeight: s.id === season ? 700 : 500 }}>{s.label}</span></span>
-                  {s.id === season && <Icone nom="check" taille={18} style={{ color: s.color }} />}
-                </button>
-              </div>
-            ))}
-            <div style={{ borderTop: '1px solid var(--trait)' }}>
-              {!adding ? (
-                <button className="ligne" style={{ minHeight: 44, color: 'var(--action-texte)' }} onClick={openAdd}>
-                  <Icone nom="ajout" taille={18} /> <span className="txt" style={{ fontWeight: 600 }}>Nouvelle saison</span>
-                </button>
-              ) : (
-                <form onSubmit={confirmAdd} style={{ padding: 10, display: 'flex', gap: 8 }}>
-                  <input ref={inputRef} className="champ" value={newName} onChange={e => setNewName(e.target.value)} placeholder="ex : Hiver 2027"
-                    onKeyDown={e => e.key === 'Escape' && setAdding(false)} />
-                  <button type="submit" className="btn btn-prim" disabled={!newName.trim()}>OK</button>
-                </form>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
-// En-tête commun des pages : titre, actions, sélecteur de saison, onglets éventuels (plus de bouton retour : le menu reste visible)
-function PageShell({ title, withSeason = true, tabs = null, rightExtra = null, children }) {
-  return (
-    <div className="page-coque">
-      <header className="entete-page">
-        <h1 className="titre-page">{title}</h1>
-        <div className="entete-actions">
-          {rightExtra}
-          {withSeason && <SeasonBadge />}
-        </div>
-      </header>
-      {tabs && <div className="onglets-page"><div className="segment" role="group">{tabs}</div></div>}
-      <main className="app-main">{children}</main>
-    </div>
-  )
-}
-
-// Bouton « magasin » de l'en-tête (revient au choix du magasin, comme aujourd'hui)
-function BoutonMagasin({ nom, onClick }) {
-  return (
-    <button className="chip" onClick={onClick} title="Changer de magasin">
-      <Icone nom="magasin" taille={16} /> {nom} <Icone nom="bas" taille={14} />
-    </button>
-  )
-}
-
-// Cahier des entrées = Suivi livraisons + Entrées réunis (sous-onglets)
-const CAHIER_TABS = [
-  { id: 'suivi',   label: 'Suivi livraisons' },
-  { id: 'entrees', label: 'Entrées' },
-]
-
-function CahierEntrees() {
-  const [tab, setTab] = useState('suivi')
-  const { magasin: magasinCourant, setMagasin } = useMagasin()
-  const magasin = magasinCourant?.nom || ''
-
-  if (!magasin) return <StoreSelect onSelect={m => setMagasin(m)} onHome={() => aller('home')}
-    theme={{ accent: '#1d4ed8', border: '#93c5fd', shadow: 'rgba(29,78,216,0.18)', gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', icon: '📥' }} />
-
-  return (
-    <PageShell
-      title="Cahier des entrées"
-      rightExtra={<BoutonMagasin nom={magasin} onClick={() => setMagasin(null)} />}
-      tabs={CAHIER_TABS.map(t => (
-        <button key={t.id} aria-pressed={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</button>
-      ))}
-    >
-      {tab === 'suivi'   && <SuiviLivraisons />}
-      {tab === 'entrees' && <Entrees defaultMagasin={magasin} />}
-    </PageShell>
-  )
-}
 
 // Top modèles & réassorts (par magasin, liés à la saison)
 function ReassortApp() {
@@ -170,7 +51,7 @@ function Root() {
   const alerts  = useAlerts(magasin)
 
   let content
-  if (vue === 'cahier')          content = <CahierEntrees />
+  if (vue === 'cahier')          content = <Cahier />
   else if (vue === 'commandes')  content = <Commandes onHome={home} />
   else if (vue === 'defectueux') content = <Defectueux onHome={home} />
   else if (vue === 'paie')       content = <PageShell title="Éléments variables de paie" withSeason={false}><Paie /></PageShell>
