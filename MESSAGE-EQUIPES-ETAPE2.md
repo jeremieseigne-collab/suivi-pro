@@ -11,7 +11,7 @@
 **En bref, pour tout le monde :**
 À partir du [DATE], rien ne change pour le quotidien : Cahier des entrées, SAV, défectueux, commandes, réassorts, planning, répertoire et factures fonctionnent comme avant.
 Quelques rubriques de gestion (Achats, Plan de règlement, Paramètres) et le pointage des entrées disparaissent pour les comptes des magasins.
-Votre identifiant et votre mot de passe ne changent pas.
+Votre identifiant et votre mot de passe ne changent pas, et vous n'avez pas à vous reconnecter.
 Paie : relisez bien l'écran « Vérifie ta saisie » — une fiche validée ne peut plus être corrigée par vous, prévenez Jérémie en cas d'erreur.
 « Se déconnecter » ne déconnecte plus que l'appareil sur lequel vous le touchez.
 
