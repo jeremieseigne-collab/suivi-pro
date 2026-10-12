@@ -419,6 +419,52 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 
 **Constat à décider plus tard (rien changé)** : le compteur de numéro est **propre à chaque appareil**. Deux appareils de la même société (ex. Albi et Les 2 Zèbres, tous deux B'Shoes, ou deux postes d'un même magasin) proposent **le même numéro** ; vider les données du navigateur remet le compteur à zéro. Or les numéros de facture doivent se suivre sans doublon. Il faudrait un compteur partagé dans la base (et, si vous le souhaitez, un registre des factures émises) : modification de la base, à faire seulement avec votre accord écrit (voir « Idées pour plus tard »).
 
+## Plans préparés (non construits, 12/10)
+
+### A. Calendriers des magasins lus par le serveur (point 2b)
+
+**But** : ni la clé Google ni les adresses des calendriers dans le code publié ; seuls les appareils connectés voient les événements des magasins.
+
+**Principe** : une fonction serveur `api/agenda` (comme `api/send-mail`) reçoit la période demandée, **vérifie que l'appareil est connecté** (même contrôle que pour les mails), lit les 3 calendriers côté serveur, et renvoie les événements sous la même forme qu'aujourd'hui. L'agenda et le bloc « À venir » l'appellent au lieu d'appeler Google. Réponse gardée quelques minutes en mémoire pour limiter les appels.
+
+**Lecture côté serveur — recommandé : compte de service Google** : les calendriers redeviennent **privés** et sont partagés seulement avec un « compte de service » (adresse technique Google) ; le serveur s'identifie avec la clé de ce compte. *Point à vérifier au début* : les 3 calendriers sont des abonnements à des calendriers iCloud (« import.calendar.google.com ») ; si Google ne permet pas de les partager avec un compte de service, repli : le serveur lit directement les liens iCloud publiés (gardés secrets dans Vercel).
+
+**Ce que vous aurez à faire** (guidé pas à pas le moment venu) :
+1. Console Google : créer le compte de service, télécharger sa clé (fichier JSON — à ne mettre ni dans le projet ni dans un mail).
+2. Google Agenda : partager chacun des 3 calendriers avec l'adresse du compte de service (« Afficher tous les détails des événements »), puis **décocher « Rendre disponible publiquement »**.
+3. Vercel → Settings → Environment Variables (Production, sans préfixe `VITE_`) : `GOOGLE_SERVICE_ACCOUNT` (contenu de la clé) et `GOOGLE_CALENDAR_IDS` (les 3 identifiants) ; puis **supprimer `VITE_GOOGLE_API_KEY`**.
+4. Après vérification : supprimer l'ancienne clé dans la console Google.
+
+**Ordre de mise en ligne** (sans coupure de l'agenda) : code avec la fonction serveur → vérification → calendriers rendus privés → suppression de l'ancienne clé.
+
+**Effort** : petit à moyen (une fonction serveur et son équivalent en local, deux fichiers de l'agenda, essais) — environ une demi-journée, plus vos réglages Google et Vercel. **Aucune modification de la base.**
+
+**Avec l'étape 2 ?** Possible (indépendant de la base) : il faudrait le construire et le tester dans la branche de l'étape 2 et suivre l'ordre ci-dessus le même jour. Recommandation : le faire **juste après** l'étape 2, pour ne pas ajouter de réglages Google / Vercel le jour de la mise en ligne de la protection — sauf si vous préférez tout regrouper. En attendant, la restriction de la clé (point 2a) limite l'usage de la clé aux pages de votre site.
+
+### B. Numéros de facture partagés et registre des factures (point 3)
+
+**But** : des numéros qui se suivent **sans doublon** pour chaque société, quel que soit l'appareil, et un registre des factures émises.
+
+**Modifications de la base (ajouts, sans perte — avec votre accord écrit)** :
+- table `factures_compteurs` : société, année, dernier numéro (une ligne par société et par année) ;
+- table `factures` : société, numéro (unique par société), date, boutique, client (nom, adresse, email), désignation, HT, TVA, TTC, compte qui l'a émise, date d'émission, et « annulée » + motif (une facture n'est jamais effacée) ;
+- une fonction en base `emettre_facture(...)` qui, **en une seule opération**, prend le numéro suivant de la société et enregistre la facture : deux appareils qui valident au même instant obtiennent deux numéros différents.
+
+**Dans l'écran** : bouton « Valider la facture » ; le numéro est attribué **à ce moment-là** (avant : proposé par l'appareil, modifiable). Une fois validée, la facture est figée : on l'imprime, on télécharge le PDF, on l'envoie, on la retrouve dans le registre. Une erreur se corrige par une annulation (motif) et, si le cabinet le demande, par un avoir.
+
+**Droits proposés** :
+| | Compte magasin | Compte Direction |
+|---|---|---|
+| Émettre une facture | Oui (par la fonction : il ne choisit pas le numéro) | Oui |
+| Lire le registre | Oui (pour réimprimer / renvoyer) | Oui |
+| Modifier, effacer | Non | Non (la base l'interdit à tous) |
+| Annuler (avec motif) | Non | Oui |
+| Exporter le registre (CSV pour le cabinet) | Non | Oui |
+
+**Reprendre la numérotation existante sans doublon** : relever le dernier numéro utilisé pour chaque société — sur chaque appareil qui fait des factures (je peux vous dire où le lire) et dans les mails « Facture 2026-… » envoyés depuis contact.baillyalbi@ et contact.baillyrouffiac@ ; le compteur de 2026 démarre **après le plus grand numéro trouvé**. S'il existe déjà des doublons, les lister avec le cabinet : selon sa réponse, on les garde tels quels (ils restent hors registre) ou on les note dans le registre comme factures historiques. À valider avec votre expert-comptable : le format (« 2026-0043 », remise à 1 chaque année par société), la reprise, et le traitement d'une erreur (annulation et avoir).
+
+**Effort** : moyen (2 tables, 1 fonction, règles d'accès, écran Factures et registre, essais) — environ une journée.
+
 ## Idées pour plus tard (non construites)
 
 | Idée | Pour quoi faire | Ce qu'il faudrait ajouter à la base |
@@ -428,7 +474,7 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 | **Dater l'avoir du jour de réception** | Aujourd'hui l'avoir du Plan de règlement est daté du jour de création de la ligne « Retour » ; le dater du jour où l'avoir est reçu | Une date de réception de l'avoir sur le défectueux (`defectueux.avoir_at`), remplie au passage à « Avoir reçu » ; le Plan l'utiliserait à la place de la date du retour (repli sur la date du retour si vide). Modification **additive** — à faire avec votre accord écrit |
 | **Avoir pour un retour saisi dans le Cahier** | Un retour saisi directement dans le Cahier (bouton Retour) n'a pas de défectueux, donc jamais d'avoir dans le Plan | Soit créer un défectueux lié à la saisie d'un retour au Cahier, soit un état d'avoir sur l'entrée elle-même (`entrees.avoir`, par ex. « attendu / reçu / refusé ») lu par le Plan. À concevoir — à faire avec votre accord écrit |
 | **Total d'heures du planning, pause déduite** | Total d'heures **réellement travaillées** par salarié et par semaine (écran, éventuellement impression) — refusé sans la pause (décision B) | Une **durée de pause par créneau** : colonne `planning.pause` (nombre de minutes, vide = pas de pause), saisie avec les horaires (« Pause : 0 / 30 min / 1 h / autre »), et le total = Σ (fin − début − pause). Les créneaux existants resteraient sans pause (total à vérifier pour le passé). Modification **additive**, sans perte — à faire avec votre accord écrit. Variante sans changer la base : une pause fixe par règle (ex. 1 h dès 7 h de présence), moins juste |
-| **Numéros de facture partagés (et registre des factures)** | Numéros qui se suivent sans doublon pour chaque société, quel que soit l'appareil ; retrouver une facture émise | Une table `factures` (société, numéro unique par société, date, client, désignation, montants, boutique) ou au minimum un compteur par société dans la base, lu et avancé au moment d'imprimer / envoyer. Ajout **sans perte** — à faire avec votre accord écrit |
+| **Numéros de facture partagés (et registre des factures)** | Voir « Plans préparés — B » | Voir « Plans préparés — B » |
 
 ---
 

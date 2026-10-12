@@ -78,7 +78,7 @@
 
 ## Points à retenir
 
-- ⚠️ **Avant la mise en ligne de l'étape 2** : les branches `securite-etape2` et `dev` ne contiennent pas les 3 correctifs déjà en ligne (7098b17 Rouffiac, 8691471 date du jour, 8829c91 mails SAV) — il faudra les y reporter, sinon la mise en ligne de l'étape 2 les annulerait.
+- ✅ **12/10 : les 3 correctifs en ligne** (7098b17 Rouffiac, 8691471 date du jour, 8829c91 mails SAV) **sont reportés** dans `securite-etape2` (sans conflit ; essais 59/59 + 2 appareils 8/8 + correctifs 14/14), dans `dev` (local, code identique à la version en ligne, non envoyé) et dans `refonte` (qui avait déjà ses propres versions de ces correctifs : code inchangé). Les 3 branches contiennent toute la version en ligne.
 - Sauvegarde production du 12/10 à 17h30, après le correctif des mails : `~/Sauvegardes/suivi-pro/prod-2026-10-12_17h30-apres-correctif-mails-sav/`.
 - Sauvegardes de la production : `~/Sauvegardes/suivi-pro/` (notice `LISEZMOI.txt` ; restauration testée — **ne pas oublier l'étape des autorisations**).
 - Écarts de structure base de test / production : colonne inutilisée `commandes.type` (test seulement) ; `sav.id` numéroté différemment. Sans effet sur l'outil.
