@@ -243,7 +243,7 @@ Effort : **petit** = moins d'une demi-journée · **moyen** = 1 à 2 jours · **
 | **U4** | **Réorganiser Paramètres** : « Assortiment » (marques & modèles, à côté d'Achats), « Équipe » (salariés), réglage du mode de règlement dans la fiche fournisseur, recherche partout | Chaque réglage là où on le cherche | Moyen |
 | **U5** | **Une seule clôture SAV ↔ Défectueux** : clôturer le SAV propose de mettre à jour le défectueux (et inversement) | Fin de la double saisie | Petit-moyen |
 | **U6** | **Commandes** : commandes closes masquées par défaut, dernier salarié mémorisé, bouton « Appeler / SMS le client » | Liste courte, client prévenu en 1 toucher | Petit |
-| **U7** | **Réassorts** : suppression de l'étape « Demandé », boutons d'action sur téléphone | ~15 → ~9 actions | Petit |
+| **U7** | ~~**Réassorts** : suppression de l'étape « Demandé »~~ — **annulée le 13/10** : « Demandé » n'est pas un doublon de « À réassortir » (la demande est envoyée à la marque, on attend sa confirmation ; ex. réassort Clarks d'Albi). Gardé : boutons d'action sur téléphone | ~15 → ~9 actions | Petit |
 | **U8** | **Répertoire** : appel et mail en un toucher, recherche immédiate | Joindre un fournisseur en 2 secondes | Petit |
 | **U9** | **Lien direct par écran** : le bouton retour du navigateur (et le geste « retour » du téléphone) fonctionne, on peut mettre un écran en favori sur la tablette du magasin | Moins de clics pour arriver au bon endroit | Moyen |
 | **U14** | **Icône sur l'écran d'accueil du téléphone** : l'outil s'installe comme une application (plein écran, sans barre d'adresse) | On l'ouvre en 1 toucher comme une vraie app | Petit |

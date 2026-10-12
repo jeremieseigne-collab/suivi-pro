@@ -1,6 +1,6 @@
 import { db } from '../db'
 import { useLiveQuery } from '../lib/useLiveQuery'
-import { isActif, retard, joursDepuis } from '../reassort/constants'
+import { isActif, retard, joursDepuis, joursEtape } from '../reassort/constants'
 import { magasinCommandes, memeMagasin } from '../commandes/constants'
 
 // Dossier SAV (retour client ou réparation) non clôturé au-delà de ce délai → tâche « En retard » sur l'accueil
@@ -19,15 +19,16 @@ export function useAlerts(magasin) {
     const actifs = reassorts.filter(r => isActif(r) && mine(r))
     // Tâches en retard : réassorts « En route » depuis 10 jours ou plus ; dossiers SAV ouverts depuis 15 jours ou plus
     const retards = actifs.filter(r => retard(r))
-      .map(r => ({ id: r.id, marque: nomMarque[r.fournisseurId] || '', modele: r.modele || '', jours: joursDepuis(r.etapes?.['En route']), niveau: retard(r) }))
+      .map(r => ({ id: r.id, marque: nomMarque[r.fournisseurId] || '', modele: r.modele || '', statut: r.statut, jours: joursEtape(r), niveau: retard(r) }))
       .sort((a, b) => b.jours - a.jours)
     const savAnciens = savs.filter(s => mine(s) && (s.type === 'retour' || s.type === 'reparation') && s.statut !== 'Clôturé' && s.statut !== 'Récupéré' && (joursDepuis(s.createdAt) ?? 0) >= SAV_ATTENTE_JOURS)
       .map(s => ({ id: s.id, client: s.clientNom || '', marque: nomMarque[s.fournisseurId] || s.marque || '', jours: joursDepuis(s.createdAt), mailEnvoye: s.statut === 'Mail marque envoyé' }))
       .sort((a, b) => b.jours - a.jours)
     return {
-      aCommander: actifs.filter(r => r.statut === 'À réassortir' || r.statut === 'Demandé').length,
+      aCommander: actifs.filter(r => r.statut === 'À réassortir').length,   // « Demandé » = demande envoyée : n'est plus « à commander » (13/10)
       enRoute:    actifs.filter(r => r.statut === 'En route').length,
       retard:     retards.length,
+      retardRoute: retards.filter(r => r.statut === 'En route').length,   // pour « Réassorts en route · dont X en retard »
       retards, savAnciens,
       defATraiter: defs.filter(d => mine(d) && d.statut === 'À traiter').length,
       savEnCours: savs.filter(s => mine(s) && s.statut !== 'Clôturé' && s.statut !== 'Récupéré').length,

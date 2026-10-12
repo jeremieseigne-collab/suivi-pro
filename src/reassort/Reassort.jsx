@@ -15,7 +15,7 @@ import { Toast } from '../cahier/Reperes'
 import { buildReassortMailUrl, coordMarque } from './mail'
 import { SaisieTop, SaisieStock, SaisieReassort, SaisieReception, GrillePointures } from './Saisies'
 import {
-  ETAPES_VUES, ETAPES_CHOIX, CLASSE_ETAPE, etapeVue, etapeSuivante, aCommander,
+  ETAPES_VUES, ETAPES_CHOIX, CLASSE_ETAPE, etapeVue, etapeSuivante, mailPossible, joursEtape,
   fmtDate, joursDepuis, sortSizes, resteParPointure, isActif, retard, etatPointure, proposition, supprimerTop,
 } from './constants'
 import '../cahier/cahier.css'
@@ -24,7 +24,7 @@ import './reassort.css'
 
 const fmtTailles = o => sortSizes(Object.keys(o || {})).map(s => `${s}×${o[s]}`).join('  ')
 const Etape = ({ r }) => {
-  const n = retard(r), j = r.statut === 'En route' ? joursDepuis(r.etapes?.['En route']) : null
+  const n = retard(r), j = ['En route', 'Demandé'].includes(r.statut) ? joursEtape(r) : null
   return <span className={`etat-mot ${n ? 'retard-' + n : CLASSE_ETAPE[etapeVue(r.statut)]}`}>{etapeVue(r.statut)}{j != null ? ` · ${j} j` : ''}</span>
 }
 // État d'un top modèle (liste et fiche)
@@ -40,7 +40,7 @@ function EtatTop({ t }) {
 function trait(t) {
   const n = t.actif ? retard(t.actif) : null
   if (n) return n === 'rouge' ? '#dc2626' : '#f97316'
-  if (t.actif) return ({ 'À réassortir': '#ef4444', 'Commandé': '#3b82f6', 'En route': '#8b5cf6' })[etapeVue(t.actif.statut)]
+  if (t.actif) return ({ 'À réassortir': '#ef4444', 'Demandé': '#f59e0b', 'Commandé': '#3b82f6', 'En route': '#8b5cf6' })[etapeVue(t.actif.statut)]
   if (t.alerte) return '#dc2626'
   if (t.termine) return '#16a34a'
   return 'transparent'
@@ -87,14 +87,14 @@ function FicheTop({ t, act, onFermer }) {
                 {r.par && <> · demandé par {r.par}</>} · depuis le {fmtDate(r.createdAt)}
               </div>
               {r.note && <div className="aide">{r.note}</div>}
-              {n && <div className={`retard-texte retard-${n}`}>En route depuis {joursDepuis(r.etapes?.['En route'])} jours — relancer la marque ?</div>}
+              {n && <div className={`retard-texte retard-${n}`}>{r.statut === 'Demandé' ? `Demandé depuis ${joursEtape(r)} jours, sans confirmation — relancer la marque ?` : `En route depuis ${joursEtape(r)} jours — relancer la marque ?`}</div>}
               {/* Étape modifiable à la main (décision du 13/10) ; revenir en arrière demande confirmation */}
               {<div className="chips" style={{ flexWrap: 'wrap', marginTop: 10 }}>
                 {ETAPES_CHOIX.map(e => <button key={e} className="chip" aria-pressed={etapeVue(r.statut) === e} onClick={() => act.choisirEtape(r, e)}>{e}</button>)}
               </div>}
               <div className="actions-bloc">
                 {suivant && suivant !== 'Reçu' && <button className="btn" onClick={() => act.avancer(r)}>→ {suivant}</button>}
-                {aCommander(r.statut) && <button className="btn" onClick={() => act.mail(t, r)}><Icone nom="mail" taille={18} />Commander par mail</button>}
+                {mailPossible(r.statut) && <button className="btn" onClick={() => act.mail(t, r)}><Icone nom="mail" taille={18} />{r.statut === 'Demandé' ? 'Renvoyer le mail' : 'Commander par mail'}</button>}
                 {['Commandé', 'En route'].includes(r.statut) && <button className="btn btn-prim" onClick={() => act.reception(t, r)}>Réassort reçu</button>}
                 <button className="btn" onClick={() => act.modifierReassort(t, r)}>Modifier le réassort</button>
               </div>
@@ -219,7 +219,10 @@ export default function Reassort() {
       const f = t.fournisseurObj, reste = resteParPointure(r)
       window.open(buildReassortMailUrl({ modele: t.modele, numero: t.numero, sizes: Object.keys(reste).length ? reste : r.sizes, magasin: t.magasinNom, salarie: r.par, societe: getSociete(t.magasinNom),
         email: coordMarque(f, t.magasinId, 'email'), numeroClient: coordMarque(f, t.magasinId, 'numeroClient') }), '_blank')
-      if (aCommander(r.statut)) changerEtape(r, 'Commandé', `${r.modele} : « Commandé »`)   // comme aujourd'hui : le mail passe le réassort à « Commandé »
+      // Règle du 13/10 (accord écrit) : le mail fait passer « À réassortir » à « Demandé » ; « Commandé » quand la marque confirme (étape suivante).
+      // Renvoyer le mail d'un réassort « Demandé » ne change ni l'étape ni sa date (le retard continue de courir jusqu'à la confirmation).
+      if (r.statut === 'À réassortir') changerEtape(r, 'Demandé', `${r.modele} : « Demandé » — en attente de la confirmation de la marque`)
+      else setToast({ texte: `Mail de relance préparé pour ${r.modele}` })
     },
     reception: (t, r) => setSaisie({ type: 'reception', top: t, reassort: r }),
     modifierReassort: (t, r) => setSaisie({ type: 'reassort', top: t, reassort: r }),

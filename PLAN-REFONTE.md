@@ -1,7 +1,7 @@
 # Plan de la refonte — étape 2
 
 > À valider avant la construction. Maquettes : ouvrir `maquettes/index.html` dans le navigateur (charte : `maquettes/charte.html`).
-> Retenu à l'audit : I1 à I9, U1, U2, U3, U5, U6, U7, U8, U14, B2. Protection des données (B6 étape 1) : chantier séparé, avant la refonte (voir `SECURITE.md`, branche `securite`).
+> Retenu à l'audit : I1 à I9, U1, U2, U3, U5, U6, U7 (sauf la suppression de « Demandé », annulée le 13/10), U8, U14, B2. Protection des données (B6 étape 1) : chantier séparé, avant la refonte (voir `SECURITE.md`, branche `securite`).
 
 ---
 
@@ -102,7 +102,7 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Cahier — Suivi des livraisons | Compteur « nombre de magasins » | ✅ retiré |
 | Cahier — Suivi des livraisons | Taux global, reçues, attendues ; N° de chaque modèle ; détail par pointure ; recherche par marque ; choix du magasin | **gardés** (11/10) — choix du magasin avec, par défaut, celui de l'appareil |
 | Commandes clients | Commandes retirées / annulées | ↔ ✅ masquées par défaut (U6), accessibles par le filtre « Retirées / annulées » (lignes grisées) ; le résumé indique « retirées et annulées masquées » |
-| Réassorts | Étape « Demandé » | ✅ supprimée (U7) — **aucune donnée modifiée** : un réassort enregistré « Demandé » s'affiche et se traite comme « À réassortir » (étape suivante : « Commandé ») ; les nouveaux réassorts n'y passent plus ; les dates « Demandé » restent dans l'historique (décision du 13/10) |
+| Réassorts | Étape « Demandé » | ✅ **gardée** (13/10 — U7 annulée : ce n'est pas un doublon, la demande est envoyée et on attend la confirmation de la marque). Étapes : À réassortir → Demandé → Commandé → En route → Reçu. Voir « Règles métier — Réassorts » |
 | Défectueux | Colonnes Magasin et Société ; champ « État » à la création | ✅ décidé (13/10) : **magasin** sur la ligne pour les comptes **Direction** (même règle que le Cahier ; la liste est toujours celle du magasin choisi) ; **société** retirée de la ligne, visible dans la **fiche** ; champ « État » **retiré à la création** (créé « À traiter », l'état se change dans la fiche ; il reste dans « Modifier ») |
 | SAV | Champ magasin à la création | ✅ décidé (13/10) : **toujours visible**, magasins en pastilles (un toucher) ; **pré-rempli** avec le magasin de l'appareil pour un compte magasin ; **à choisir** avec un compte Direction |
 | Planning | 4 lignes vides ajoutées d'office | ⏸ à décider sur la maquette de l'écran |
@@ -236,6 +236,18 @@ Au téléphone, les deux directions sont identiques. Elles diffèrent sur ordina
 
 ---
 
+## Règles métier — Réassorts (vérifiées dans le code de l'outil en ligne, 13/10)
+
+| Règle | Outil actuel | Refonte |
+|---|---|---|
+| Étapes | À réassortir → Demandé → Commandé → En route → Reçu | **Identiques** (« Demandé » gardé) : À réassortir = la commande est à passer, rien n'est envoyé ; Demandé = demande envoyée, on attend la réponse ; Commandé = la marque a confirmé |
+| Mail à la marque | Fait passer « À réassortir » ou « Demandé » à **« Commandé »** | ⚠️ **Changé avec votre accord écrit (13/10)** : fait passer « À réassortir » à **« Demandé »** ; « Commandé » avec « étape suivante » quand la marque confirme ; sur un « Demandé », « Renvoyer le mail » (l'étape et sa date ne changent pas) |
+| Compteur « Réassorts à commander » (accueil, pastille du menu) | « À réassortir » + « Demandé » | ⚠️ **Changé (13/10)** : « À réassortir » seulement |
+| « Demandé » en cours | Compte comme en cours (pas d'alerte de rupture, quantités déjà en commande) | Identique |
+| Retard | « En route » depuis 10 jours (orange) / 15 jours (rouge) | ⚠️ **Ajout (13/10)** : aussi « Demandé » depuis **7 jours** (orange), dans le filtre « En retard », le bloc « En retard » de l'accueil (« demandé il y a X jours — relancer la marque ») et la pastille du menu ; « Réassorts en route · dont X en retard » ne compte que les « En route » |
+| Couleurs | À réassortir rouge, Demandé ambre, Commandé bleu, En route violet, Reçu vert | Identiques (mot de couleur et trait à gauche) |
+| Étape suivante, étape à la main, réception, prix, stock, archivage, suppression | voir le tableau validé du 13/10 | Identiques (étape à la main avec confirmation pour revenir en arrière ; prix facultatif à la réception) |
+
 ## Idées pour plus tard (non construites)
 
 | Idée | Pour quoi faire | Ce qu'il faudrait ajouter à la base |
@@ -254,7 +266,7 @@ Au téléphone, les deux directions sont identiques. Elles diffèrent sur ordina
 3. **Accueil « ma journée »**.
 4. **SAV & défectueux** (U5).
 5. **Commandes clients** (U6).
-6. **Réassorts** (U7).
+6. **Réassorts** (U7, sans la suppression de « Demandé »).
 7. **Répertoire** (U8).
 8. **Planning** (U3) et **Éléments de paie**.
 9. **Direction** : Achats & assortiment, Plan de règlement (U2), Factures, Réglages.

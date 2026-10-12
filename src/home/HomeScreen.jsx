@@ -30,7 +30,7 @@ export default function HomeScreen({ alerts }) {
   // Compteurs : mêmes intitulés et couleurs que l'outil actuel ; la couleur ne sert qu'au trait à gauche
   const compteurs = [
     { n: alerts?.aCommander, label: 'Réassorts à commander', couleur: '#ef4444', vue: 'reassort' },
-    { n: alerts?.enRoute, label: 'Réassorts en route', couleur: '#8b5cf6', vue: 'reassort', sous: alerts?.retard ? { texte: `dont ${alerts.retard} en retard`, urgent: true } : null },
+    { n: alerts?.enRoute, label: 'Réassorts en route', couleur: '#8b5cf6', vue: 'reassort', sous: alerts?.retardRoute ? { texte: `dont ${alerts.retardRoute} en retard`, urgent: true } : null },
     { n: alerts?.cmdAPrevenir, label: 'Clients à prévenir', couleur: '#0891b2', vue: 'commandes', action: 'recues', sous: alerts?.cmdACommander ? { texte: `${alerts.cmdACommander} à commander` } : null },
     { n: alerts?.defATraiter, label: 'Défectueux à traiter', couleur: '#e11d48', vue: 'defectueux' },
     { n: alerts?.savEnCours, label: 'Dossiers SAV en cours', couleur: '#0e7490', vue: 'sav' },
@@ -41,7 +41,7 @@ export default function HomeScreen({ alerts }) {
   const r = alerts?.retards || []
   if (r.length) taches.push({ icone: 'reassort', vue: () => aller('reassort'), urgent: r.some(x => x.niveau === 'rouge'),
     titre: `${pluriel(r.length, 'réassort')} en retard`,
-    sous: `${[r[0].marque, r[0].modele].filter(Boolean).join(' · ')} · en route depuis ${r[0].jours} jours${r.length > 1 ? ` · et ${pluriel(r.length - 1, 'autre')}` : ''}` })
+    sous: `${[r[0].marque, r[0].modele].filter(Boolean).join(' · ')} · ${r[0].statut === 'Demandé' ? `demandé il y a ${r[0].jours} jours — relancer la marque` : `en route depuis ${r[0].jours} jours`}${r.length > 1 ? ` · et ${pluriel(r.length - 1, 'autre')}` : ''}` })
   const s = alerts?.savAnciens || []
   if (s.length) taches.push({ icone: 'sav', vue: () => aller('sav'),
     titre: `${pluriel(s.length, 'dossier SAV ouvert', 'dossiers SAV ouverts')} depuis plus de ${SAV_ATTENTE_JOURS} jours`,

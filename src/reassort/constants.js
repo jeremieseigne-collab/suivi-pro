@@ -66,7 +66,11 @@ export function resteParPointure(r) {
 export const isActif = r => r && r.statut !== 'Reçu'
 
 // Niveau de retard d'un réassort : null | 'orange' | 'rouge'
+// « En route » depuis 10 jours (orange) / 15 jours (rouge) ; « Demandé » depuis 7 jours (orange : la marque n'a pas confirmé, relancer)
+export const RETARD_DEMANDE = 7
+export const joursEtape = r => joursDepuis(r?.etapes?.[r.statut] || r?.createdAt)
 export function retard(r) {
+  if (r?.statut === 'Demandé') { const j = joursEtape(r); return j != null && j >= RETARD_DEMANDE ? 'orange' : null }
   if (!r || r.statut !== 'En route') return null
   const j = joursDepuis(r.etapes?.['En route'])
   if (j == null) return null
@@ -106,11 +110,14 @@ export async function supprimerTop(topId) {
   await db.topModeles.delete(topId)
 }
 
-// ─── Refonte (13/10) : l'étape « Demandé » est supprimée (doublon de « À réassortir », U7) ───
-// Aucune donnée n'est modifiée : un réassort enregistré « Demandé » s'affiche et se traite comme « À réassortir ».
-export const ETAPES_VUES = ['À réassortir', 'Commandé', 'En route', 'Reçu']
-export const ETAPES_CHOIX = ['À réassortir', 'Commandé', 'En route']   // choisissables à la main (« Reçu » passe par la réception)
-export const etapeVue = s => (s === 'Demandé' ? 'À réassortir' : s)
-export const etapeSuivante = s => ETAPES_VUES[ETAPES_VUES.indexOf(etapeVue(s)) + 1]
-export const aCommander = s => s === 'À réassortir' || s === 'Demandé'
-export const CLASSE_ETAPE = { 'À réassortir': 'e-rouge', 'Commandé': 'e-bleu', 'En route': 'e-violet', 'Reçu': 'e-vert' }
+// ─── Refonte : les 5 étapes de l'outil actuel sont gardées (décision du 13/10, U7 annulée) ───
+// À réassortir : la commande est à passer, rien n'est envoyé · Demandé : la demande est envoyée à la marque, on attend sa réponse
+// · Commandé : la marque a confirmé · En route · Reçu (par la réception).
+// Règle changée avec votre accord écrit (13/10) : le mail à la marque fait passer à « Demandé » (et non plus à « Commandé »).
+export const ETAPES_VUES = ETAPES
+export const ETAPES_CHOIX = ETAPES_ACTIVES   // choisissables à la main (« Reçu » passe par la réception)
+export const etapeVue = s => s
+export const etapeSuivante = s => ETAPES[ETAPES.indexOf(s) + 1]
+export const aCommander = s => s === 'À réassortir'          // compteur « Réassorts à commander » : « À réassortir » seulement
+export const mailPossible = s => s === 'À réassortir' || s === 'Demandé'   // commander par mail / renvoyer le mail
+export const CLASSE_ETAPE = { 'À réassortir': 'e-rouge', 'Demandé': 'e-orange', 'Commandé': 'e-bleu', 'En route': 'e-violet', 'Reçu': 'e-vert' }
