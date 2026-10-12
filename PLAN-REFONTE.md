@@ -106,7 +106,7 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Défectueux | Colonnes Magasin et Société ; champ « État » à la création | ✅ décidé (13/10) : **magasin** sur la ligne pour les comptes **Direction** (même règle que le Cahier ; la liste est toujours celle du magasin choisi) ; **société** retirée de la ligne, visible dans la **fiche** ; champ « État » **retiré à la création** (créé « À traiter », l'état se change dans la fiche ; il reste dans « Modifier ») |
 | SAV | Champ magasin à la création | ✅ décidé (13/10) : **toujours visible**, magasins en pastilles (un toucher) ; **pré-rempli** avec le magasin de l'appareil pour un compte magasin ; **à choisir** avec un compte Direction |
 | Planning | 4 lignes vides ajoutées d'office | ✅ retirées (décision D) — un remplaçant s'inscrit avec « Ajouter un remplaçant » en bas de la grille (et de la liste du jour sur téléphone) |
-| Achats, Factures, Plan de règlement | — | rien de retiré prévu à ce jour |
+| Factures | — | rien de retiré prévu à ce jour |
 | Socle — titres des pages | Emoji devant le titre (« 📥 Cahier des entrées » → « Cahier des entrées ») | ✅ accordé (12/10) |
 | Socle — onglets du Cahier | Emojis des onglets (« 📦 Suivi livraisons », « 📥 Entrées ») | ✅ accordé (12/10) |
 | Socle — menu | Groupes « Au quotidien » / « Gestion » → premier groupe sans titre, « Équipe », « Direction » ; Répertoire et Factures remontés dans le premier groupe ; logo 👟 → pastille « S » | ✅ accordé (12/10) |
@@ -193,6 +193,13 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Paie — récap (Direction) | Mêmes boutons et même texte ; emojis 📧 ✉️ 📋 ✏️ des boutons retirés (« Envoyer (auto) », « Ouvrir dans Gmail », « Copier », prénoms avec un crayon) ; **ajout** : « Destinataire : marion.fouquereau@lecussan.fr » sous les boutons | ✅ accordé |
 | Paie — demande de modification | Même écran « 🔒 Document déjà validé » et mêmes textes ; emoji 📨 du bouton retiré (« Envoyer la demande ») | ✅ accordé |
 | Paie — choix P1 à P3 | ✅ décidé, **tous « avec »** : P1. société pré-remplie d'après le magasin de la salariée, toujours modifiable ; P2. avertissement (sans blocage) si une ligne n'est pas dans le mois ; P3. total d'heures par rubrique sur « Vérifie ta saisie » | ✅ accordé |
+| Plan de règlement — calcul | **Aucun changement** : le calcul de l'outil actuel est déplacé tel quel dans `src/reglement/calcul.js` (mêmes échéances, montants, dates, clés de pointage) ; comparaison ligne par ligne sur la base de test : identique | ⏳ à valider |
+| Plan de règlement — présentation | Cartes de chiffres (Total à régler, Reste à payer, Mois d'échéances, Échéances planifiées, En attente 1ère réception) **gardées** ; 4 filtres et légende des modes **gardés** (mêmes couleurs) ; mois par mois, sous-totaux par société, lignes regroupées par fournisseur et date (dépliables, « tout cocher ») **gardés** ; emojis 📅 ⚠️ 🗓 🏢 ⏳ retirés ; « PASSÉ » / « EN COURS » → « Passé » / « En cours » ; fenêtre « Avoirs à reporter » identique (textes, boutons) ; message d'erreur dans l'écran (avant : fenêtre d'alerte) ; **téléphone** : chaque échéance sur deux lignes au lieu du tableau | ⏳ à valider |
+| Plan de règlement — points R1 à R3 | R1. bloc « En retard, non payé » en haut ; R2. ouverture sur le mois en cours ; R3. mois passés entièrement payés repliés — **chacun en « avec » / « sans »** | ⏸ à trancher |
+| Achats — présentation | Mêmes chiffres, filtres, pastilles stratégie et catégorie, répartition, tableau et totaux (comparaison ligne par ligne : identique) ; emojis des boutons retirés : 👻 → « Masquer les montants » / « Afficher les montants » (même effet), 🔍 du champ de recherche, 📂 « Importer CSV », ✏️ → crayon, 📋 et ⏳ du report de la saison précédente. Les emojis des **stratégies** (🆕 🚀 🛡️ 📉 🛑) sont gardés : ils font partie des valeurs enregistrées | ⏳ à valider |
+| Achats — point A1 | Mode de règlement dans la fiche d'achat : modifiable comme aujourd'hui (sans) ou affiché en lecture seule, réglé dans Paramètres → Modes de règlement (avec) | ⏸ à trancher |
+| Paramètres — onglets | Emojis retirés (Magasins, Salariés, Marques, Modes de règlement, Saisons, Appareils connectés) ; contenu identique ; suppression d'une saison : **nom à retaper** (gardé) | ⏳ à valider |
+| Paramètres — point A2 | Nom « Paramètres » (sans) ou « Réglages » (avec), dans le menu et le titre | ⏸ à trancher |
 
 ## 2 ter. Codes couleur de l'outil actuel (conservés)
 
@@ -310,6 +317,31 @@ Le serveur n'accepte que ces 3 destinataires / objets, depuis un appareil connec
 **Rappel « À remplir avant le 25 »** : dans le menu, à côté de « Éléments de paie », du **15 au 25** de chaque mois, pour tous les comptes, que les fiches soient remplies ou non. Identique dans la refonte (déjà en place dans le menu).
 
 **Correctif (refonte et étape 2)** : après le dépôt d'une fiche par un compte magasin, la liste restait sur « À remplir » jusqu'au rechargement (la base, volontairement, ne prévient pas un compte magasin des changements de fiches) — un 2ᵉ toucher rouvrait la saisie puis échouait. La liste est maintenant relue après chaque enregistrement. Corrigé aussi dans la branche `securite-etape2` (essais refaits sur la base de test).
+
+## Règles métier — Direction : Achats, Plan de règlement, Paramètres (vérifiées dans le code de l'outil en ligne)
+
+Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et la refonte avant ce chantier. Paramètres : l'étape 2 ajoute « Appareils connectés », la refonte « Saisons » (décision du 12/10).
+
+| Règle | Outil actuel | Refonte |
+|---|---|---|
+| Accès | Achats, Plan, Paramètres : comptes Direction seulement (menu et accès direct) | Identique (vérifié : menu, menu « Plus » du téléphone, liens directs → accueil) |
+| Plan — chèques | Mode CHEQUE de la marque pilote : Σ réel achat du groupe ÷ nombre de chèques (défaut 4), fins de mois successives à partir de la 1ère réception (hors retours) ; ou plan chèque personnalisé de la saison | Identique (calcul déplacé tel quel) |
+| Plan — autres modes | Par livraison : PHT réparti à parts égales sur les délais (jours après la livraison) ; délais par défaut selon le mode | Identique |
+| Plan — avoirs | Retour avec défectueux « Avoir reçu » ou « Clôturé » : une ligne AVOIR à la date du retour | Identique |
+| Plan — fournisseur réel | Marques d'un même groupe : réglées selon la marque pilote (plus petit n°), lignes au nom du groupe | Identique |
+| Plan — pointage | Une clé par échéance (`cheque|…`, `liv|…`, `avoir|…`) | Identique (vérifié : une échéance cochée dans la refonte est cochée dans l'outil actuel, et inversement) |
+| Plan — report des avoirs | Saison terminée (Été : 30/08, Hiver : fin février) + avoirs non pointés → « Reporter sur [saison suivante] » | Identique |
+| Achats | Réel, quantité, PM = somme des univers ; totaux, filtres, mode discret, report des marques de la saison précédente, import CSV | Identique |
+| Fiche d'achat — mode de règlement | Modifiable ; enregistre le mode de la marque × magasin **sans remettre les délais à zéro**, et sans tenir compte du fournisseur réel (défaut relevé à l'audit) | Point A1 |
+| Saisons | Suppression : nom à retaper, Direction seulement | Identique |
+
+**Comparaison des calculs (base de test, 12/10)** : outil actuel et refonte ouverts côte à côte, mêmes données, avec des marques d'essai couvrant chèques automatiques (3 chèques), plan chèque personnalisé, groupe de deux marques, LCR sans délais saisis, VIREMENT 30 / 60 jours, avoirs « Avoir reçu », « Clôturé » et « Mail envoyé », une échéance pointée, des échéances en retard. Résultat : chiffres du haut, mois, totaux de mois, sous-totaux par société et chaque ligne (date, magasin, fournisseur, mode, détail, source, montant, case cochée) **identiques** pour 14 filtres (aucun, chaque société, chaque magasin, chaque mode, deux marques, société + mode), avant et après pointage, et avec les points R1 à R3 : 56 comparaisons, 1 468 lignes. Le bloc « En retard » (R1) reprend exactement les 28 échéances non payées échues. Achats : 8 filtres, 139 lignes identiques.
+
+**Comportements de l'outil actuel relevés pendant la comparaison — gardés tels quels (aucun calcul changé), à décider plus tard** :
+1. **Pointer un avoir comme « payé » augmente « Reste à payer »** : l'avoir est un montant négatif ; une fois coché, il sort du reste (ex. total 12 941 €, avoir de −120 € coché → reste 13 061 €).
+2. **Plan chèque personnalisé** : une ligne sans date est ignorée, mais compte dans la numérotation (« Chèque 1/3 », « 2/3 » pour 2 chèques réels).
+3. **« En attente de 1ère réception » ne s'affiche jamais** : une marque en CHEQUE sans aucune réception n'apparaît pas du tout dans le Plan (son montant n'est pas dans le total).
+4. Dans un groupe, le mode d'une marque non pilote est ignoré (c'est la règle voulue) — avec A1 « sans », on peut toujours le changer depuis Achats sans effet visible.
 
 ## Idées pour plus tard (non construites)
 

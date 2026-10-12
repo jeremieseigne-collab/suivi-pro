@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams } from '../hooks/useParams'
 import { db } from '../db'
+import { useVariantes } from '../shell/essai'
+import { POINTS_ACHATS } from '../achats/points'
 
 const STRATEGIES      = ['🆕 NOUVEAU', '🚀 BOOSTER', '🛡️ MAINTENIR', '📉 RÉDUIRE', '🛑 ARRÊTER']
 const STATUTS         = ['', '✅', '⏳', '❌']
@@ -19,6 +21,7 @@ const STRAT_COLORS = {
 
 export default function AchatEditModal({ row, onClose, onSaved }) {
   const { params } = useParams()
+  const modeLecture = useVariantes(POINTS_ACHATS).achats_mode_lecture
 
   const [form, setForm] = useState({
     statut:      row.statut      || '',
@@ -107,7 +110,9 @@ export default function AchatEditModal({ row, onClose, onSaved }) {
       const existingMode = await db.modesReglement
         .filter(m => m.fournisseurId === fournisseurRow.id && m.magasinId === magasinRow.id)
         .first()
-      if (existingMode) {
+      if (modeLecture) {
+        // A1 : le mode se règle dans Paramètres → Modes de règlement (rien n'est écrit ici)
+      } else if (existingMode) {
         await db.modesReglement.update(existingMode.id, { modeReglement: form.moderegl })
       } else if (form.moderegl) {
         await db.modesReglement.add({ fournisseurId: fournisseurRow.id, magasinId: magasinRow.id, modeReglement: form.moderegl })
@@ -244,9 +249,16 @@ export default function AchatEditModal({ row, onClose, onSaved }) {
             <div className="form-grid">
               <div className="form-field">
                 <label>Mode de règlement</label>
+                {modeLecture ? (
+                  <div style={{ padding: '8px 0', fontSize: 14 }}>
+                    <strong>{form.moderegl || 'non renseigné'}</strong>
+                    <div style={{ fontSize: 12, color: 'var(--doux)', marginTop: 4 }}>Se règle dans Paramètres → Modes de règlement (délais, nombre de chèques, fournisseur réel).</div>
+                  </div>
+                ) : (
                 <select value={form.moderegl} onChange={e => set('moderegl', e.target.value)}>
                   {MODES_REGLEMENT.map(m => <option key={m} value={m}>{m || '— Choisir —'}</option>)}
                 </select>
+                )}
               </div>
               <div className="form-field" style={{ flex: 2 }}>
                 <label>Stratégie</label>

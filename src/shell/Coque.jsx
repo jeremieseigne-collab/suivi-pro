@@ -1,3 +1,5 @@
+import { useVariantes } from './essai'
+import { POINTS_ACHATS } from '../achats/points'
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { db } from '../db'
@@ -30,6 +32,12 @@ const MENU = [
     { id: 'parametres', icone: 'reglages',  label: 'Paramètres' },
   ] },
 ]
+// A2 (essai) : « Paramètres » affiché « Réglages »
+function useMenu() {
+  const { reglages_nom } = useVariantes(POINTS_ACHATS)
+  return reglages_nom ? MENU.map(g => ({ ...g, items: g.items.map(it => it.id === 'parametres' ? { ...it, label: 'Réglages' } : it) })) : MENU
+}
+
 // Onglets du téléphone (en bas, à portée du pouce) ; le reste est dans « Plus »
 const ONGLETS = [
   { id: 'home',     icone: 'accueil',  label: 'Accueil' },
@@ -107,7 +115,7 @@ function BarreLaterale({ vue, alerts, magasin, setMagasin }) {
     <nav className={`barre-laterale${replie ? ' replie' : ''}`} aria-label="Menu">
       <button className="marque-app" onClick={() => aller('home')} title="Accueil"><b>S</b>{!replie && 'Suivi Pro'}</button>
       <ChoixMagasin magasin={magasin} setMagasin={setMagasin} replie={replie} />
-      {MENU.filter(g => !g.direction || estDirection).map((g, i) => (
+      {useMenu().filter(g => !g.direction || estDirection).map((g, i) => (
         <div key={i}>
           {g.titre && (replie ? <div className="separateur" /> : <div className="nav-titre">{g.titre}</div>)}
           {g.items.map(it => (
@@ -135,7 +143,7 @@ function BarreOnglets({ vue, alerts, magasin, setMagasin }) {
   const [plus, setPlus] = useState(false)
   const { badges, notes } = reperes(alerts)
   const dansOnglets = new Set(ONGLETS.flatMap(o => o.vues || [o.id]))
-  const autres = MENU.filter(g => !g.direction || estDirection).flatMap(g => g.items).filter(it => !dansOnglets.has(it.id))
+  const autres = useMenu().filter(g => !g.direction || estDirection).flatMap(g => g.items).filter(it => !dansOnglets.has(it.id))
   const ongletActif = o => (o.vues || [o.id]).includes(vue)
   const nbClients = (badges.commandes.n || 0) + (badges.sav.n || 0)
   return (

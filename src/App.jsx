@@ -1,3 +1,5 @@
+import { useVariantes } from './shell/essai'
+import { POINTS_ACHATS } from './achats/points'
 import { lazy, Suspense } from 'react'
 import HomeScreen       from './home/HomeScreen'
 import { LoadingState } from './components/shared'
@@ -15,7 +17,7 @@ import './styles/charte.css'
 // Chaque écran n'est chargé qu'au moment où on l'ouvre (ouverture de l'outil plus rapide, surtout sur téléphone)
 const Cahier          = lazy(() => import('./cahier/Cahier'))
 const Achats          = lazy(() => import('./tabs/Achats'))
-const PlanReglement   = lazy(() => import('./tabs/PlanReglement'))
+const PlanReglement   = lazy(() => import('./reglement/Plan'))
 const Parametres      = lazy(() => import('./tabs/Parametres'))
 const Repertoire      = lazy(() => import('./repertoire/Repertoire'))
 const Commandes       = lazy(() => import('./commandes/Commandes'))
@@ -36,6 +38,7 @@ function Root() {
   const home = () => aller('home')
   const { magasin, setMagasin } = useMagasin()
   const alerts  = useAlerts(magasin)
+  const nomReglages = useVariantes(POINTS_ACHATS).reglages_nom   // A2 (essai)
 
   let content
   if (vue === 'cahier')          content = <Cahier />
@@ -44,7 +47,7 @@ function Root() {
   else if (vue === 'achats')     content = <PageShell title="Achats"><Achats /></PageShell>
   else if (vue === 'repertoire') content = <Repertoire />
   else if (vue === 'reglement')  content = <PageShell title="Plan de règlement"><PlanReglement /></PageShell>
-  else if (vue === 'parametres') content = <PageShell title="Paramètres"><Parametres /></PageShell>
+  else if (vue === 'parametres') content = <PageShell title={nomReglages ? 'Réglages' : 'Paramètres'}><Parametres /></PageShell>
   else if (vue === 'factures')   content = <PageShell title="Factures" withSeason={false}><Factures /></PageShell>
   else if (vue === 'planning')   content = <Planning />
   else if (vue === 'sav' || vue === 'defectueux') content = <SavDefectueux vue={vue} />

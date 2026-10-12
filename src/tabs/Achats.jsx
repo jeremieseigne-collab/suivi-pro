@@ -2,6 +2,9 @@ import { useState, useMemo, Fragment } from 'react'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { LoadingState } from '../components/shared'
+import Icone from '../components/ui/Icone'
+import PanneauEssai from '../shell/PanneauEssai'
+import { POINTS_ACHATS } from '../achats/points'
 import AchatEditModal from '../components/AchatEditModal'
 import AchatAddModal  from '../components/AchatAddModal'
 import AchatImportModal from '../components/AchatImportModal'
@@ -161,17 +164,16 @@ export default function Achats() {
             </div>
           ))}
         </div>
-        <button
+        <button className="chip" aria-pressed={ghost}
           onClick={() => setGhost(g => !g)}
           title={ghost ? 'Afficher les données' : 'Mode discret'}
-          style={{ marginTop: 8, background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, opacity: ghost ? 1 : 0.25, transition: 'opacity .2s', padding: '4px 6px', borderRadius: 6 }}
-        >👻</button>
+          style={{ marginTop: 8, opacity: ghost ? 1 : 0.6, transition: 'opacity .2s', flexShrink: 0 }}
+        >{ghost ? 'Afficher les montants' : 'Masquer les montants'}</button>
       </div>
 
       {/* Report des marques depuis la saison précédente (même type) */}
       {rows.length === 0 && prevSeason && (prevCombos?.length > 0) && (
         <div className="store-card" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16, background: 'var(--accent-bg)', border: '1px solid var(--accent-border)' }}>
-          <span style={{ fontSize: 22 }}>📋</span>
           <div style={{ flex: 1, minWidth: 200 }}>
             <div style={{ fontWeight: 700, color: 'var(--text)' }}>Reporter les marques de {prevSeason.label} ?</div>
             <div style={{ fontSize: 13, color: 'var(--text-3)' }}>
@@ -179,7 +181,7 @@ export default function Achats() {
             </div>
           </div>
           <button className="btn-primary" onClick={importBrands} disabled={importing}>
-            {importing ? '⏳ Import…' : `Importer ${prevCombos.length} ligne${prevCombos.length > 1 ? 's' : ''}`}
+            {importing ? 'Import…' : `Importer ${prevCombos.length} ligne${prevCombos.length > 1 ? 's' : ''}`}
           </button>
         </div>
       )}
@@ -256,7 +258,7 @@ export default function Achats() {
       })()}
 
       <div className="controls" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-        <input type="text" placeholder="🔍 Fournisseur…" value={search}
+        <input type="text" placeholder="Fournisseur…" value={search}
           onChange={e => setSearch(e.target.value)} className="search-input" />
         <select value={societe} onChange={e => { setSociete(e.target.value); setMagasin('') }} className="sel">
           <option value="">Toutes les sociétés</option>
@@ -267,7 +269,7 @@ export default function Achats() {
           {magasinList.map(m => <option key={m}>{m}</option>)}
         </select>
         <button className="btn-primary" onClick={() => setShowAdd(true)}>+ Nouveau fournisseur</button>
-        <button className="btn-secondary" onClick={() => setShowImport(true)} title="Importer les achats depuis un fichier CSV">📂 Importer CSV</button>
+        <button className="btn-secondary" onClick={() => setShowImport(true)} title="Importer les achats depuis un fichier CSV">Importer CSV</button>
       </div>
 
       <div className="store-card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -326,7 +328,7 @@ export default function Achats() {
                     </span>
                   </td>
                   <td>
-                    <button className="edit-btn" onClick={e => { e.stopPropagation(); setEditRow(r) }} title="Modifier">✏️</button>
+                    <button className="icone-btn" onClick={e => { e.stopPropagation(); setEditRow(r) }} title="Modifier" aria-label={`Modifier ${r.fournisseur} · ${r.magasin}`}><Icone nom="crayon" taille={18} /></button>
                   </td>
                 </tr>
                 {isOpen && (
@@ -355,7 +357,7 @@ export default function Achats() {
                             })}
                           </tbody>
                         </table>
-                      ) : <span style={{ color: 'var(--text-4)', fontSize: 13 }}>Aucun détail par univers — saisis-le via ✏️ (Réel achat par univers).</span>}
+                      ) : <span style={{ color: 'var(--text-4)', fontSize: 13 }}>Aucun détail par univers — saisis-le avec le crayon (Réel achat par univers).</span>}
                     </td>
                   </tr>
                 )}
@@ -383,6 +385,7 @@ export default function Achats() {
           </table>
         </div>
       </div>
+      <PanneauEssai points={POINTS_ACHATS} />
     </div>
   )
 }

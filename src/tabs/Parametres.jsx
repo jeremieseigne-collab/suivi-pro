@@ -1075,12 +1075,12 @@ export default function Parametres() {
   const [section, setSection] = useState('magasins')
 
   const TABS = [
-    { id: 'magasins',     label: '🏪 Magasins' },
-    { id: 'salaries',     label: '👤 Salariés' },
-    { id: 'fournisseurs', label: '🏷️ Marques' },
-    { id: 'modes',        label: '💳 Modes de règlement' },
-    { id: 'saisons',      label: '🗓 Saisons' },
-    { id: 'appareils',    label: '📱 Appareils connectés' },
+    { id: 'magasins',     label: 'Magasins' },
+    { id: 'salaries',     label: 'Salariés' },
+    { id: 'fournisseurs', label: 'Marques' },
+    { id: 'modes',        label: 'Modes de règlement' },
+    { id: 'saisons',      label: 'Saisons' },
+    { id: 'appareils',    label: 'Appareils connectés' },
   ]
 
   return (

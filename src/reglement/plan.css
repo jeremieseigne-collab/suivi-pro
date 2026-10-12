@@ -1,0 +1,54 @@
+/* Plan de règlement — charte de la refonte (couleurs des modes : celles de l'outil actuel) */
+.plan-reglement .plan-chiffres { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.plan-chiffres .carte { padding: 12px 14px; }
+.plan-chiffres b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+.plan-chiffres b.rouge { color: var(--err); } .plan-chiffres b.vert { color: var(--ok); } .plan-chiffres b.orange { color: var(--att); }
+.plan-chiffres span { font-size: var(--t-meta); color: var(--doux); }
+.plan-filtres { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-bottom: 10px; }
+.plan-legende { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.mode-badge { display: inline-block; padding: 1px 8px; border-radius: 6px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.plan-mois, .plan-retard { padding: 0; overflow: hidden; margin-bottom: 14px; }
+.plan-mois-titre { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 16px; border: 0; background: transparent; font: inherit; color: var(--texte);
+  text-align: left; border-bottom: 1px solid var(--trait); cursor: default; }
+.plan-mois-titre .nom { font-weight: 700; font-size: var(--t-titre); text-transform: capitalize; }
+.plan-mois-titre b { margin-left: auto; font-size: var(--t-titre); font-variant-numeric: tabular-nums; }
+.plan-mois-titre .etat { font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 6px; }
+.plan-mois-titre .etat.passe { color: var(--err); background: var(--err-teinte); }
+.plan-mois-titre .etat.en-cours { color: var(--action-texte); background: var(--action-teinte); }
+.plan-mois.en-cours { box-shadow: 0 0 0 2px var(--action-teinte); }
+.plan-mois.passe .plan-mois-titre { background: color-mix(in srgb, var(--err) 5%, transparent); }
+.plan-mois.attente { opacity: .75; }
+.plan-mois-titre[aria-expanded="false"] { cursor: pointer; border-bottom: 0; }
+.plan-retard { box-shadow: 0 0 0 2px var(--err-teinte); }
+.plan-retard-titre { display: flex; align-items: center; gap: 10px; padding: 12px 16px; font-weight: 700; color: var(--err); border-bottom: 1px solid var(--trait); }
+.plan-retard-titre b { margin-left: auto; font-size: var(--t-titre); }
+.plan-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.plan-table th { font-size: var(--t-meta); font-weight: 600; color: var(--doux); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--trait); }
+.plan-table td { padding: 9px 10px; border-bottom: 1px solid var(--trait); vertical-align: middle; }
+.plan-table tr:last-child td { border-bottom: 0; }
+.plan-table .c-paye { width: 44px; text-align: center; }
+.plan-table .c-date { white-space: nowrap; font-weight: 600; font-variant-numeric: tabular-nums; }
+.plan-table .c-date.detail { padding-left: 30px; color: var(--doux); }
+.plan-table .c-mag { font-size: 13px; }
+.plan-table .c-montant { text-align: right; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.plan-table .c-montant.fort { font-weight: 700; }
+.plan-table .doux { color: var(--doux); font-size: 13px; } .plan-table .discret { color: var(--discret); font-size: 12px; }
+.plan-table .ligne-societe td { background: var(--carte-2); font-weight: 700; font-size: 13px; padding: 7px 12px; }
+.plan-table .ligne-groupe { cursor: pointer; background: color-mix(in srgb, var(--texte) 2%, transparent); }
+.plan-table .ligne-groupe:hover { background: color-mix(in srgb, var(--texte) 5%, transparent); }
+.plan-table .chevron { display: inline-block; width: 14px; color: var(--discret); font-size: 11px; }
+.plan-table tr.payee { opacity: .5; } .plan-table tr.payee .c-montant { text-decoration: line-through; }
+.case-paye { width: 20px; height: 20px; cursor: pointer; accent-color: var(--ok); }
+/* Téléphone : lignes sur deux niveaux */
+.plan-societe { display: flex; justify-content: space-between; padding: 7px 14px; background: var(--carte-2); font-weight: 700; font-size: 13px; }
+.plan-ligne { display: flex; gap: 12px; align-items: flex-start; padding: 10px 14px; border-bottom: 1px solid var(--trait); }
+.plan-ligne .case-paye { margin-top: 2px; flex-shrink: 0; }
+.plan-ligne .txt { flex: 1; min-width: 0; }
+.plan-ligne .t1 { font-weight: 600; display: flex; gap: 8px; }
+.plan-ligne .t1 .montant { margin-left: auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.plan-ligne .t2 { font-size: var(--t-meta); color: var(--doux); margin-top: 3px; line-height: 1.7; }
+.plan-ligne .t3 { font-size: 12px; color: var(--discret); }
+.plan-ligne.detail { padding-left: 34px; }
+.plan-ligne.groupe { cursor: pointer; background: color-mix(in srgb, var(--texte) 2%, transparent); }
+.plan-ligne.payee { opacity: .5; } .plan-ligne.payee .montant { text-decoration: line-through; }
+.plan-retard .plan-ligne:last-child, .plan-lignes .plan-ligne:last-child { border-bottom: 0; }
