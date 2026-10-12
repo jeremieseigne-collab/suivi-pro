@@ -168,14 +168,17 @@ export default function Paie() {
   const [justSaved, setJustSaved] = useState(false)
   const [recapOpen, setRecapOpen] = useState(false)
   const { estDirection } = useCompte()
+  // Relecture après chaque enregistrement : un compte magasin n'est pas prévenu des changements de fiches (confidentialité),
+  // la liste « Rempli / À remplir » ne se mettait donc pas à jour seule
+  const [maj, setMaj] = useState(0)
 
   const salaries = useLiveQuery(async () => (await db.salaries.orderBy('nom').toArray()).filter(s => !isGerant(s.nom)), [])
   // Direction : saisies complètes. Magasin : seulement les prénoms déjà remplis (la base ne donne pas le contenu).
   const rows     = useLiveQuery(async () => (estDirection
     ? await db.paieVariables.where('periode').equals(periode).toArray()
     : await prenomsRemplis(periode)
-  ).filter(r => !isGerant(r.salarie)), [periode, estDirection])
-  const envoi    = useLiveQuery(() => estDirection ? db.paieEnvois.where('periode').equals(periode).first() : null, [periode, estDirection])
+  ).filter(r => !isGerant(r.salarie)), [periode, estDirection, maj])
+  const envoi    = useLiveQuery(() => estDirection ? db.paieEnvois.where('periode').equals(periode).first() : null, [periode, estDirection, maj])
 
   const byName = useMemo(() => {
     const m = new Map()
@@ -199,6 +202,7 @@ export default function Paie() {
   async function handleSaved() {
     const fromRecap = recapOpen
     setEditing(null)
+    setMaj(x => x + 1)
     if (!fromRecap) setJustSaved(true)   // confirmation salarié uniquement ; depuis le récap on y retourne
     if (estDirection) return
     try {
