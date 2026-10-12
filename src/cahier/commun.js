@@ -13,7 +13,7 @@ export const CATEGORIES = ['Femme', 'Homme', 'Enfant', 'Bébé', 'Acc']
 export const CAT_TO_KEY = { 'Femme': 'F', 'Homme': 'H', 'Enfant': 'E', 'Bébé': 'B', 'Acc': 'ACC' }
 export const CAT_DE_GRILLE = { F: 'Femme', H: 'Homme', E: 'Enfant', B: 'Bébé', ACC: 'Acc' }
 
-// N° de commande : même logique que l'outil actuel — nombre du N°, (N° − 1) modulo 3 → 1 rouge, 2 bleu, 3 vert…
+// N° de référence du modèle : même logique que l'outil actuel — nombre du N°, (N° − 1) modulo 3 → 1 rouge, 2 bleu, 3 vert…
 export function classeNumero(n) { const v = parseInt(n); return v ? 'n' + ((v - 1) % 3 + 1) : '' }
 
 // Dates : stockées en texte JJ/MM/AAAA ; calculs en heure locale (pas d'UTC → pas de décalage la nuit)
@@ -41,9 +41,15 @@ export const pluriel = (n, mot) => `${n} ${mot}${Math.abs(n) > 1 ? 's' : ''}`
 export const niveauJauge = pc => pc <= 0 ? 'zero' : pc >= 100 ? 'ok' : pc >= 50 ? 'bleu' : 'orange'
 
 // ─── Noms de marque : présentation propre et détection des doublons ───
-// Nom tel qu'il sera enregistré : espaces en trop retirés, majuscule au début de chaque mot (le reste tel que tapé)
+// Nom tel qu'il sera enregistré : espaces en trop retirés ; un nom tapé tout en majuscules reste tel quel (« UGG ») ;
+// sinon majuscule au début de chaque mot (le reste tel que tapé), sauf les petits mots de liaison qui restent en minuscules
+// quand ils ne sont pas en premier (« coco et abricot » → « Coco et Abricot »)
+const MOTS_LIAISON = new Set(['et', 'de', 'du', 'des', 'la', 'le', 'les', 'en', 'à'])
 export function nomPropre(s) {
-  return (s || '').trim().replace(/\s+/g, ' ').replace(/(^|[\s\-'&/])(\p{L})/gu, (m, sep, l) => sep + l.toUpperCase())
+  const net = (s || '').trim().replace(/\s+/g, ' ')
+  if (/\p{L}/u.test(net) && net === net.toLocaleUpperCase('fr-FR')) return net
+  return net.split(' ').map((mot, i) => i > 0 && MOTS_LIAISON.has(mot.toLocaleLowerCase('fr-FR')) ? mot.toLocaleLowerCase('fr-FR')
+    : mot.replace(/(^|[-'&/])(\p{L})/gu, (m, sep, l) => sep + l.toLocaleUpperCase('fr-FR'))).join(' ')
 }
 // Forme de comparaison : sans majuscules, accents, espaces ni ponctuation (« Dr. Martens » = « dr martens » = « DrMartens »)
 export const formeComparaison = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '')

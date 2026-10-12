@@ -1,6 +1,6 @@
 import { classeNumero, STATUT_CLASSE, libelleStatut } from './commun'
 
-// Pastille du N° de commande, juste après le nom du modèle. Plusieurs N° (« 2, 3 ») → une pastille chacun.
+// Pastille du N° de référence du modèle, juste après le nom du modèle. Plusieurs N° (« 2, 3 ») → une pastille chacun.
 export function Numero({ n, prefixe = true }) {
   if (!n) return null
   const liste = String(n).split(/\s*,\s*/).filter(Boolean)

@@ -89,7 +89,7 @@ button.ligne:hover { background: color-mix(in srgb, var(--texte) 3%, transparent
 .puce { display: inline-flex; align-items: center; gap: 6px; font-size: var(--t-meta); color: var(--doux); white-space: nowrap; }
 .puce::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--discret); }
 .puce.ok::before { background: var(--ok); } .puce.att::before { background: #ff9500; } .puce.err::before { background: #ff3b30; } .puce.info::before { background: #007aff; }
-/* N° de commande : pastille pleine, juste après le nom du modèle ; 1 rouge, 2 bleu, 3 vert… */
+/* N° de référence du modèle : pastille pleine, juste après le nom du modèle ; 1 rouge, 2 bleu, 3 vert… */
 .num { display: inline-block; white-space: nowrap; padding: 0 7px; border-radius: 6px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.5; }
 .num.n1 { background: var(--num1-fond); color: var(--num1) !important; } .num.n2 { background: var(--num2-fond); color: var(--num2) !important; }
 .num.n3 { background: var(--num3-fond); color: var(--num3) !important; }

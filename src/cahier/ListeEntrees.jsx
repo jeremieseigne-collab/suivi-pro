@@ -1,8 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
-import { db } from '../db'
 import { SOCIETES } from '../data/societes'
 import Icone from '../components/ui/Icone'
-import Confirmation from '../components/ui/Confirmation'
+import ActionsSelection from './ActionsSelection'
 import { Numero, Statut } from './Reperes'
 import { STATUTS, libelleStatut, cleDate, libelleJour, fmtEur, pluriel } from './commun'
 
@@ -18,9 +17,6 @@ export default function ListeEntrees({ entrees, magasinAppareil, estDirection, e
   const [feuilleFiltres, setFeuilleFiltres] = useState(false)
   const [nb, setNb]               = useState(PAR_PAGE)
   const [selection, setSelection] = useState(null)        // null = pas en mode sélection ; sinon Set d'ids
-  const [choixStatut, setChoixStatut] = useState(false)    // feuille « Changer le statut »
-  const [suppr, setSuppr] = useState(null)                  // confirmation de suppression en lot : { lignes, bloquees, lies }
-  const [tape, setTape] = useState('')                      // nombre à retaper au-delà de 5 entrées
   useEffect(() => { onModeSelection?.(!!selection) }, [selection, onModeSelection])
 
   const magasinFiltre = filtres.magasin === null ? magasinAppareil : filtres.magasin   // '' = tous les magasins
@@ -52,46 +48,6 @@ export default function ListeEntrees({ entrees, magasinAppareil, estDirection, e
   const sel = selection || new Set()
   const basculerSel = id => setSelection(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
   const toutSelectionne = filtrees.length > 0 && filtrees.every(e => sel.has(e.id))
-  // Changement de statut groupé (comme l'outil actuel), avec « Annuler » qui remet les statuts d'avant
-  async function appliquerStatut(statut) {
-    const ids = [...sel]; if (!ids.length) return
-    const avant = Object.fromEntries(entrees.filter(e => sel.has(e.id)).map(e => [e.id, e.statut || '']))
-    setChoixStatut(false)
-    let echecs = 0
-    for (const id of ids) { try { await db.entrees.update(id, { statut }) } catch { echecs++ } }
-    onToast(echecs ? { texte: `${ids.length - echecs} entrée(s) modifiée(s), ${echecs} en échec : vérifiez la connexion.` }
-      : { texte: `Statut « ${libelleStatut(statut)} » appliqué à ${pluriel(ids.length, 'entrée')}`,
-          annuler: async () => { for (const [id, st] of Object.entries(avant)) { try { await db.entrees.update(Number(id), { statut: st }) } catch { /* ignore */ } } } })
-    setSelection(null)
-  }
-  function pointerSel(val) { onPointer([...sel], val); setSelection(null) }
-
-  // Suppression en lot. Protections : confirmation avec le détail, nombre à retaper au-delà de 5 entrées,
-  // entrées pointées exclues pour un compte magasin, « Annuler » pendant 10 s (remet les lignes avec leur numéro d'origine).
-  async function preparerSuppression() {
-    const choisies = entrees.filter(e => sel.has(e.id))
-    const bloquees = estDirection ? [] : choisies.filter(e => estPointe(e))
-    const lignes = choisies.filter(e => !bloquees.includes(e))
-    let lies = 0
-    try { const ids = new Set(lignes.map(e => e.id)); lies = (await db.defectueux.toArray()).filter(d => ids.has(d.entreeId)).length } catch { /* simple information */ }
-    setTape(''); setSuppr({ lignes, bloquees, lies })
-  }
-  async function supprimerSel() {
-    const { lignes } = suppr; setSuppr(null)
-    const faites = []
-    for (const e of lignes) { try { await db.entrees.delete(e.id); faites.push(e) } catch { /* compté en échec */ } }
-    const echecs = lignes.length - faites.length
-    // Copie exacte des lignes supprimées (sans les noms ajoutés pour l'affichage), pour pouvoir les remettre
-    const copies = faites.map(e => { const brut = { ...e }; delete brut.magasin; delete brut.marque; delete brut.societe; return brut })
-    const remettre = async () => {
-      let ko = 0
-      for (const c of copies) { try { await db.entrees.put(c) } catch { ko++ } }
-      onToast(ko ? { texte: `${ko} entrée(s) n'ont pas pu être remises : vérifiez la connexion.` } : { texte: `${pluriel(copies.length, 'entrée')} remise${copies.length > 1 ? 's' : ''}` })
-    }
-    onToast(echecs ? { texte: `${pluriel(faites.length, 'entrée')} supprimée(s), ${echecs} en échec : vérifiez la connexion.`, annuler: faites.length ? remettre : undefined, duree: 10000 }
-      : { texte: `${pluriel(faites.length, 'entrée')} supprimée${faites.length > 1 ? 's' : ''}`, annuler: remettre, duree: 10000 })
-    setSelection(null)
-  }
 
   const opts = (cle) => uniq(entrees.map(e => e[cle]))
   const statutsPresents = STATUTS.filter(s => s && entrees.some(e => e.statut === s))
@@ -153,56 +109,8 @@ export default function ListeEntrees({ entrees, magasinAppareil, estDirection, e
 
       {selection && <div style={{ height: 120 }} aria-hidden="true" />}
       {selection && (
-        <div className="barre-selection" role="toolbar" aria-label="Actions sur la sélection">
-          <b className="compte-selection">{sel.size ? pluriel(sel.size, 'sélectionnée') : 'Touchez les lignes à sélectionner'}</b>
-          <div className="actions-selection">
-            <button className="btn btn-prim" disabled={!sel.size} onClick={() => setChoixStatut(true)}>Changer le statut</button>
-            {estDirection && <button className="btn" disabled={!sel.size} onClick={() => pointerSel(true)}>Pointer</button>}
-            {estDirection && <button className="btn" disabled={!sel.size} onClick={() => pointerSel(false)}>Dépointer</button>}
-            <button className="btn" onClick={() => setSelection(toutSelectionne ? new Set() : new Set(filtrees.map(e => e.id)))}>{toutSelectionne ? 'Tout désélectionner' : `Tout sélectionner (${filtrees.length})`}</button>
-            <button className="btn btn-ghost" onClick={() => setSelection(null)}>Annuler</button>
-          </div>
-          <div className="action-danger-selection">
-            <button className="btn btn-danger-plein" disabled={!sel.size} onClick={preparerSuppression}>Supprimer</button>
-          </div>
-        </div>
-      )}
-      {suppr && (() => {
-        const n = suppr.lignes.length, paires = suppr.lignes.reduce((t, e) => t + (Number(e.total) || 0), 0)
-        const aTaper = n > 5
-        const bloq = suppr.bloquees.length ? `${pluriel(suppr.bloquees.length, 'entrée')} déjà pointée${suppr.bloquees.length > 1 ? 's' : ''} par la Direction ne ${suppr.bloquees.length > 1 ? 'seront' : 'sera'} pas supprimée${suppr.bloquees.length > 1 ? 's' : ''}. ` : ''
-        if (!n) return <Confirmation titre="Suppression impossible" texte={`${bloq}Seule la Direction peut supprimer une entrée pointée.`} confirmer="Compris" annuler="Fermer" onConfirmer={() => setSuppr(null)} onAnnuler={() => setSuppr(null)} />
-        return (
-          <Confirmation danger titre={`Supprimer ${pluriel(n, 'entrée')} ?`} confirmer="Supprimer" actif={!aTaper || tape.trim() === String(n)}
-            texte={`${pluriel(n, 'entrée')} · ${pluriel(paires, 'paire')} au total. ${bloq}`} onAnnuler={() => setSuppr(null)} onConfirmer={supprimerSel}>
-            <ul className="liste-resume">
-              {suppr.lignes.slice(0, 5).map(e => <li key={e.id}><span>{e.marque} · {e.modele || 'sans modèle'}</span><span>{e.date} · {e.total || 0} p.</span></li>)}
-              {n > 5 && <li><span>… et {pluriel(n - 5, 'autre entrée')}</span><span /></li>}
-            </ul>
-            {suppr.lies > 0 && <div className="encart att" style={{ marginBottom: 14 }}>{suppr.lies > 1 ? `${suppr.lies} défectueux sont liés` : 'Un défectueux est lié'} à ces entrées : {suppr.lies > 1 ? 'ils resteront' : 'il restera'} dans la Gestion des défectueux.</div>}
-            {aTaper && <label className="champ-confirmer" style={{ display: 'block' }}>
-              <span className="etiquette">Pour confirmer, tapez le nombre d'entrées : <b>{n}</b></span>
-              <input className="champ" inputMode="numeric" autoFocus value={tape} onChange={ev => setTape(ev.target.value)} aria-label="Nombre d'entrées à supprimer" />
-            </label>}
-          </Confirmation>
-        )
-      })()}
-      {choixStatut && (
-        <>
-          <div className="feuille-fond" style={{ zIndex: 960 }} onClick={() => setChoixStatut(false)} />
-          <div className="feuille bas" style={{ zIndex: 961 }} role="dialog" aria-label="Changer le statut">
-            <div className="feuille-entete"><h2>Statut de {pluriel(sel.size, 'entrée')}</h2><button className="icone-btn" onClick={() => setChoixStatut(false)} aria-label="Fermer"><Icone nom="fermer" /></button></div>
-            <div className="feuille-corps">
-              <div className="liste" style={{ background: 'var(--carte-2)' }}>
-                {STATUTS.map(st => (
-                  <button key={st || 'aucun'} className="ligne" style={{ minHeight: 52 }} onClick={() => appliquerStatut(st)}>
-                    <span className="txt">{st ? <Statut s={st} /> : <span className="t1" style={{ fontWeight: 500 }}>Aucun (vider le statut)</span>}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </>
+        <ActionsSelection sel={sel} entrees={entrees} filtrees={filtrees} estDirection={estDirection} estPointe={estPointe} onPointer={onPointer} onToast={onToast}
+          onToutSelectionner={() => setSelection(toutSelectionne ? new Set() : new Set(filtrees.map(e => e.id)))} onFin={() => setSelection(null)} />
       )}
 
       {feuilleFiltres && (
