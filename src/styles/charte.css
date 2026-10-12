@@ -1,0 +1,118 @@
+/* ─── Charte de la refonte (voir maquettes/charte.html et PLAN-REFONTE.md) ─────────────────────
+   Jetons nommés pour ne pas entrer en conflit avec App.css (--surface, --text…), que les écrans
+   pas encore refaits continuent d'utiliser. Sobriété : la couleur est réservée aux repères
+   (N°, statuts, jauges, magasins, compteurs) et à l'urgence ; le point de couleur est réservé
+   au statut des entrées. */
+
+:root {
+  --fond: #f5f5f7; --carte: #ffffff; --carte-2: #f0f0f4; --menu-fond: #ededf1;
+  --trait: rgba(60, 60, 67, .14); --texte: #1d1d1f; --doux: #6e6e73; --discret: #8e8e93;
+  --action: #0a66d9; --action-texte: #0062cc; --action-teinte: rgba(0, 122, 255, .10);
+  --ok: #1f7a4d; --ok-teinte: rgba(52, 199, 89, .15);
+  --att: #a54a00; --att-teinte: rgba(255, 149, 0, .16);
+  --err: #c4000f; --err-teinte: rgba(255, 59, 48, .12);
+  --neutre-teinte: rgba(120, 120, 128, .12);
+  --num1: #c4000f; --num1-fond: rgba(255, 59, 48, .12);
+  --num2: #0062cc; --num2-fond: rgba(0, 122, 255, .12);
+  --num3: #1f7a4d; --num3-fond: rgba(52, 199, 89, .16);
+  --ombre-douce: 0 1px 2px rgba(0, 0, 0, .04), 0 6px 20px rgba(0, 0, 0, .06);
+  --rayon: 14px; --rayon-champ: 10px;
+  --t-meta: 13px; --t-corps: 15px; --t-titre: 17px; --t-page: 26px;
+}
+html[data-theme="dark"] {
+  --fond: #111113; --carte: #1c1c1e; --carte-2: #2c2c2e; --menu-fond: #18181a;
+  --trait: rgba(255, 255, 255, .12); --texte: #f5f5f7; --doux: #a1a1a6; --discret: #8e8e93;
+  --action: #1a6fe0; --action-texte: #5aa9ff; --action-teinte: rgba(10, 132, 255, .18);
+  --ok: #4cc38a; --ok-teinte: rgba(48, 209, 88, .18);
+  --att: #ffb340; --att-teinte: rgba(255, 159, 10, .18);
+  --err: #ff6961; --err-teinte: rgba(255, 69, 58, .18);
+  --neutre-teinte: rgba(160, 160, 170, .16);
+  --num1: #ff6961; --num1-fond: rgba(255, 69, 58, .22);
+  --num2: #5aa9ff; --num2-fond: rgba(10, 132, 255, .24);
+  --num3: #4cc38a; --num3-fond: rgba(48, 209, 88, .22);
+  --ombre-douce: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 24px rgba(0, 0, 0, .4);
+}
+
+/* ─── Base ─── */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.coque, .coque button, .coque input, .coque select { font-family: inherit; }
+svg.icone { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+/* ─── Boutons ─── */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 999px;
+  font: inherit; font-weight: 600; border: 0; cursor: pointer; background: var(--carte-2); color: var(--texte); transition: background .12s; }
+.btn:hover { background: color-mix(in srgb, var(--texte) 9%, var(--carte-2)); }
+.btn-prim { background: var(--action); color: #fff; }
+.btn-prim:hover { background: color-mix(in srgb, #000 12%, var(--action)); }
+.btn-ghost { background: transparent; color: var(--action-texte); }
+.btn-ghost:hover { background: var(--action-teinte); }
+.btn-danger { background: var(--err-teinte); color: var(--err); }
+.btn:disabled { opacity: .4; cursor: default; }
+.icone-btn { width: 44px; height: 44px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; color: var(--doux);
+  border: 0; background: transparent; cursor: pointer; }
+.icone-btn:hover { background: var(--carte-2); color: var(--texte); }
+.lien { color: var(--action-texte); font-weight: 600; font-size: 14px; min-height: 36px; padding: 0 4px; border: 0; background: none; cursor: pointer; }
+
+/* ─── Champs, choix ─── */
+.champ { width: 100%; min-height: 44px; padding: 10px 14px; border-radius: var(--rayon-champ); border: 1px solid transparent; background: var(--carte-2);
+  color: var(--texte); font: inherit; outline: none; box-sizing: border-box; }
+.champ:focus { border-color: var(--action); box-shadow: 0 0 0 3px var(--action-teinte); background: var(--carte); }
+.etiquette { display: block; font-size: var(--t-meta); color: var(--doux); margin: 0 0 6px; font-weight: 500; }
+.chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 0; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { min-height: 36px; padding: 0 14px; border-radius: 999px; background: var(--carte-2); color: var(--texte); font: inherit; font-size: 14px;
+  font-weight: 500; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; border: 0; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--texte); color: var(--fond); }
+.segment { display: inline-flex; background: var(--carte-2); border-radius: 999px; padding: 3px; gap: 2px; }
+.segment button { min-height: 36px; padding: 0 16px; border-radius: 999px; font: inherit; font-size: 14px; font-weight: 600; color: var(--doux);
+  border: 0; background: transparent; cursor: pointer; }
+.segment button[aria-pressed="true"] { background: var(--carte); color: var(--texte); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+
+/* ─── Listes (à la place des tableaux) ─── */
+.liste { background: var(--carte); border-radius: var(--rayon); overflow: hidden; }
+.ligne { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 8px 10px 16px; position: relative; width: 100%; text-align: left;
+  border: 0; background: transparent; color: var(--texte); font: inherit; box-sizing: border-box; }
+.ligne + .ligne::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: 1px solid var(--trait); }
+button.ligne { cursor: pointer; }
+button.ligne:hover { background: color-mix(in srgb, var(--texte) 3%, transparent); }
+.ligne .txt { flex: 1; min-width: 0; }
+.ligne .t1 { font-weight: 600; overflow-wrap: anywhere; }
+.ligne .t1 > span:not(.num) { font-weight: 400; color: var(--doux); }
+.ligne .t2 { font-size: var(--t-meta); color: var(--doux); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.groupe-titre { font-size: var(--t-meta); font-weight: 600; color: var(--doux); margin: 22px 4px 8px; }
+
+/* ─── Repères ─── */
+/* Statut des entrées : point plein + mot (le point de couleur est réservé au statut) */
+.puce { display: inline-flex; align-items: center; gap: 6px; font-size: var(--t-meta); color: var(--doux); white-space: nowrap; }
+.puce::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--discret); }
+.puce.ok::before { background: var(--ok); } .puce.att::before { background: #ff9500; } .puce.err::before { background: #ff3b30; } .puce.info::before { background: #007aff; }
+/* N° de commande : pastille pleine, juste après le nom du modèle ; 1 rouge, 2 bleu, 3 vert… */
+.num { display: inline-block; white-space: nowrap; padding: 0 7px; border-radius: 6px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.5; }
+.num.n1 { background: var(--num1-fond); color: var(--num1) !important; } .num.n2 { background: var(--num2-fond); color: var(--num2) !important; }
+.num.n3 { background: var(--num3-fond); color: var(--num3) !important; }
+/* Jauges : 0 % gris, < 50 % orange, ≥ 50 % bleu, 100 % vert (seuils de l'outil actuel) */
+.barre { height: 6px; border-radius: 3px; background: var(--neutre-teinte); overflow: hidden; }
+.barre i { display: block; height: 100%; border-radius: 3px; background: #007aff; }
+.barre i.orange { background: #ff9500; } .barre i.ok { background: var(--ok); } .barre i.zero { width: 0 !important; }
+
+/* ─── Messages ─── */
+.encart { border-radius: 12px; padding: 12px 14px; font-size: 14px; display: flex; gap: 10px; align-items: flex-start; }
+.encart.att { background: var(--att-teinte); color: var(--att); }
+.encart.err { background: var(--err-teinte); color: var(--err); }
+.encart.neutre { background: var(--carte-2); color: var(--texte); }
+.vide { text-align: center; color: var(--doux); padding: 48px 16px; }
+
+/* ─── Fenêtres (feuille plein écran sur téléphone, fenêtre centrée au-delà) ─── */
+.feuille-fond { position: fixed; inset: 0; background: rgba(0, 0, 0, .32); z-index: 950; }
+.feuille { position: fixed; z-index: 951; background: var(--carte); color: var(--texte); display: flex; flex-direction: column; inset: 0; }
+.feuille.bas { inset: auto 0 0 0; max-height: 85vh; border-radius: 18px 18px 0 0; padding-bottom: env(safe-area-inset-bottom); }
+@media (min-width: 768px) {
+  .feuille:not(.bas) { inset: auto; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(640px, calc(100% - 48px)); max-height: calc(100% - 48px);
+    border-radius: 18px; box-shadow: var(--ombre-douce); }
+}
+.feuille-entete { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 16px; border-bottom: 1px solid var(--trait); min-height: 56px; }
+.feuille-entete h2 { flex: 1; margin: 0; font-size: var(--t-titre); font-weight: 700; }
+.feuille-corps { flex: 1; overflow-y: auto; padding: 16px; }

@@ -101,6 +101,11 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | SAV | Champ magasin à la création | ⏸ à décider sur la maquette de l'écran |
 | Planning | 4 lignes vides ajoutées d'office | ⏸ à décider sur la maquette de l'écran |
 | Achats, Paie, Factures, Répertoire, Plan de règlement | — | rien de retiré prévu à ce jour |
+| Socle — titres des pages | Emoji devant le titre (« 📥 Cahier des entrées » → « Cahier des entrées ») | ⏳ **à valider** (socle du 12/10) |
+| Socle — onglets du Cahier | Emojis des onglets (« 📦 Suivi livraisons », « 📥 Entrées ») | ⏳ **à valider** — ordre et onglet d'ouverture **inchangés** jusqu'à la refonte du Cahier |
+| Socle — menu | Groupes « Au quotidien » / « Gestion » → premier groupe sans titre, « Équipe », « Direction » ; Répertoire et Factures remontés dans le premier groupe ; logo 👟 → pastille « S » | ⏳ **à valider** — mêmes destinations, mêmes intitulés |
+| Socle — sélecteur de saison | 🗓 et ▾ remplacés par la pastille à la couleur de la saison ; 🗑 → croix | ⏳ **à valider** — mêmes fonctions (choix, ajout, suppression Direction) |
+| Socle — apparence | Bouton 🌙 flottant → réglage **Auto / Clair / Sombre** dans le menu (« Auto » pour qui n'a jamais choisi ; un choix déjà fait est conservé) | ✅ accordé (boutons flottants) |
 | Menu | Pastilles de comptage colorées (Réassorts, Défectueux, Commandes) et rappel orange « À remplir avant le 25 » sur la paie | ⚠️ absents de la maquette — **gardés**, à dessiner |
 | Partout | **Sélecteur de saison** (pastille de couleur par saison) | ⚠️ absent de la maquette — **gardé**, à dessiner |
 | Cahier — Entrées | Bouton « Importer CSV » ; sélection multiple + changement de statut groupé | ⚠️ absents de la maquette — **gardés**, à dessiner |

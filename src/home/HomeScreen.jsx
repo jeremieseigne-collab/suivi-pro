@@ -33,7 +33,7 @@ export default function HomeScreen({ onOpen, alerts, onMenu }) {
     <main style={{ minHeight: '100vh', background: 'var(--bg)', padding: phone ? '14px 12px 72px' : tablet ? '24px 24px 72px' : '32px 40px 64px' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <header style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: phone ? 16 : 24 }}>
-          {tablet && (
+          {tablet && onMenu && (
             <button onClick={onMenu} aria-label="Menu"
               style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', fontSize: 18, color: 'var(--text-2)' }}>☰</button>
           )}
@@ -48,7 +48,7 @@ export default function HomeScreen({ onOpen, alerts, onMenu }) {
 
         {!magasin && (
           <div style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 12, background: 'var(--accent-bg)', color: 'var(--accent)', fontSize: 14, fontWeight: 600 }}>
-            🏪 Choisis ton magasin dans le menu{tablet ? ' ☰' : ' à gauche'} : tous les outils l'utiliseront directement.
+            🏪 Choisis ton magasin dans le menu{tablet ? ' (onglet « Plus » sur téléphone)' : ' à gauche'} : tous les outils l'utiliseront directement.
           </div>
         )}
 

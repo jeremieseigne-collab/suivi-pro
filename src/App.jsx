@@ -1,73 +1,37 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, lazy, Suspense } from 'react'
 import { db } from './db'
-import SuiviLivraisons from './tabs/SuiviLivraisons'
-import Entrees         from './tabs/Entrees'
-import Achats          from './tabs/Achats'
-import PlanReglement   from './tabs/PlanReglement'
-import Parametres      from './tabs/Parametres'
-import Repertoire       from './tabs/Repertoire'
-import Commandes        from './commandes/Commandes'
-import Defectueux       from './defectueux/Defectueux'
-import Paie             from './paie/Paie'
-import Planning         from './planning/Planning'
-import Sav             from './sav/Sav'
-import Factures         from './factures/Factures'
-import Reassort         from './reassort/Reassort'
 import StoreSelect      from './components/StoreSelect'
 import HomeScreen       from './home/HomeScreen'
+import { LoadingState } from './components/shared'
 import { confirmDanger } from './components/DangerConfirm'
 import Connexion from './components/Connexion'
 import { useCompte } from './context/CompteContext'
-import Sidebar          from './home/Sidebar'
 import { useAlerts }    from './home/useAlerts'
-import { useMediaQuery, TABLET } from './lib/useMediaQuery'
 import { SeasonProvider, useSeason } from './context/SeasonContext'
 import { MagasinProvider, useMagasin } from './context/MagasinContext'
+import Coque, { VueClients } from './shell/Coque'
+import { useVue, aller } from './shell/navigation'
+import Icone from './components/ui/Icone'
 import './App.css'
+import './styles/charte.css'
+
+// Chaque écran n'est chargé qu'au moment où on l'ouvre (ouverture de l'outil plus rapide, surtout sur téléphone)
+const SuiviLivraisons = lazy(() => import('./tabs/SuiviLivraisons'))
+const Entrees         = lazy(() => import('./tabs/Entrees'))
+const Achats          = lazy(() => import('./tabs/Achats'))
+const PlanReglement   = lazy(() => import('./tabs/PlanReglement'))
+const Parametres      = lazy(() => import('./tabs/Parametres'))
+const Repertoire      = lazy(() => import('./tabs/Repertoire'))
+const Commandes       = lazy(() => import('./commandes/Commandes'))
+const Defectueux      = lazy(() => import('./defectueux/Defectueux'))
+const Paie            = lazy(() => import('./paie/Paie'))
+const Planning        = lazy(() => import('./planning/Planning'))
+const Sav             = lazy(() => import('./sav/Sav'))
+const Factures        = lazy(() => import('./factures/Factures'))
+const Reassort        = lazy(() => import('./reassort/Reassort'))
 
 // Écrans réservés aux comptes Direction (la base refuse de toute façon les écritures sensibles aux comptes magasin)
 const DIRECTION_VIEWS = new Set(['reglement', 'parametres', 'achats'])
-
-function useDarkMode() {
-  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
-  useEffect(() => {
-    document.documentElement.dataset.theme = dark ? 'dark' : 'light'
-    localStorage.setItem('theme', dark ? 'dark' : 'light')
-  }, [dark])
-  return [dark, () => setDark(d => !d)]
-}
-
-function ThemeToggle() {
-  const [dark, toggle] = useDarkMode()
-  return (
-    <button onClick={toggle} title={dark ? 'Passer en mode clair' : 'Passer en mode sombre'}
-      style={{
-        position: 'fixed', bottom: 20, right: 20, zIndex: 90,
-        width: 46, height: 46, borderRadius: '50%', cursor: 'pointer',
-        border: '1px solid var(--border)', background: 'var(--surface)',
-        fontSize: 20, boxShadow: '0 4px 14px var(--shadow-lg)',
-      }}>
-      {dark ? '☀️' : '🌙'}
-    </button>
-  )
-}
-
-
-function BackButton({ onHome }) {
-  return (
-    <button
-      onClick={onHome}
-      title="Retour à l'accueil"
-      style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        width: 34, height: 34, borderRadius: 9, border: '1px solid var(--border)',
-        background: 'var(--surface)', cursor: 'pointer', fontSize: 17, color: 'var(--text-2)', lineHeight: 1,
-      }}
-      onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--accent)' }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.color = 'var(--text-2)' }}
-    >←</button>
-  )
-}
 
 function SeasonBadge() {
   const { estDirection } = useCompte()
@@ -119,90 +83,43 @@ function SeasonBadge() {
   }
 
   function close() { setOpen(false); setAdding(false) }
+  const couleur = current?.color ?? 'var(--discret)'
 
   return (
     <div style={{ position: 'relative' }}>
-      <button
-        onClick={() => { setOpen(o => !o); setAdding(false) }}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '5px 12px', borderRadius: 20, border: '2px solid',
-          borderColor: current?.color ?? 'var(--text-4)',
-          background: (current?.color ?? 'var(--text-4)') + '22',
-          color: current?.color ?? 'var(--text-4)',
-          fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
-        }}
-      >
-        🗓 {current?.label ?? '—'} ▾
+      <button className="saison-btn" onClick={() => { setOpen(o => !o); setAdding(false) }} aria-expanded={open}
+        style={{ color: couleur, background: `color-mix(in srgb, ${couleur} 14%, transparent)` }}>
+        {current?.label ?? '—'} <Icone nom="bas" taille={14} />
       </button>
 
       {open && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 199 }} onClick={close} />
-          <div style={{
-            position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 200,
-            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)', minWidth: 210, overflow: 'hidden',
-          }}>
+          <div className="voile" style={{ zIndex: 199 }} onClick={close} />
+          <div className="saison-menu">
             {seasons.map(s => (
-              <div key={s.id}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <button onClick={() => { setSeason(s.id); close() }}
-                      style={{
-                        flex: 1, display: 'flex', alignItems: 'center', gap: 8,
-                        padding: '10px 12px 10px 16px', border: 'none',
-                        background: s.id === season ? s.color + '22' : 'var(--surface)',
-                        cursor: 'pointer', fontSize: 14,
-                        fontWeight: s.id === season ? 700 : 400,
-                        color: s.id === season ? s.color : 'var(--text)', textAlign: 'left',
-                      }}
-                    >
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
-                      {s.label}
-                      {s.id === season && <span style={{ marginLeft: 'auto', fontSize: 12, paddingRight: 4 }}>✓</span>}
-                    </button>
-                    {seasons.length > 1 && estDirection && (
-                      <button
-                        onClick={e => { e.stopPropagation(); setAdding(false); handleDelete(s.id) }} disabled={deleting}
-                        title="Supprimer cette saison"
-                        style={{ padding: '10px 12px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#cbd5e1', fontSize: 14, lineHeight: 1 }}
-                        onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-                        onMouseLeave={e => e.currentTarget.style.color = '#cbd5e1'}
-                      >🗑</button>
-                    )}
-                  </div>
+              <div key={s.id} style={{ display: 'flex', alignItems: 'center' }}>
+                <button className="ligne" style={{ minHeight: 44, flex: 1 }} onClick={() => { setSeason(s.id); close() }}>
+                  <span className="txt"><span className="t1" style={{ color: s.id === season ? s.color : 'var(--texte)', fontWeight: s.id === season ? 700 : 500 }}>{s.label}</span></span>
+                  {s.id === season && <Icone nom="check" taille={18} style={{ color: s.color }} />}
+                </button>
+                {seasons.length > 1 && estDirection && (
+                  <button className="icone-btn" onClick={e => { e.stopPropagation(); setAdding(false); handleDelete(s.id) }} disabled={deleting}
+                    title="Supprimer cette saison" aria-label={`Supprimer la saison ${s.label}`}>
+                    <Icone nom="fermer" taille={18} />
+                  </button>
+                )}
               </div>
             ))}
-
-            <div style={{ borderTop: '1px solid var(--surface-3)' }}>
+            <div style={{ borderTop: '1px solid var(--trait)' }}>
               {!adding ? (
-                <button onClick={openAdd}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                    padding: '10px 16px', border: 'none', background: 'var(--surface)',
-                    cursor: 'pointer', fontSize: 13, color: 'var(--text-3)', textAlign: 'left',
-                  }}
-                >
-                  <span style={{ fontSize: 16, lineHeight: 1 }}>＋</span> Nouvelle saison
+                <button className="ligne" style={{ minHeight: 44, color: 'var(--action-texte)' }} onClick={openAdd}>
+                  <Icone nom="ajout" taille={18} /> <span className="txt" style={{ fontWeight: 600 }}>Nouvelle saison</span>
                 </button>
               ) : (
-                <form onSubmit={confirmAdd} style={{ padding: '8px 12px', display: 'flex', gap: 6 }}>
-                  <input
-                    ref={inputRef}
-                    value={newName}
-                    onChange={e => setNewName(e.target.value)}
-                    placeholder="ex: Hiver 2027"
-                    style={{ flex: 1, padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 13, outline: 'none' }}
-                    onKeyDown={e => e.key === 'Escape' && setAdding(false)}
-                  />
-                  <button type="submit" disabled={!newName.trim()}
-                    style={{
-                      padding: '5px 10px', borderRadius: 6, border: 'none',
-                      background: newName.trim() ? '#2563eb' : 'var(--border)',
-                      color: newName.trim() ? '#fff' : 'var(--text-4)',
-                      cursor: newName.trim() ? 'pointer' : 'default', fontSize: 13, fontWeight: 600,
-                    }}
-                  >OK</button>
+                <form onSubmit={confirmAdd} style={{ padding: 10, display: 'flex', gap: 8 }}>
+                  <input ref={inputRef} className="champ" value={newName} onChange={e => setNewName(e.target.value)} placeholder="ex : Hiver 2027"
+                    onKeyDown={e => e.key === 'Escape' && setAdding(false)} />
+                  <button type="submit" className="btn btn-prim" disabled={!newName.trim()}>OK</button>
                 </form>
               )}
             </div>
@@ -213,57 +130,52 @@ function SeasonBadge() {
   )
 }
 
-// En-tête commun aux pages (bouton retour + titre + sélecteur de saison + onglets éventuels)
-function PageShell({ title, onHome, withSeason = true, tabs = null, rightExtra = null, children }) {
+// En-tête commun des pages : titre, actions, sélecteur de saison, onglets éventuels (plus de bouton retour : le menu reste visible)
+function PageShell({ title, withSeason = true, tabs = null, rightExtra = null, children }) {
   return (
-    <div className="app">
-      <header className="app-header">
-        <div className="header-top" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <BackButton onHome={onHome} />
-            <h1>{title}</h1>
-          </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {rightExtra}
-            {withSeason && <SeasonBadge />}
-          </div>
+    <div className="page-coque">
+      <header className="entete-page">
+        <h1 className="titre-page">{title}</h1>
+        <div className="entete-actions">
+          {rightExtra}
+          {withSeason && <SeasonBadge />}
         </div>
-        {tabs ? <nav className="tab-nav">{tabs}</nav> : <div style={{ height: 16 }} />}
       </header>
+      {tabs && <div className="onglets-page"><div className="segment" role="group">{tabs}</div></div>}
       <main className="app-main">{children}</main>
     </div>
   )
 }
 
+// Bouton « magasin » de l'en-tête (revient au choix du magasin, comme aujourd'hui)
+function BoutonMagasin({ nom, onClick }) {
+  return (
+    <button className="chip" onClick={onClick} title="Changer de magasin">
+      <Icone nom="magasin" taille={16} /> {nom} <Icone nom="bas" taille={14} />
+    </button>
+  )
+}
+
 // Cahier des entrées = Suivi livraisons + Entrées réunis (sous-onglets)
 const CAHIER_TABS = [
-  { id: 'suivi',   label: '📦 Suivi livraisons' },
-  { id: 'entrees', label: '📥 Entrées' },
+  { id: 'suivi',   label: 'Suivi livraisons' },
+  { id: 'entrees', label: 'Entrées' },
 ]
 
-function CahierEntrees({ onHome }) {
+function CahierEntrees() {
   const [tab, setTab] = useState('suivi')
   const { magasin: magasinCourant, setMagasin } = useMagasin()
   const magasin = magasinCourant?.nom || ''
 
-  function selectMagasin(m) { setMagasin(m) }
-  function changeMagasin() { setMagasin(null) }
-
-  if (!magasin) return <StoreSelect onSelect={selectMagasin} onHome={onHome}
+  if (!magasin) return <StoreSelect onSelect={m => setMagasin(m)} onHome={() => aller('home')}
     theme={{ accent: '#1d4ed8', border: '#93c5fd', shadow: 'rgba(29,78,216,0.18)', gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', icon: '📥' }} />
 
   return (
     <PageShell
-      title="📥 Cahier des entrées"
-      onHome={onHome}
-      rightExtra={
-        <button onClick={changeMagasin}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, border: '2px solid #93c5fd', background: '#eff6ff', color: '#1d4ed8', fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-          🏪 {magasin} &#9662;
-        </button>
-      }
+      title="Cahier des entrées"
+      rightExtra={<BoutonMagasin nom={magasin} onClick={() => setMagasin(null)} />}
       tabs={CAHIER_TABS.map(t => (
-        <button key={t.id} className={`tab-btn${tab === t.id ? ' active' : ''}`} onClick={() => setTab(t.id)}>{t.label}</button>
+        <button key={t.id} aria-pressed={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</button>
       ))}
     >
       {tab === 'suivi'   && <SuiviLivraisons />}
@@ -273,109 +185,56 @@ function CahierEntrees({ onHome }) {
 }
 
 // Top modèles & réassorts (par magasin, liés à la saison)
-function ReassortApp({ onHome }) {
+function ReassortApp() {
   const { magasin, setMagasin } = useMagasin()
-  function selectMagasin(m) { setMagasin(m) }
-  function changeMagasin() { setMagasin(null) }
-
-  if (!magasin) return <StoreSelect onSelect={selectMagasin} onHome={onHome}
+  if (!magasin) return <StoreSelect onSelect={m => setMagasin(m)} onHome={() => aller('home')}
     theme={{ accent: '#059669', border: '#6ee7b7', shadow: 'rgba(5,150,105,0.18)', gradient: 'linear-gradient(135deg, #10b981, #047857)', icon: '⭐' }} />
-
   return (
-    <PageShell
-      title="⭐ Top modèles & réassorts"
-      onHome={onHome}
-      rightExtra={
-        <button onClick={changeMagasin}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, border: '2px solid #6ee7b7', background: '#ecfdf5', color: '#047857', fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-          🏪 {magasin.nom} &#9662;
-        </button>
-      }
-    >
+    <PageShell title="Top modèles & réassorts" rightExtra={<BoutonMagasin nom={magasin.nom} onClick={() => setMagasin(null)} />}>
       <Reassort magasin={magasin} />
     </PageShell>
   )
 }
 
 function Root() {
-  const [view,      setView]      = useState('home')
+  const vueDemandee = useVue()
   const { estDirection } = useCompte()
-
-  function open(v) {
-    if (DIRECTION_VIEWS.has(v) && !estDirection) return
-    setView(v)
-  }
-  const home = () => setView('home')
+  const vue = DIRECTION_VIEWS.has(vueDemandee) && !estDirection ? 'home' : vueDemandee
+  const home = () => aller('home')
   const { magasin, setMagasin } = useMagasin()
   const alerts  = useAlerts(magasin)
-  const tablet  = useMediaQuery(TABLET)
-  const [drawer,    setDrawer]    = useState(false)
-  const [collapsed, setCollapsed] = useState(() => { try { return localStorage.getItem('sidebar_collapsed') === '1' } catch { return false } })
-  function toggleCollapse() {
-    setCollapsed(c => { try { localStorage.setItem('sidebar_collapsed', c ? '0' : '1') } catch { /* ignore */ } return !c })
-  }
-  function navigate(v) { setDrawer(false); open(v) }
 
   let content
-  if (view === 'cahier')          content = <CahierEntrees onHome={home} />
-  else if (view === 'commandes')  content = <Commandes onHome={home} />
-  else if (view === 'defectueux') content = <Defectueux onHome={home} />
-  else if (view === 'paie')       content = <PageShell title="🧾 Éléments variables de paie" onHome={home} withSeason={false}><Paie /></PageShell>
-  else if (view === 'achats' && estDirection)     content = <PageShell title="🛒 Achats" onHome={home}><Achats /></PageShell>
-  else if (view === 'repertoire') content = <PageShell title="📒 Répertoire fournisseurs" onHome={home} withSeason={false}><Repertoire /></PageShell>
-  else if (view === 'reglement' && estDirection)  content = <PageShell title="💳 Plan de règlement" onHome={home}><PlanReglement /></PageShell>
-  else if (view === 'parametres' && estDirection) content = <PageShell title="⚙️ Paramètres" onHome={home}><Parametres /></PageShell>
-  else if (view === 'factures')   content = <PageShell title="📄 Factures" onHome={home} withSeason={false}><Factures /></PageShell>
-  else if (view === 'planning')   content = <Planning onHome={home} />
-  else if (view === 'sav')        content = <Sav onHome={home} />
-  else if (view === 'reassort')   content = <ReassortApp onHome={home} />
-  else                            content = <HomeScreen onOpen={open} alerts={alerts} onMenu={() => setDrawer(true)} />
-
-  const sidebarProps = { view, magasin, setMagasin, alerts, onOpen: navigate }
+  if (vue === 'cahier')          content = <CahierEntrees />
+  else if (vue === 'commandes')  content = <Commandes onHome={home} />
+  else if (vue === 'defectueux') content = <Defectueux onHome={home} />
+  else if (vue === 'paie')       content = <PageShell title="Éléments variables de paie" withSeason={false}><Paie /></PageShell>
+  else if (vue === 'achats')     content = <PageShell title="Achats"><Achats /></PageShell>
+  else if (vue === 'repertoire') content = <PageShell title="Répertoire fournisseurs" withSeason={false}><Repertoire /></PageShell>
+  else if (vue === 'reglement')  content = <PageShell title="Plan de règlement"><PlanReglement /></PageShell>
+  else if (vue === 'parametres') content = <PageShell title="Paramètres"><Parametres /></PageShell>
+  else if (vue === 'factures')   content = <PageShell title="Factures" withSeason={false}><Factures /></PageShell>
+  else if (vue === 'planning')   content = <Planning onHome={home} />
+  else if (vue === 'sav')        content = <Sav onHome={home} />
+  else if (vue === 'reassort')   content = <ReassortApp />
+  else if (vue === 'clients')    content = <VueClients alerts={alerts} />
+  else                           content = <HomeScreen onOpen={aller} alerts={alerts} />
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Barre latérale toujours visible sur ordinateur */}
-      {!tablet && (
-        <aside style={{ width: collapsed ? 68 : 248, flexShrink: 0, position: 'sticky', top: 0, height: '100vh', background: 'var(--surface)', borderRight: '1px solid var(--border)', zIndex: 20, transition: 'width .2s' }}>
-          <Sidebar {...sidebarProps} collapsed={collapsed} onToggleCollapse={toggleCollapse} />
-        </aside>
-      )}
-      {/* Tablette / téléphone : tiroir ouvert par le bouton ☰ */}
-      {tablet && drawer && (
-        <>
-          <div onClick={() => setDrawer(false)} style={{ position: 'fixed', inset: 0, zIndex: 900, background: 'rgba(15,23,42,0.45)' }} />
-          <aside style={{ position: 'fixed', left: 0, top: 0, bottom: 0, width: 280, maxWidth: '85vw', zIndex: 901, background: 'var(--surface)', boxShadow: '8px 0 30px rgba(0,0,0,0.25)' }}>
-            <Sidebar {...sidebarProps} />
-          </aside>
-        </>
-      )}
-      {tablet && view !== 'home' && !drawer && (
-        <button onClick={() => setDrawer(true)} aria-label="Menu" title="Menu"
-          style={{
-            position: 'fixed', bottom: 20, left: 16, zIndex: 90, width: 46, height: 46, borderRadius: '50%', cursor: 'pointer',
-            border: '1px solid var(--border)', background: 'var(--surface)', fontSize: 20, color: 'var(--text-2)', boxShadow: '0 4px 14px var(--shadow-lg)',
-          }}>☰</button>
-      )}
-
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {content}
-      </div>
-    </div>
+    <Coque vue={vue} alerts={alerts} magasin={magasin} setMagasin={setMagasin}>
+      <Suspense fallback={<LoadingState />}>{content}</Suspense>
+    </Coque>
   )
 }
 
 export default function App() {
   return (
-    <>
-      <ThemeToggle />
-      <Connexion>
-        <SeasonProvider>
-          <MagasinProvider>
-            <Root />
-          </MagasinProvider>
-        </SeasonProvider>
-      </Connexion>
-    </>
+    <Connexion>
+      <SeasonProvider>
+        <MagasinProvider>
+          <Root />
+        </MagasinProvider>
+      </SeasonProvider>
+    </Connexion>
   )
 }

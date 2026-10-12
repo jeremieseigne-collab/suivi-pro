@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import '../styles/charte.css'
 import { CompteContext, compteDepuisSession } from '../context/CompteContext'
 
 // Garde l'outil derrière une connexion : tant que l'appareil n'est pas connecté avec un compte,
@@ -33,25 +34,22 @@ function EcranConnexion() {
     if (error) setErreur(error.message === 'Invalid login credentials' ? 'Adresse ou mot de passe incorrect.' : 'Connexion impossible pour le moment. Vérifiez le réseau et réessayez.')
   }
 
-  const champ = { width: '100%', boxSizing: 'border-box', minHeight: 44, padding: '10px 14px', fontSize: 16, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', marginTop: 6 }
-
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'var(--bg)' }}>
-      <form onSubmit={valider} style={{ width: '100%', maxWidth: 380, background: 'var(--surface)', borderRadius: 16, padding: '28px 24px', boxShadow: '0 8px 30px var(--shadow-lg)' }}>
-        <h1 style={{ margin: '0 0 6px', fontSize: 22, textAlign: 'center', color: 'var(--text)' }}>Suivi Pro</h1>
-        <p style={{ margin: '0 0 22px', fontSize: 14, textAlign: 'center', color: 'var(--text-3)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'var(--fond)', boxSizing: 'border-box' }}>
+      <form onSubmit={valider} style={{ width: '100%', maxWidth: 380, background: 'var(--carte)', borderRadius: 18, padding: '28px 24px', boxShadow: 'var(--ombre-douce)', color: 'var(--texte)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontWeight: 700, fontSize: 18, marginBottom: 8 }}>
+          <span style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--action)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>S</span>
+          Suivi Pro
+        </div>
+        <p style={{ margin: '0 0 22px', fontSize: 14, textAlign: 'center', color: 'var(--doux)' }}>
           Connectez cet appareil avec le compte du magasin. Il restera connecté.
         </p>
-        <label style={{ display: 'block', fontSize: 13, color: 'var(--text-3)' }}>
-          Adresse du magasin
-          <input type="email" autoComplete="username" required value={email} onChange={e => setEmail(e.target.value)} style={champ} />
-        </label>
-        <label style={{ display: 'block', fontSize: 13, color: 'var(--text-3)', marginTop: 14 }}>
-          Mot de passe
-          <input type="password" autoComplete="current-password" required value={motDePasse} onChange={e => setMdp(e.target.value)} style={champ} />
-        </label>
-        {erreur && <div className="form-error" style={{ marginTop: 14 }}>{erreur}</div>}
-        <button type="submit" className="btn-primary" disabled={enCours} style={{ width: '100%', minHeight: 44, marginTop: 22 }}>
+        <label className="etiquette" htmlFor="connexion-email">Adresse du magasin</label>
+        <input id="connexion-email" className="champ" type="email" autoComplete="username" required value={email} onChange={e => setEmail(e.target.value)} style={{ fontSize: 16 }} />
+        <label className="etiquette" htmlFor="connexion-mdp" style={{ marginTop: 14 }}>Mot de passe</label>
+        <input id="connexion-mdp" className="champ" type="password" autoComplete="current-password" required value={motDePasse} onChange={e => setMdp(e.target.value)} style={{ fontSize: 16 }} />
+        {erreur && <div className="encart err" style={{ marginTop: 14 }}>{erreur}</div>}
+        <button type="submit" className="btn btn-prim" disabled={enCours} style={{ width: '100%', marginTop: 22 }}>
           {enCours ? 'Connexion…' : 'Se connecter'}
         </button>
       </form>
