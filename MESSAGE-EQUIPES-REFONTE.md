@@ -33,6 +33,12 @@ Sur l'**Accueil** :
 
 *(Direction uniquement : « En retard » indique aussi les entrées à pointer.)*
 
+## Détail — Top modèles & réassorts
+
+- L'étape « Demandé » disparaît : un réassort est « À réassortir », puis « Commandé », « En route » et « Reçu ».
+- Touchez un modèle pour ouvrir sa fiche : réassort en cours, stock par pointure, commander par mail, réception, historique.
+- Après chaque action, un message propose « Annuler ».
+
 ## Détail — Commandes clients
 
 - La liste montre les **commandes en cours** ; les commandes retirées ou annulées sont rangées dans le filtre « Retirées / annulées ».

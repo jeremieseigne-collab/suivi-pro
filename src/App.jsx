@@ -1,5 +1,4 @@
 import { lazy, Suspense } from 'react'
-import StoreSelect      from './components/StoreSelect'
 import HomeScreen       from './home/HomeScreen'
 import { LoadingState } from './components/shared'
 import Connexion from './components/Connexion'
@@ -9,7 +8,7 @@ import { SeasonProvider } from './context/SeasonContext'
 import { MagasinProvider, useMagasin } from './context/MagasinContext'
 import Coque, { VueClients } from './shell/Coque'
 import { useVue, aller } from './shell/navigation'
-import { PageShell, BoutonMagasin } from './shell/EnTete'
+import { PageShell } from './shell/EnTete'
 import './App.css'
 import './styles/charte.css'
 
@@ -30,18 +29,6 @@ const AgendaBoard     = lazy(() => import('./agenda/AgendaBoard'))
 // Écrans réservés aux comptes Direction (la base refuse de toute façon les écritures sensibles aux comptes magasin)
 const DIRECTION_VIEWS = new Set(['reglement', 'parametres', 'achats'])
 
-// Top modèles & réassorts (par magasin, liés à la saison)
-function ReassortApp() {
-  const { magasin, setMagasin } = useMagasin()
-  if (!magasin) return <StoreSelect onSelect={m => setMagasin(m)} onHome={() => aller('home')}
-    theme={{ accent: '#059669', border: '#6ee7b7', shadow: 'rgba(5,150,105,0.18)', gradient: 'linear-gradient(135deg, #10b981, #047857)', icon: '⭐' }} />
-  return (
-    <PageShell title="Top modèles & réassorts" rightExtra={<BoutonMagasin nom={magasin.nom} onClick={() => setMagasin(null)} />}>
-      <Reassort magasin={magasin} />
-    </PageShell>
-  )
-}
-
 function Root() {
   const vueDemandee = useVue()
   const { estDirection } = useCompte()
@@ -61,7 +48,7 @@ function Root() {
   else if (vue === 'factures')   content = <PageShell title="Factures" withSeason={false}><Factures /></PageShell>
   else if (vue === 'planning')   content = <Planning onHome={home} />
   else if (vue === 'sav' || vue === 'defectueux') content = <SavDefectueux vue={vue} />
-  else if (vue === 'reassort')   content = <ReassortApp />
+  else if (vue === 'reassort')   content = <Reassort />
   else if (vue === 'clients')    content = <VueClients alerts={alerts} />
   else if (vue === 'agenda')     content = <PageShell title="Agenda" withSeason={false}><AgendaBoard /></PageShell>
   else                           content = <HomeScreen alerts={alerts} />

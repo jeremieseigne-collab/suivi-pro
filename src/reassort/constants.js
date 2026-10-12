@@ -105,3 +105,12 @@ export async function supprimerTop(topId) {
   for (const r of rs) await db.reassorts.delete(r.id)
   await db.topModeles.delete(topId)
 }
+
+// ─── Refonte (13/10) : l'étape « Demandé » est supprimée (doublon de « À réassortir », U7) ───
+// Aucune donnée n'est modifiée : un réassort enregistré « Demandé » s'affiche et se traite comme « À réassortir ».
+export const ETAPES_VUES = ['À réassortir', 'Commandé', 'En route', 'Reçu']
+export const ETAPES_CHOIX = ['À réassortir', 'Commandé', 'En route']   // choisissables à la main (« Reçu » passe par la réception)
+export const etapeVue = s => (s === 'Demandé' ? 'À réassortir' : s)
+export const etapeSuivante = s => ETAPES_VUES[ETAPES_VUES.indexOf(etapeVue(s)) + 1]
+export const aCommander = s => s === 'À réassortir' || s === 'Demandé'
+export const CLASSE_ETAPE = { 'À réassortir': 'e-rouge', 'Commandé': 'e-bleu', 'En route': 'e-violet', 'Reçu': 'e-vert' }
