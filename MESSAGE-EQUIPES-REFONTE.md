@@ -33,6 +33,14 @@ Sur l'**Accueil** :
 
 *(Direction uniquement : « En retard » indique aussi les entrées à pointer.)*
 
+## Détail — SAV & défectueux
+
+- Le SAV et les défectueux sont réunis dans **un seul écran** à deux onglets : « SAV » et « Défectueux » (menu « SAV & défectueux », ou « Clients » sur téléphone).
+- **Nouveau dossier** : comme avant (retour client, mise à la forme, réparation). Touche ton prénom, tape le nom du client, cherche la marque (si elle n'existe pas, l'outil propose d'abord une marque au nom proche), puis le modèle et la pointure.
+- Sur chaque dossier : l'enveloppe (mail à la marque), le crayon (modifier), la corbeille (supprimer), et le **journal** pour noter les échanges (Entrée pour ajouter une note).
+- **Clôturer** un dossier SAV propose de clôturer aussi le défectueux lié — plus besoin de le faire deux fois. Et passer un défectueux à « Avoir reçu » propose de clôturer le dossier SAV.
+- **Défectueux** : touche une ligne pour ouvrir sa fiche (changer l'état, envoyer le mail, modifier, supprimer).
+
 ## Détail — Cahier des entrées
 
 **Créer une marque depuis la saisie**

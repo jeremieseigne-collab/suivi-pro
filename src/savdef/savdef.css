@@ -1,0 +1,60 @@
+/* SAV & défectueux — charte de la refonte (sobre : la couleur pour l'urgence et l'état terminé seulement) */
+.dossiers { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.dossier { padding: 10px 12px 12px 16px; }
+.dossier-haut { display: flex; align-items: center; gap: 8px; min-height: 40px; }
+.dossier-etiquettes { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; }
+.dossier-icones { display: flex; flex-shrink: 0; margin-right: -6px; }
+.type-dossier { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: var(--carte-2); color: var(--doux); }
+.statut-dossier { font-size: var(--t-meta); font-weight: 600; color: var(--doux); }
+.statut-dossier.ok { color: var(--ok); }
+.icone-btn.petit { width: 40px; height: 40px; }
+.dossier-corps { display: grid; gap: 10px; }
+@media (min-width: 900px) { .dossier-corps { grid-template-columns: minmax(220px, 1fr) minmax(280px, 1.2fr); align-items: start; } }
+.dossier-infos .t1 { font-weight: 600; font-size: 16px; }
+.dossier-infos .tel { font-weight: 400; color: var(--doux); font-size: 14px; }
+.dossier-article { font-size: 15px; margin: 2px 0; }
+.dossier-infos .t2 { font-size: var(--t-meta); color: var(--doux); }
+.dossier-forme { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--trait); }
+.dossier-forme.aide { font-weight: 600; }
+.dossier-forme.att { color: var(--att); }
+.dossier-bas { display: flex; justify-content: flex-end; margin-top: 10px; }
+.btn-cloturer { color: var(--ok); }
+.dossier.clos { background: var(--carte-2); }
+.dossier.clos .dossier-corps, .dossier.clos .type-dossier { opacity: .6; }
+
+.minuteur { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 150px; font-size: var(--t-meta); color: var(--doux); }
+.minuteur b { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; color: var(--action-texte); }
+.minuteur .barre { width: 100%; }
+.minuteur.att b { color: var(--att); } .minuteur.att .barre i { background: #ff9500; }
+.minuteur.err b { color: var(--err); } .minuteur.err .barre i { background: #ff3b30; }
+.minuteur.ok b { color: var(--ok); }
+
+/* Journal : une note par ligne, la ligne du bas pour en ajouter une */
+.journal { border-radius: 10px; background: var(--carte-2); padding: 4px 10px; }
+.journal-ligne { display: block; width: 100%; text-align: left; font: inherit; font-size: 14px; line-height: 1.4; color: var(--texte); background: none; border: 0;
+  border-bottom: 1px solid var(--trait); padding: 7px 0; white-space: pre-wrap; cursor: text; }
+.journal-ligne.vide-j { color: var(--discret); border: 0; cursor: default; }
+.journal-saisie { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; border: 0; border-bottom: 1px solid var(--action); background: transparent; color: var(--texte); padding: 7px 0; outline: none; }
+.journal-saisie.nouvelle { border-bottom: 0; min-height: 40px; }
+
+/* Défectueux */
+.etat-mot { font-size: var(--t-meta); font-weight: 600; white-space: nowrap; color: var(--doux); }
+.etat-mot.att { color: var(--att); } .etat-mot.info { color: var(--action-texte); } .etat-mot.ok { color: var(--ok); } .etat-mot.err { color: var(--err); }
+.ligne-def .t1, .ligne-def .t2 { display: block; }
+.note-def { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.ligne.termine { background: var(--carte-2); }
+
+/* Saisies */
+.saisie-sav .feuille-corps .etiquette { margin-top: 14px; }
+.saisie-sav .feuille-corps label.etiquette .champ { margin-top: 6px; }
+.deux-champs, .trois-champs { display: grid; gap: 0 12px; }
+@media (min-width: 600px) { .deux-champs { grid-template-columns: 1fr 1fr; } .trois-champs { grid-template-columns: 1fr 1fr 1fr; } }
+.segment-plein { display: flex; } .segment-plein button { flex: 1; padding: 0 6px; line-height: 1.2; }
+@media (max-width: 420px) { .segment-plein button { font-size: 13px; } }
+textarea.champ { resize: vertical; min-height: 72px; }
+
+/* Panneau d'essai local (points à trancher) */
+.panneau-variantes { border: 1px dashed var(--discret); border-radius: 12px; padding: 8px 12px; margin-bottom: 12px; font-size: 14px; color: var(--doux); }
+.panneau-variantes summary { cursor: pointer; font-weight: 600; }
+.ligne-variante { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--trait); }
+.ligne-variante span { color: var(--texte); }

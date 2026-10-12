@@ -20,10 +20,9 @@ const PlanReglement   = lazy(() => import('./tabs/PlanReglement'))
 const Parametres      = lazy(() => import('./tabs/Parametres'))
 const Repertoire      = lazy(() => import('./tabs/Repertoire'))
 const Commandes       = lazy(() => import('./commandes/Commandes'))
-const Defectueux      = lazy(() => import('./defectueux/Defectueux'))
 const Paie            = lazy(() => import('./paie/Paie'))
 const Planning        = lazy(() => import('./planning/Planning'))
-const Sav             = lazy(() => import('./sav/Sav'))
+const SavDefectueux   = lazy(() => import('./savdef/SavDefectueux'))
 const Factures        = lazy(() => import('./factures/Factures'))
 const Reassort        = lazy(() => import('./reassort/Reassort'))
 const AgendaBoard     = lazy(() => import('./agenda/AgendaBoard'))
@@ -54,7 +53,6 @@ function Root() {
   let content
   if (vue === 'cahier')          content = <Cahier />
   else if (vue === 'commandes')  content = <Commandes onHome={home} />
-  else if (vue === 'defectueux') content = <Defectueux onHome={home} />
   else if (vue === 'paie')       content = <PageShell title="Éléments variables de paie" withSeason={false}><Paie /></PageShell>
   else if (vue === 'achats')     content = <PageShell title="Achats"><Achats /></PageShell>
   else if (vue === 'repertoire') content = <PageShell title="Répertoire fournisseurs" withSeason={false}><Repertoire /></PageShell>
@@ -62,7 +60,7 @@ function Root() {
   else if (vue === 'parametres') content = <PageShell title="Paramètres"><Parametres /></PageShell>
   else if (vue === 'factures')   content = <PageShell title="Factures" withSeason={false}><Factures /></PageShell>
   else if (vue === 'planning')   content = <Planning onHome={home} />
-  else if (vue === 'sav')        content = <Sav onHome={home} />
+  else if (vue === 'sav' || vue === 'defectueux') content = <SavDefectueux vue={vue} />
   else if (vue === 'reassort')   content = <ReassortApp />
   else if (vue === 'clients')    content = <VueClients alerts={alerts} />
   else if (vue === 'agenda')     content = <PageShell title="Agenda" withSeason={false}><AgendaBoard /></PageShell>

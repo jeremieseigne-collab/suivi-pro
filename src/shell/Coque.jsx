@@ -16,8 +16,7 @@ const MENU = [
     { id: 'cahier',     icone: 'entrees',    label: 'Cahier des entrées' },
     { id: 'reassort',   icone: 'reassort',   label: 'Top modèles & réassorts' },
     { id: 'commandes',  icone: 'commande',   label: 'Commandes clients' },
-    { id: 'sav',        icone: 'sav',        label: 'SAV' },
-    { id: 'defectueux', icone: 'defectueux', label: 'Défectueux' },
+    { id: 'sav',        icone: 'sav',        label: 'SAV & défectueux', vues: ['sav', 'defectueux'] },
     { id: 'repertoire', icone: 'repertoire', label: 'Répertoire' },
     { id: 'factures',   icone: 'facture',    label: 'Factures' },
   ] },
@@ -46,7 +45,7 @@ function reperes(alerts) {
     badges: {
       reassort:   alerts?.retard ? { n: alerts.retard, couleur: '#f97316', titre: 'Réassorts en retard' }
                 : { n: alerts?.aCommander, couleur: '#ef4444', titre: 'Réassorts à commander' },
-      defectueux: { n: alerts?.defATraiter, couleur: '#e11d48', titre: 'Défectueux à traiter' },
+      sav:        { n: alerts?.defATraiter, couleur: '#e11d48', titre: 'Défectueux à traiter' },
       commandes:  { n: alerts?.cmdAPrevenir, couleur: '#0891b2', titre: 'Clients à prévenir' },
     },
     notes: { paie: jour >= 15 && jour <= 25 ? 'À remplir avant le 25' : '' },
@@ -112,7 +111,7 @@ function BarreLaterale({ vue, alerts, magasin, setMagasin }) {
         <div key={i}>
           {g.titre && (replie ? <div className="separateur" /> : <div className="nav-titre">{g.titre}</div>)}
           {g.items.map(it => (
-            <button key={it.id} className="nav" aria-current={vue === it.id ? 'page' : undefined} onClick={() => aller(it.id)} title={replie ? it.label : undefined}>
+            <button key={it.id} className="nav" aria-current={(it.vues || [it.id]).includes(vue) ? 'page' : undefined} onClick={() => aller(it.id)} title={replie ? it.label : undefined}>
               <Icone nom={it.icone} taille={20} />
               {!replie && <span className="nav-txt">{it.label}{notes[it.id] && <small>{notes[it.id]}</small>}</span>}
               <Pastille badge={badges[it.id]} />
@@ -138,7 +137,7 @@ function BarreOnglets({ vue, alerts, magasin, setMagasin }) {
   const dansOnglets = new Set(ONGLETS.flatMap(o => o.vues || [o.id]))
   const autres = MENU.filter(g => !g.direction || estDirection).flatMap(g => g.items).filter(it => !dansOnglets.has(it.id))
   const ongletActif = o => (o.vues || [o.id]).includes(vue)
-  const nbClients = (badges.commandes.n || 0) + (badges.defectueux.n || 0)
+  const nbClients = (badges.commandes.n || 0) + (badges.sav.n || 0)
   return (
     <>
       <nav className="barre-onglets" aria-label="Onglets">
@@ -187,10 +186,10 @@ function BarreOnglets({ vue, alerts, magasin, setMagasin }) {
   )
 }
 
-// ─── Page « Clients » du téléphone : Commandes clients, SAV, Défectueux ───
+// ─── Page « Clients » du téléphone : Commandes clients, SAV & défectueux ───
 export function VueClients({ alerts }) {
   const { badges } = reperes(alerts)
-  const items = [['commandes', 'commande', 'Commandes clients'], ['sav', 'sav', 'SAV'], ['defectueux', 'defectueux', 'Défectueux']]
+  const items = [['commandes', 'commande', 'Commandes clients'], ['sav', 'sav', 'SAV & défectueux']]
   return (
     <div className="page-coque">
       <h1 className="titre-page">Clients</h1>

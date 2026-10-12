@@ -134,8 +134,8 @@ button.ligne:hover { background: color-mix(in srgb, var(--texte) 3%, transparent
 .confirmation { width: 100%; max-width: 420px; background: var(--carte); color: var(--texte); border-radius: 18px; padding: 20px; box-shadow: var(--ombre-douce); }
 .confirmation h2 { margin: 0 0 8px; font-size: var(--t-titre); }
 .confirmation p { margin: 0 0 18px; color: var(--doux); font-size: 15px; line-height: 1.45; }
-.confirmation-boutons { display: flex; gap: 10px; }
-.confirmation-boutons .btn { flex: 1; }
+.confirmation-boutons { display: flex; gap: 10px; flex-wrap: wrap; }
+.confirmation-boutons .btn { flex: 1 1 120px; }
 .btn-danger-plein { background: var(--err); color: #fff; }
 .btn-danger-plein:hover { background: color-mix(in srgb, #000 12%, var(--err)); }
 .confirmation .nom-exact { display: block; margin: 10px 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--carte-2); border: 1px solid var(--trait); color: var(--texte); font-size: 18px; font-weight: 700; word-break: break-word; }

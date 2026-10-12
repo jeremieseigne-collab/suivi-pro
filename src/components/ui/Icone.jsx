@@ -27,6 +27,10 @@ const TRACES = {
   sortie:     'M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4 M10 17l5-5-5-5 M15 12H4',
   replier:    'm15 6-6 6 6 6 M20 4v16',
   deplier:    'm9 6 6 6-6 6 M4 4v16',
+  mail:       'M3 5h18v14H3z m0 0 9 7 9-7',
+  crayon:     'M4 20h4L19 9l-4-4L4 16z M13.5 6.5l4 4',
+  corbeille:  'M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6',
+  horloge:    'M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18z M12 7v5l3 2',
   apparence:  'M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z',
 }
 
