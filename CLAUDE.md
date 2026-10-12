@@ -130,7 +130,8 @@ La saison active n'est **pas** une table : elle vit dans `localStorage` et dans 
 - **Magasin de l'appareil** : `MagasinContext` (`localStorage['magasin_courant']`), choisi une fois ; `StoreSelect` (« Dans quel magasin es-tu ? ») s'affiche dans Cahier, Réassorts, SAV & défectueux, Commandes tant qu'il n'est pas choisi.
 - **Composants de la charte** : `components/ui/Icone.jsx` (icônes au trait, pas d'emojis dans les menus et boutons), `components/ui/Confirmation.jsx` (fenêtre de confirmation, `danger`), `cahier/Reperes.jsx` (`Toast` avec « Annuler », `Statut`, `Numero`). Classes : `.carte`, `.liste` / `.ligne`, `.btn` / `.btn-prim` / `.btn-danger`, `.champ`, `.etiquette`, `.chip` / `.chips`, `.segment`, `.feuille` (fenêtre, plein écran sur téléphone), `.encart`, `.aide`. Le **point de couleur** est réservé au statut des entrées ; ailleurs l'état s'écrit en **mot de couleur**.
 - **`src/styles/pont.css`** : passerelle qui branche les anciens composants encore en place (fenêtres d'import CSV, fiches d'achat `AchatEditModal` / `AchatAddModal`, `Parametres.jsx`, `DangerConfirm`) sur la charte : ancienne palette (`--surface`, `--text`, `--accent`…) = couleurs de la charte, fenêtres / boutons / champs / tableaux restylés, couleurs de code en teinte transparente en mode sombre.
-- **Essais avec / sans** : pendant la construction d'un écran, `shell/essai.js` (`useVariantes`) + `shell/PanneauEssai.jsx` (visible seulement en local) ; le panneau est retiré une fois les choix faits.
+- **Essais avec / sans** : le panneau d'essai (`shell/essai.js`, `shell/PanneauEssai.jsx`) a été retiré le 13/10 ; pour un nouvel essai, le reprendre dans l'historique Git (commit précédant le retrait des fichiers inutilisés).
+- **Écrans chargés à l'ouverture** : `ecran()` dans `App.jsx` (au lieu de `lazy`) recharge la page une fois si le fichier d'un écran n'existe plus (après une mise en ligne, Vercel ne sert plus les fichiers de la version précédente).
 
 ### Écrans (refonte)
 - **Accueil** (`home/HomeScreen.jsx`, `home/AVenir.jsx`) : bonjour, raccourcis (Saisir une entrée, Commande client, Dossier SAV), compteurs non nuls, bloc « En retard », bloc « À venir » (agenda).
@@ -144,7 +145,7 @@ La saison active n'est **pas** une table : elle vit dans `localStorage` et dans 
 - **Planning** (`planning/`) : grille de la semaine (téléphone : jour par jour), saisie d'un créneau, copier / coller, annuler (bouton + Ctrl+Z, vise la bonne semaine), « Reprendre la semaine précédente » (cases vides seulement), impression 1 / 2 / 3 semaines (`impression.js`).
 - **Éléments de paie** (`paie/`) : règles de l'étape 2 (compte magasin : dépôt sans relecture ; Direction : lecture, correction, récap) ; société pré-remplie d'après le magasin, « Vérifie ta saisie » (avertissement hors du mois, totaux). La liste est relue après chaque enregistrement (`maj`).
 - **Direction** : **Achats** (`tabs/Achats.jsx` ; fiche d'achat : mode de règlement en lecture seule, `achats/ModeLecture.jsx`), **Plan de règlement** (`reglement/Plan.jsx` ; ⚠️ le **calcul** est dans `reglement/calcul.js`, déplacé **tel quel** depuis l'ancien écran — ne pas le modifier sans comparaison ligne par ligne avec l'outil actuel ; bloc « En retard », mois passés payés repliés, avoirs « déduit », marques en chèques sans réception dans un bloc à part `chequesEnAttente`), **Réglages** (`tabs/Parametres.jsx`, ouvrable sur un onglet : `#/parametres?modes` ; suppression de saison avec le nom à retaper).
-- Fichiers inutilisés restant à retirer (étape 4) : `tabs/PlanAchat.jsx`, `tabs/PlanReglement.jsx` (ancien écran, sert de référence au calcul), `lib/migrate.js`, `components/ComboBox.jsx`.
+- Fichiers inutilisés retirés le 13/10 (`tabs/PlanAchat.jsx`, ancien `tabs/PlanReglement.jsx`, `lib/migrate.js`, `components/ComboBox.jsx`, panneau d'essai, images du modèle Vite). La référence du calcul du Plan est l'**outil en ligne** (comparaison ligne par ligne).
 
 ### Envoi d'emails — fonction serveur (`api/`)
 Les mails (App Paie ; potentiellement d'autres à l'avenir) partent d'une **fonction serverless Vercel** : `api/send-mail.js` (handler POST `{to, subject, text}`) qui utilise `api/_send.js` → **nodemailer + SMTP Gmail** (`smtp.gmail.com:465`) avec `GMAIL_USER` / `GMAIL_APP_PASSWORD` (mot de passe d'application Google). Le `from` est `B'Shoes & JR Shoes <GMAIL_USER>`. **Aucune marque tierce** dans les mails (contrairement à EmailJS). En **dev**, `vite.config.js` sert la même route via un middleware (`Object.assign(process.env, loadEnv(...))` charge les vars non-`VITE_`), donc `npm run dev` envoie aussi de vrais mails. **En prod, définir `GMAIL_USER` et `GMAIL_APP_PASSWORD` dans Vercel** (env Production, sans préfixe `VITE_`).
@@ -155,7 +156,7 @@ Les mails (App Paie ; potentiellement d'autres à l'avenir) partent d'une **fonc
 - **`src/data/clipboard.js`** : presse-papier en mémoire (module singleton) pour copier/coller une grille de tailles dans la saisie du Cahier.
 
 ### Migration historique
-`src/lib/migrate.js` (`migrateLocalToSupabase`) est un import **ponctuel** IndexedDB (ancienne base Dexie locale `SuiviPro`) → Supabase, déclenché depuis l'onglet Paramètres. Refuse de s'exécuter si Supabase contient déjà des magasins.
+L'import ponctuel IndexedDB → Supabase (`lib/migrate.js`) n'était plus branché nulle part ; il a été retiré le 13/10 (consultable dans l'historique Git).
 
 ## Thème clair / sombre
 

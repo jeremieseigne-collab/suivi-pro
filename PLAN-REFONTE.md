@@ -43,7 +43,7 @@ Achats, Réglages (Magasins, Salariés, Marques, Modes de règlement, Saisons, A
 - Les compteurs peu utiles en haut des écrans (« lignes totales », « lignes filtrées », « nombre de magasins »…).
 - Le bouton retour ← en haut de chaque app (le menu est toujours visible ; le retour du navigateur fonctionne).
 - Les 6 menus de filtres toujours visibles du Cahier → pastilles (magasin, Toutes, Retours ; « À pointer » pour la Direction) + un bouton « Filtres » (magasin, société, marque, catégorie, statut ; pointage pour la Direction).
-- Les fichiers inutilisés (`PlanAchat.jsx`, ancien `PlanReglement.jsx`, `migrate.js`, `ComboBox.jsx`, panneau d'essai) : **pas encore retirés** — décision attendue à l'étape 4 (rien de visible).
+- Les fichiers inutilisés (`PlanAchat.jsx`, ancien `PlanReglement.jsx`, `migrate.js`, `ComboBox.jsx`, panneau d'essai `PanneauEssai.jsx` / `essai.js`, images du modèle Vite `src/assets/*`, `public/icons.svg`) : **retirés le 13/10** (commit à part ; aucun n'était utilisé, ni dans la refonte ni dans l'outil en ligne : rien de visible). L'ancien calcul du Plan reste consultable dans l'historique Git.
 
 ### Ce qui est ajouté
 - **Accueil « ma journée »** (B2) : seulement ce qui demande une action aujourd'hui + les 3 actions fréquentes.
