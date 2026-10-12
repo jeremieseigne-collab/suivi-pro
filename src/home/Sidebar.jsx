@@ -108,9 +108,10 @@ function NavItem({ item, active, badge, note, collapsed, onOpen }) {
   )
 }
 
-// Déconnexion de l'appareil (l'appareil devra ressaisir le mot de passe du magasin)
+// Déconnexion de CET appareil seulement (accord écrit du 12/10) : les autres appareils du même compte restent connectés.
+// La déconnexion de tous les appareils d'un compte reste dans Paramètres → Appareils connectés (Direction).
 function seDeconnecter() {
-  if (window.confirm('Se déconnecter de cet appareil ?\nIl faudra ressaisir l\'adresse et le mot de passe du magasin pour revenir.')) supabase.auth.signOut()
+  if (window.confirm('Se déconnecter de cet appareil ?\nIl faudra ressaisir l\'adresse et le mot de passe du magasin pour revenir.')) supabase.auth.signOut({ scope: 'local' })
 }
 
 export default function Sidebar({ view, magasin, setMagasin, alerts, onOpen, collapsed = false, onToggleCollapse }) {

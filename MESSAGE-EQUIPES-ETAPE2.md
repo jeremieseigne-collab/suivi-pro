@@ -13,6 +13,7 @@
 Quelques rubriques de gestion (Achats, Plan de règlement, Paramètres) et le pointage des entrées disparaissent pour les comptes des magasins.
 Votre identifiant et votre mot de passe ne changent pas.
 Paie : relisez bien l'écran « Vérifie ta saisie » — une fiche validée ne peut plus être corrigée par vous, prévenez Jérémie en cas d'erreur.
+« Se déconnecter » ne déconnecte plus que l'appareil sur lequel vous le touchez.
 
 ---
 
@@ -40,6 +41,8 @@ Si vous avez besoin de l'une de ces actions (par exemple une nouvelle collègue 
 - **une fois validée, votre fiche ne peut plus être corrigée par vous** : en cas d'erreur, prévenez Jérémie (bouton « Envoyer la demande » sur votre nom, ou directement).
 
 **Petit changement dans les listes de statuts :** « Enregistré » vient désormais **avant** « Imp. étiquettes » (ordre des étapes : on enregistre, puis on imprime les étiquettes).
+
+**« Se déconnecter » :** le bouton ne déconnecte plus que **l'appareil sur lequel vous le touchez** ; les autres appareils du magasin (caisse, tablette, téléphone) restent connectés.
 
 **Ce qui ne change pas :** le Cahier des entrées (y compris une marque ou un modèle nouveau), les SAV, les défectueux, les commandes clients, les réassorts, le planning, le répertoire et les factures fonctionnent exactement comme aujourd'hui. Vous pouvez toujours ajouter une marque depuis le SAV, les défectueux, le répertoire ou les top modèles, et un modèle depuis le SAV ou les défectueux.
 
