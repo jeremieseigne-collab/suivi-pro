@@ -1,7 +1,7 @@
 import { db } from '../db'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { isActif, retard } from '../reassort/constants'
-import { magasinCommandes } from '../commandes/constants'
+import { magasinCommandes, memeMagasin } from '../commandes/constants'
 
 // Compteurs « à surveiller » (filtrés sur le magasin courant s'il y en a un)
 export function useAlerts(magasin) {
@@ -11,7 +11,7 @@ export function useAlerts(magasin) {
     ])
     const mine = r => !magasin || r.magasinId === magasin.id
     const nomCmd = magasinCommandes(magasin?.nom)
-    const cmdMine = c => !magasin || c.magasin === nomCmd
+    const cmdMine = c => !magasin || memeMagasin(c.magasin, nomCmd)
     const actifs = reassorts.filter(r => isActif(r) && mine(r))
     return {
       aCommander: actifs.filter(r => r.statut === 'À réassortir' || r.statut === 'Demandé').length,

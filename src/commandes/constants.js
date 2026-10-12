@@ -2,12 +2,17 @@
 
 export const MAGASINS = ['Bailly Albi', 'Bailly Rouffiac-Tolosan', 'Les 2 Zèbres']
 
-// Nom « Commandes » d'un magasin de la base (ex. « Bailly Rouffiac » → « Bailly Rouffiac-Tolosan »)
+// Comparaison de noms de magasin sans tenir compte des majuscules, accents, espaces ni tirets
+// (« Bailly Rouffiac Tolosan » = « Bailly Rouffiac-Tolosan ») : les deux écritures existent dans les commandes.
+export const formeMagasin = nom => (nom || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '')
+export const memeMagasin = (a, b) => !!a && !!b && formeMagasin(a) === formeMagasin(b)
+
+// Nom « Commandes » d'un magasin de la base (ex. « Bailly Rouffiac Tolosan » ou « Bailly Rouffiac » → « Bailly Rouffiac-Tolosan »)
 export function magasinCommandes(nom) {
   if (!nom) return ''
-  const n = nom.trim().toLowerCase()
-  return MAGASINS.find(m => m.toLowerCase() === n)
-    || MAGASINS.find(m => m.toLowerCase().startsWith(n) || n.startsWith(m.toLowerCase()))
+  const n = formeMagasin(nom)
+  return MAGASINS.find(m => formeMagasin(m) === n)
+    || MAGASINS.find(m => formeMagasin(m).startsWith(n) || n.startsWith(formeMagasin(m)))
     || nom
 }
 

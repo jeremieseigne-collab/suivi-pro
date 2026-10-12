@@ -5,7 +5,7 @@ import { LoadingState, fmtTel } from '../components/shared'
 import CommandeModal from './CommandeModal'
 import StoreSelect from '../components/StoreSelect'
 import { useMagasin } from '../context/MagasinContext'
-import { magasinCommandes, PROVENANCES, STATUTS, STATUTS_CLOS, STATUT_COLOR, PROVENANCE_COLOR } from './constants'
+import { magasinCommandes, memeMagasin, PROVENANCES, STATUTS, STATUTS_CLOS, STATUT_COLOR, PROVENANCE_COLOR } from './constants'
 
 function Pill({ map, value }) {
   if (!value) return <span style={{ color: 'var(--text-5)' }}>—</span>
@@ -65,11 +65,11 @@ export default function Commandes({ onHome }) {
 
   const salaries = useLiveQuery(() => db.salaries.orderBy('nom').toArray(), [])
   const salarieNames = useMemo(() =>
-    (salaries || []).filter(s => !s.magasin || s.magasin === magasin).map(s => s.nom),
+    (salaries || []).filter(s => !s.magasin || memeMagasin(s.magasin, magasin)).map(s => s.nom),
     [salaries, magasin]
   )
 
-  const rows = useMemo(() => (data ?? []).filter(r => r.magasin === magasin), [data, magasin])
+  const rows = useMemo(() => (data ?? []).filter(r => memeMagasin(r.magasin, magasin)), [data, magasin])
 
   const filtered = useMemo(() => rows.filter(r => {
     if (fStatut  && r.statut     !== fStatut)  return false
