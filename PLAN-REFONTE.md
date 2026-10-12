@@ -1,7 +1,7 @@
-# Plan de la refonte — étape 2
+# Plan de la refonte
 
-> À valider avant la construction. Maquettes : ouvrir `maquettes/index.html` dans le navigateur (charte : `maquettes/charte.html`).
-> Retenu à l'audit : I1 à I9, U1, U2, U3, U5, U6, U7 (sauf la suppression de « Demandé », annulée le 13/10), U8, U14, B2. Protection des données (B6 étape 1) : chantier séparé, avant la refonte (voir `SECURITE.md`, branche `securite`).
+> **État au 12/10** : tous les écrans sont construits et validés ligne par ligne (voir § 5) ; ce plan décrit la refonte **telle qu'elle est construite** (branche `refonte`). Maquettes d'origine : `maquettes/index.html` (charte : `maquettes/charte.html`).
+> Retenu à l'audit : I1 à I9, U1, U2, U3, U5, U6, U7 (sauf la suppression de « Demandé », annulée le 13/10), U8, U14, B2 (U4, réorganisation des Réglages : **non faite**, voir « Idées pour plus tard »). Protection des données (B6 étape 1) : chantier séparé, avant la refonte (voir `SECURITE.md`, branche `securite`).
 
 ---
 
@@ -9,43 +9,41 @@
 
 ### Le menu
 
-| Ordinateur / tablette (barre latérale) | Téléphone (5 onglets en bas) | Pour qui |
+| Ordinateur / tablette (barre latérale) | Téléphone (onglets en bas) | Pour qui |
 |---|---|---|
-| **Magasin** (sélecteur en haut du menu) | dans « Plus » | Tous |
+| **Magasin de l'appareil** (sélecteur en haut du menu) | dans « Plus » | Tous |
 | **Accueil** — « ma journée » | Accueil | Tous |
-| **Cahier des entrées** (Entrées · Suivi des livraisons) | Entrées | Équipes |
-| **Réassorts** (top modèles) | Réassorts | Équipes |
-| **Commandes clients** | Clients | Équipes |
-| **SAV & défectueux** | Clients | Équipes |
-| **Répertoire** | Plus | Tous |
 | **Agenda** (page complète ; « À venir » sur l'accueil) | Plus | Tous |
-| *Équipe* — **Planning** | Plus | Vous / gérants |
-| *Équipe* — **Éléments de paie** | Plus | Équipes (1×/mois) |
-| *Direction* — **Achats & assortiment** | Plus | Vous |
-| *Direction* — **Plan de règlement** | Plus | Vous |
-| *Direction* — **Factures** | Plus | Vous |
-| *Direction* — **Réglages** | Plus | Vous |
-| Se déconnecter (bas du menu) | Plus | Tous |
+| **Cahier des entrées** (Entrées · Suivi des livraisons) | Entrées | Tous |
+| **Top modèles & réassorts** | Réassorts | Tous |
+| **Commandes clients** | Clients | Tous |
+| **SAV & défectueux** | Clients | Tous |
+| **Répertoire** | Plus | Tous |
+| **Factures** | Plus | Tous (magasins et Direction — décision du 12/10) |
+| *Équipe* — **Planning** | Plus | Tous |
+| *Équipe* — **Éléments de paie** | Plus | Tous (règles de l'étape 2 : un magasin dépose, la Direction lit) |
+| *Direction* — **Achats** | Plus | Comptes Direction |
+| *Direction* — **Plan de règlement** | Plus | Comptes Direction |
+| *Direction* — **Réglages** | Plus | Comptes Direction |
+| Apparence Auto / Clair / Sombre, compte connecté, Se déconnecter, Replier le menu (bas du menu) | dans « Plus » | Tous |
 
-L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Commandes clients et SAV & défectueux.
+L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Commandes clients et SAV & défectueux. Les pastilles de comptage (réassorts, défectueux, clients à prévenir) et le rappel « À remplir avant le 25 » (paie, du 15 au 25) sont dans le menu.
 
 ### Ce qui est regroupé
 
 | Avant | Après | Pourquoi |
 |---|---|---|
 | SAV + Défectueux (2 apps) | **SAV & défectueux** (une app, 2 onglets) | Un retour client crée déjà un défectueux ; une seule clôture (U5) |
-| Paramètres → Marques & modèles + Achats | **Achats & assortiment** | Les modèles, quantités et prix de la saison sont de l'assortiment, pas un réglage (U4) |
-| Paramètres → Salariés | **Réglages → Équipe** | Utilisé par 5 apps |
-| Paramètres → Modes de règlement | **Fiche fournisseur** (Répertoire, partie Direction) | Un seul endroit pour le mode de règlement (fin des 3 endroits) |
-| Paramètres → Magasins, fusion de marques | **Réglages** (fusion dans « Maintenance ») | Réglages rares |
-| Bouton 🌙 flottant | Suit le réglage clair/sombre de l'appareil (option dans Réglages) | Plus de bouton qui masque l'écran |
-| Bouton ☰ flottant | Barre latérale (ordinateur) / onglets (téléphone) | Idem |
+| Bouton 🌙 flottant | Réglage **Auto / Clair / Sombre** en bas du menu (« Plus » sur téléphone) ; « Auto » suit l'appareil | Plus de bouton qui masque l'écran |
+| Bouton ☰ flottant | Barre latérale (ordinateur, tablette) / onglets (téléphone) | Idem |
+
+Achats, Réglages (Magasins, Salariés, Marques, Modes de règlement, Saisons, Appareils connectés) et les modes de règlement **gardent leur organisation actuelle** (décision du 12/10) ; « Paramètres » s'appelle « Réglages ».
 
 ### Ce qui est supprimé
 - Les compteurs peu utiles en haut des écrans (« lignes totales », « lignes filtrées », « nombre de magasins »…).
 - Le bouton retour ← en haut de chaque app (le menu est toujours visible ; le retour du navigateur fonctionne).
-- Les 6 menus de filtres toujours visibles du Cahier → 3 pastilles + un bouton « Filtres ».
-- Les fichiers inutilisés (`PlanAchat.jsx`, `migrate.js` et ses dépendances).
+- Les 6 menus de filtres toujours visibles du Cahier → pastilles (magasin, Toutes, Retours ; « À pointer » pour la Direction) + un bouton « Filtres » (magasin, société, marque, catégorie, statut ; pointage pour la Direction).
+- Les fichiers inutilisés (`PlanAchat.jsx`, ancien `PlanReglement.jsx`, `migrate.js`, `ComboBox.jsx`, panneau d'essai) : **pas encore retirés** — décision attendue à l'étape 4 (rien de visible).
 
 ### Ce qui est ajouté
 - **Accueil « ma journée »** (B2) : seulement ce qui demande une action aujourd'hui + les 3 actions fréquentes.
@@ -69,11 +67,17 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | **Défectueux** | app séparée | onglet de **SAV & défectueux** |
 | **Navigation au téléphone** | bouton ☰ en bas à gauche | **onglets en bas** de l'écran |
 | **Connexion** | aucune | identifiant du magasin, **une fois par appareil** |
-| **Marque absente de la liste** | impossible depuis le Cahier (il fallait passer par le SAV, les défectueux, le répertoire ou les top modèles) | **« Créer la marque … »** directement depuis la saisie ; l'outil propose d'abord une marque existante au nom proche (« Vouliez-vous dire … ? ») et demande confirmation du nom exact |
+| **Marque absente de la liste** | impossible depuis le Cahier (il fallait passer par le SAV, les défectueux, le répertoire ou les top modèles) | **« Créer la marque … »** directement depuis la saisie ; l'outil propose d'abord une marque existante au nom proche (« Tu voulais dire… ? ») et demande confirmation du nom exact |
 | **Actions sur plusieurs entrées** | statut et pointage seulement | « Sélectionner » → barre en bas : **Changer le statut**, Tout sélectionner, Annuler (+ Pointer pour la Direction) ; menu **« Plus »** : changer la **date**, la **catégorie**, **copier un récapitulatif** ; pour la Direction : Dépointer, changer le **magasin**, la **saison**, **exporter en CSV**. Chaque modification est confirmée puis peut être annulée |
 | **Agenda** | affiché en entier sur l'accueil (Jour / Semaine / Mois / Année) | l'accueil montre **« À venir »** (4 prochains rendez-vous) ; l'agenda complet s'ouvre avec **« Voir l'agenda »** (ou en touchant un rendez-vous) : c'est là qu'on ajoute ou modifie un événement |
 | **Raccourcis de l'accueil** | — | **Saisir une entrée**, **Commande client**, **Dossier SAV** ouvrent directement le formulaire |
 | **Supprimer plusieurs entrées** | impossible (une par une) | menu « Plus » → **Supprimer** (en rouge) : fenêtre avec le détail, nombre à retaper au-delà de 5, entrées pointées protégées, « Annuler » pendant 10 s |
+| **Réassorts** | « Commander par mail » passait à « Commandé » | passe à **« Demandé »** ; « Commandé » quand la marque confirme ; « Demandé » depuis 7 jours = en retard (relancer) |
+| **Planning** | — | « Reprendre la semaine précédente », bouton « Annuler la dernière modification », impression 1 / 2 / 3 semaines, téléphone jour par jour |
+| **Paie** | société à choisir | société **pré-remplie** d'après le magasin ; « Vérifie ta saisie » avec totaux et avertissement hors du mois |
+| **Agenda** | semaine du lundi au samedi | semaine du **lundi au dimanche** ; événements de l'outil en violet ; événement de plusieurs jours affiché chaque jour ; bouton « Nouvel événement » |
+| **Factures** | inutilisables sur téléphone | onglets **« Saisie » / « Aperçu »** sur téléphone |
+| **Se déconnecter** | déconnectait tous les appareils du compte | ne déconnecte que **cet appareil** (aussi avec l'étape 2) |
 
 ---
 
@@ -85,10 +89,10 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Écran | Élément | Décision |
 |---|---|---|
 | Partout | Bouton retour ← en haut de chaque app | ✅ retiré (menu toujours visible, retour du navigateur) |
-| Partout | Boutons flottants ☰ et 🌙 | ✅ retirés (menu / onglets ; thème suivant l'appareil, option dans Réglages) |
+| Partout | Boutons flottants ☰ et 🌙 | ✅ retirés (menu / onglets ; apparence Auto / Clair / Sombre dans le menu) |
 | Partout | Emojis des menus | ✅ remplacés par des icônes avec texte |
 | Partout | Sous-titre « B'Shoes · JR Shoes » sous le logo | ✅ retiré (11/10) |
-| Partout — compte magasin | Achats, Plan de règlement, Paramètres | ✅ masqués (sécurité étape 2) |
+| Partout — compte magasin | Achats, Plan de règlement, Réglages (« Paramètres ») | ✅ masqués (sécurité étape 2) |
 | Partout — compte magasin | Pointage des entrées (rond, filtre « À pointer », compteur, rappel sur l'accueil) | ✅ masqué (11/10, sécurité étape 2 / E7) |
 | Accueil | Ligne en double « Aujourd'hui · magasin » | ✅ retirée |
 | Accueil | Compteurs à zéro | ✅ masqués |
@@ -110,12 +114,12 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Socle — onglets du Cahier | Emojis des onglets (« 📦 Suivi livraisons », « 📥 Entrées ») | ✅ accordé (12/10) |
 | Socle — menu | Groupes « Au quotidien » / « Gestion » → premier groupe sans titre, « Équipe », « Direction » ; Répertoire et Factures remontés dans le premier groupe ; logo 👟 → pastille « S » | ✅ accordé (12/10) |
 | Socle — sélecteur de saison | Pastille à la couleur de la saison (choix et ajout) | ✅ accordé (12/10) |
-| Socle — suppression de saison | ↔ **retirée de l'en-tête**, déplacée dans **Paramètres → Saisons** (puis Réglages), réservée à la Direction, nom à retaper | ✅ décidé (12/10) — une croix à côté d'une pastille se lit « fermer » |
+| Socle — suppression de saison | ↔ **retirée de l'en-tête**, déplacée dans **Réglages → Saisons**, réservée à la Direction, nom à retaper | ✅ décidé (12/10) — une croix à côté d'une pastille se lit « fermer » |
 | Socle — apparence | Bouton 🌙 flottant → réglage **Auto / Clair / Sombre** dans le menu (« Auto » pour qui n'a jamais choisi ; un choix déjà fait est conservé) | ✅ accordé (boutons flottants) |
 | Cahier — onglet d'ouverture | S'ouvre sur **Entrées** (le suivi devient le 2ᵉ onglet) | ✅ accordé (plan) — **à annoncer aux équipes** |
 | Cahier — saisie | Bouton « Enregistrer » (qui fermait la fenêtre) et « Enregistrer et continuer » → **un seul « Enregistrer »** qui garde la fenêtre ouverte pour le carton suivant ; on ferme avec ✕ — **confirmation si une saisie est commencée** (13/10) | ✅ accordé (13/10) |
 | Cahier — saisie | Champs Magasin, Date, N° et Grille regroupés sur une ligne résumé, avec « Modifier » pour les changer | ✅ accordé (13/10) |
-| Cahier — saisie | Liste des marques : recherche au lieu du menu déroulant ; **ajout (13/10) : « Créer la marque … »** quand la recherche ne trouve rien, sans quitter la saisie, **avec garde-fous contre les doublons** : même nom à la casse/aux accents/aux espaces/à la ponctuation près → la marque existante est proposée, pas de création ; nom proche (1 lettre d'écart, 2 pour les noms de 6 lettres et plus) → « Vouliez-vous dire … ? » d'abord ; confirmation affichant le nom exact enregistré (espaces en trop retirés ; majuscule au début de chaque mot, sauf les mots de liaison et, de, du, des, la, le, les, en, à quand ils ne sont pas en premier — « Coco et Abricot » ; un nom tapé tout en majuscules reste tel quel — « UGG ») (l'outil actuel ne le permettait pas depuis le Cahier, seulement depuis SAV, défectueux, répertoire, top modèles) ; modèle : liste de la saison + **saisie libre conservée** | ✅ accordé (13/10) |
+| Cahier — saisie | Liste des marques : recherche au lieu du menu déroulant ; **ajout (13/10) : « Créer la marque … »** quand la recherche ne trouve rien, sans quitter la saisie, **avec garde-fous contre les doublons** : même nom à la casse/aux accents/aux espaces/à la ponctuation près → la marque existante est proposée, pas de création ; nom proche (1 lettre d'écart, 2 pour les noms de 6 lettres et plus) → « Tu voulais dire… ? » d'abord ; confirmation affichant le nom exact enregistré (espaces en trop retirés ; majuscule au début de chaque mot, sauf les mots de liaison et, de, du, des, la, le, les, en, à quand ils ne sont pas en premier — « Coco et Abricot » ; un nom tapé tout en majuscules reste tel quel — « UGG ») (l'outil actuel ne le permettait pas depuis le Cahier, seulement depuis SAV, défectueux, répertoire, top modèles) ; modèle : liste de la saison + **saisie libre conservée** | ✅ accordé (13/10) |
 | Cahier — sélection | **Ajout : « Supprimer » en lot** (l'outil actuel ne le permettait pas) : dans le menu « Plus », en rouge, à part, en dernier ; fenêtre avec nombre d'entrées, total de paires et 5 premières lignes ; au-delà de 5 entrées, nombre à retaper ; entrées pointées exclues pour un compte magasin ; « Annuler » pendant 10 s (remet les lignes à l'identique, même numéro) | ✅ accordé (13/10) |
 | Cahier — sélection | **Ajouts : actions groupées** — pour tous : changer la date, changer la catégorie (la grille de pointures ne change pas), copier un récapitulatif (marque, modèle, paires) ; Direction seulement : changer le magasin, changer de saison, exporter en CSV. Chaque modification : confirmation rappelant le nombre d'entrées, puis « Annuler » dans le message | ✅ accordé (13/10) |
 | Cahier — sélection | Barre allégée : nombre, Changer le statut, Pointer (Direction), Tout sélectionner, Annuler — **une seule ligne sur téléphone** (libellés courts « Statut », « Tout », croix pour annuler) ; les autres actions dans **« Plus »**. ↔ **« Dépointer » (Direction) passe de la barre au menu « Plus »** (toujours aussi sur chaque ligne) | ✅ accordé (13/10) · ↔ Dépointer : ✅ accordé (13/10) |
@@ -129,11 +133,11 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Cahier — téléphone | « Importer CSV » : en bas de la liste sur téléphone (en haut sur ordinateur) ; messages de confirmation en haut de l'écran sur téléphone | ✅ accordé (13/10) |
 | Suivi des livraisons | Cartes par magasin repliées + fenêtre de détail → liste par marque **sur la page** (modèles et pointures dépliables) | ✅ accordé (U1) |
 | Suivi des livraisons | Taux global, reçues, attendues : calculés sur le **magasin choisi** (avant : sur les trois magasins) ; « Tous les magasins » redonne le total | ✅ accordé (13/10) |
-| Menu | Pastilles de comptage colorées (Réassorts, Défectueux, Commandes) et rappel orange « À remplir avant le 25 » sur la paie | ⚠️ absents de la maquette — **gardés**, à dessiner — ✅ présent dans la refonte (revue du 12/10) |
-| Partout | **Sélecteur de saison** (pastille de couleur par saison) | ⚠️ absent de la maquette — **gardé**, à dessiner — ✅ présent dans la refonte (revue du 12/10) |
-| Cahier — Entrées | Bouton « Importer CSV » ; sélection multiple + changement de statut groupé | ⚠️ absents de la maquette — **gardés**, à dessiner — ✅ présent dans la refonte (revue du 12/10) |
+| Menu | Pastilles de comptage colorées (Réassorts, Défectueux, Commandes) et rappel orange « À remplir avant le 25 » sur la paie | ⚠️ absents de la maquette — **gardés** — ✅ dessiné et présent dans la refonte (revue du 12/10) |
+| Partout | **Sélecteur de saison** (pastille de couleur par saison) | ⚠️ absent de la maquette — **gardé** — ✅ dessiné et présent dans la refonte (revue du 12/10) |
+| Cahier — Entrées | Bouton « Importer CSV » ; sélection multiple + changement de statut groupé | ⚠️ absents de la maquette — **gardés** — ✅ dessiné et présent dans la refonte (revue du 12/10) |
 | Saisie d'une entrée | Champs **Catégorie** et **Statut** à la création | ✅ **gardés** (11/10) : pré-remplis quand l'outil peut les déduire (catégorie depuis la grille), **toujours visibles et modifiables d'un toucher** ; jamais de valeur choisie sans que la vendeuse la voie |
-| Saisie d'une entrée | **Copier / Coller** une grille de pointures | ⚠️ absent de la maquette — **gardé**, à dessiner — ✅ présent dans la refonte (revue du 12/10) |
+| Saisie d'une entrée | **Copier / Coller** une grille de pointures | ⚠️ absent de la maquette — **gardé** — ✅ dessiné et présent dans la refonte (revue du 12/10) |
 | Agenda | Couleurs par magasin (Albi bleu, Rouffiac vert, 2 Zèbres orange) | ⚠️ maquette avec d'autres couleurs — **gardées** — ✅ présent dans la refonte (revue du 12/10) |
 | Accueil — en-tête | « Bonjour 👋 » / « Bonsoir 👋 » → **« Bonjour » / « Bonsoir » sans emoji** ; la date et le magasin passent au-dessus, en petit | ✅ accordé (13/10) |
 | Accueil — magasin non choisi | Bandeau « 🏪 Choisis ton magasin dans le menu… » : **gardé**, sans emoji, **au tutoiement** comme le reste de l'outil (« Choisis ton magasin dans le menu (« Plus » sur téléphone)… ») | ✅ accordé (13/10) |
@@ -198,8 +202,8 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Plan de règlement — ajustements (12/10) | Avoir coché : **« déduit »** au lieu de « payé » (case, groupe d'avoirs) — calcul inchangé ; plan chèque personnalisé : seuls les chèques **datés** sont numérotés (« Chèque 1/2 ») — montants, dates et pointages inchangés ; **ajout** du bloc « En attente de 1ère réception » (marques en chèques dont rien n'est reçu : montant commandé, sans date, hors des totaux) | ✅ accordé |
 | Achats — présentation | Mêmes chiffres, filtres, pastilles stratégie et catégorie, répartition, tableau et totaux (comparaison ligne par ligne : identique) ; emojis des boutons retirés : 👻 → « Masquer les montants » / « Afficher les montants » (même effet), 🔍 du champ de recherche, 📂 « Importer CSV », ✏️ → crayon, 📋 et ⏳ du report de la saison précédente. Les emojis des **stratégies** (🆕 🚀 🛡️ 📉 🛑) sont gardés : ils font partie des valeurs enregistrées | ✅ accordé |
 | Achats — choix A1 | ✅ « avec » : mode de règlement **en lecture seule** dans la fiche d'achat (mode de la marque pilote, nombre de chèques ou délais), lien « Modifier dans Réglages → Modes de règlement » ; la fiche d'achat n'écrit plus le mode ; marque non pilote : « Réglé avec le groupe « … » (marque pilote : …) » | ✅ accordé |
-| Paramètres — onglets | Emojis retirés (Magasins, Salariés, Marques, Modes de règlement, Saisons, Appareils connectés) ; contenu identique ; suppression d'une saison : **nom à retaper** (gardé) | ✅ accordé |
-| Paramètres — choix A2 | ✅ « avec » : **« Réglages »** (menu et titre) ; plan chèque : avertissement avant l'enregistrement si une ligne n'a pas de date ou de montant (« ce chèque n'apparaîtra pas dans le Plan de règlement », « Corriger » / « Enregistrer sans ce chèque ») ; marque non pilote : « réglé avec le groupe « … » » ; Répertoire (comptes Direction) : même mention dans la fiche de la marque | ✅ accordé |
+| Réglages — onglets | Emojis retirés (Magasins, Salariés, Marques, Modes de règlement, Saisons, Appareils connectés) ; contenu identique ; suppression d'une saison : **nom à retaper** (gardé) | ✅ accordé |
+| Réglages — choix A2 | ✅ « avec » : **« Réglages »** (menu et titre) ; plan chèque : avertissement avant l'enregistrement si une ligne n'a pas de date ou de montant (« ce chèque n'apparaîtra pas dans le Plan de règlement », « Corriger » / « Enregistrer sans ce chèque ») ; marque non pilote : « réglé avec le groupe « … » » ; Répertoire (comptes Direction) : même mention dans la fiche de la marque | ✅ accordé |
 | Connexion — écran | Même formulaire (adresse du magasin, mot de passe, « Se connecter »), même texte ; logo « S » de la charte ; message d'erreur dans un encadré rouge | ✅ accordé |
 | Connexion — message d'erreur | Inchangé pour un mauvais mot de passe : « Adresse ou mot de passe incorrect. » — **le même pour une adresse inconnue**. **Correctif** : toute autre réponse « refusée » de Supabase (ex. adresse non confirmée) donnait « Connexion impossible pour le moment… », ce qui laissait deviner que l'adresse existe ; elle donne maintenant le même message. **Ajout** : « Trop d'essais. Attends quelques minutes puis réessaie. » quand Supabase bloque les essais répétés | ✅ accordé |
 | Connexion — choix C1, C2 | ✅ « avec » : bouton « Afficher / Masquer » le mot de passe ; « Mot de passe oublié ? Demande-le à la direction. » sous le bouton | ✅ accordé |
@@ -231,13 +235,13 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Détail par pointure | Vert complet · bleu partiel · gris rien reçu | Suivi des livraisons |
 | Entrée pointée | Ligne grisée (comptes Direction) | Liste des entrées |
 | Pointure saisie | Case verte (orange pour un retour) | Saisie d'une entrée |
-| Couleur par saison | Pastille du sélecteur de saison | En-tête (à dessiner) |
+| Couleur par saison | Pastille du sélecteur de saison | En-tête des pages liées à la saison |
 | Couleurs des compteurs | **Trait de couleur** à gauche de chaque compteur (chiffre en noir) — une couleur par type | Accueil |
-| Pastilles de comptage du menu | Une couleur par type (réassorts, défectueux, commandes) | Menu (à dessiner) |
+| Pastilles de comptage du menu | Une couleur par type (réassorts, défectueux, commandes) | Menu |
 | Couleurs d'agenda | Une couleur par magasin — **barre de couleur** (décision du 11/10) | Agenda, bloc « À venir » |
 
 **Statuts des entrées** (décisions du 11/10) :
-- **Ordre des étapes, partout** (saisie, filtres, détail) : **Aucun → Enregistré → Imp. étiquettes** (dernière étape), puis Réassort et Retour. ⚠️ L'outil actuel affiche « Imp. Etiquettes » **avant** « Enregistré » dans ses listes : à corriger dans la refonte.
+- **Ordre des étapes, partout** (saisie, filtres, détail) : **Aucun → Enregistré → Imp. étiquettes** (dernière étape), puis Réassort et Retour. L'outil en ligne affichait « Imp. Etiquettes » **avant** « Enregistré » : corrigé dans la refonte et dans l'étape 2.
 - **Couleurs selon la progression** : Enregistré **orange** (en cours), Imp. étiquettes **vert** (terminé), Réassort **bleu**, Retour **rouge** (l'outil actuel n'avait pas de couleur de statut).
 - **Forme** : statut = **point plein suivi du mot** ; N° = **pastille pleine commençant par « N° »** — on ne les confond pas (point creux écarté).
 - **Données inchangées** : la valeur enregistrée reste « Imp. Etiquettes » (sans accent) ; seuls l'affichage et l'ordre changent, aucune donnée existante n'est modifiée.
@@ -276,7 +280,7 @@ Au téléphone, les deux directions sont identiques. Elles diffèrent sur ordina
 - **Listes au lieu des tableaux** : titre en gras, détail en gris dessous, état à droite (point + mot).
 - **Formulaires** : étiquette au-dessus, erreur expliquée dessous, champs connus pré-remplis.
 - **Ton (13/10)** : l'outil **tutoie** les équipes, partout et de la même façon (« Touche une pointure », « Choisis ton magasin », « Vérifie la connexion et réessaie », « Tu voulais dire… ? »). Phrases courtes, sans jargon. **Exception** : les mails envoyés hors de l'équipe (marques, SAV des fournisseurs, comptable) restent au vouvoiement.
-- **Messages** : confirmation en bas avec « Annuler », encarts colorés pour les avertissements, jamais de chargement infini.
+- **Messages** : confirmation avec « Annuler » (en bas sur ordinateur, en haut sur téléphone), encarts colorés pour les avertissements, jamais de chargement infini.
 - **Très peu d'animations** ; icônes au trait avec texte.
 
 ---
@@ -338,13 +342,13 @@ Le serveur n'accepte que ces 3 destinataires / objets, depuis un appareil connec
 
 **Correctif (refonte et étape 2)** : après le dépôt d'une fiche par un compte magasin, la liste restait sur « À remplir » jusqu'au rechargement (la base, volontairement, ne prévient pas un compte magasin des changements de fiches) — un 2ᵉ toucher rouvrait la saisie puis échouait. La liste est maintenant relue après chaque enregistrement. Corrigé aussi dans la branche `securite-etape2` (essais refaits sur la base de test).
 
-## Règles métier — Direction : Achats, Plan de règlement, Paramètres (vérifiées dans le code de l'outil en ligne)
+## Règles métier — Direction : Achats, Plan de règlement, Réglages (vérifiées dans le code de l'outil en ligne)
 
 Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et la refonte avant ce chantier. Paramètres : l'étape 2 ajoute « Appareils connectés », la refonte « Saisons » (décision du 12/10).
 
 | Règle | Outil actuel | Refonte |
 |---|---|---|
-| Accès | Achats, Plan, Paramètres : comptes Direction seulement (menu et accès direct) | Identique (vérifié : menu, menu « Plus » du téléphone, liens directs → accueil) |
+| Accès | Achats, Plan, Réglages (« Paramètres ») : comptes Direction seulement (menu et accès direct) | Identique (vérifié : menu, menu « Plus » du téléphone, liens directs → accueil) |
 | Plan — chèques | Mode CHEQUE de la marque pilote : Σ réel achat du groupe ÷ nombre de chèques (défaut 4), fins de mois successives à partir de la 1ère réception (hors retours) ; ou plan chèque personnalisé de la saison | Identique (calcul déplacé tel quel) |
 | Plan — autres modes | Par livraison : PHT réparti à parts égales sur les délais (jours après la livraison) ; délais par défaut selon le mode | Identique |
 | Plan — avoirs | Retour avec défectueux « Avoir reçu » ou « Clôturé » : une ligne AVOIR à la date du retour | Identique |
@@ -404,7 +408,7 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 
 **Calendriers des magasins — ce qui est public (constat du 12/10, rien changé)** : les adresses (identifiants) des 3 calendriers et la clé Google sont **dans le code publié du site**, qui se télécharge sans connexion (la connexion protège les données de la base, pas le code). La clé fonctionne depuis n'importe où (essai sans passer par le site). Une personne extérieure qui ouvre ce code peut donc lire **tous les événements des 3 calendriers** — titres (ex. « RDV » avec un nom de client), dates, heures, lieux, notes — sur n'importe quelle période, et utiliser la clé pour d'autres lectures Google Calendar (quota du compte Google). Elle ne peut rien modifier. À traiter plus tard si vous le souhaitez (calendriers non publics lus par le serveur, ou clé restreinte au site).
 
-**Essais (base de test, compte magasin Albi, 12/10)** : vue Mois comparée à l'outil actuel sur 4 mois (oct. 2026 → janv. 2027), mêmes données : **identique** jour par jour (12 jours avec événements) ; ajout, modification, suppression avec confirmation, vus aussi dans l'outil actuel ; date proposée à 0 h 30 le 14/10 : **14/10** (l'ancien calcul donnait le 13) ; G2 (7 jours, dimanche visible) et G3 (événement du 19 au 21/10 visible le 21) avec et sans ; téléphone : les 4 vues sans défilement de côté. Événement d'essai effacé.
+**Essais (base de test, compte magasin Albi, 12/10)** : vue Mois comparée à l'outil actuel sur 4 mois (oct. 2026 → janv. 2027), mêmes données : **identique** jour par jour (12 jours avec événements) — avant les choix G1-G4 ; **après les choix** (étape 4), comparaison jour par jour en vue Jour sur octobre-novembre 2026 : tous les événements de l'outil actuel sont présents au même jour, seuls ajouts les jours suivants des événements sur plusieurs jours (G3) ; ajout, modification, suppression avec confirmation, vus aussi dans l'outil actuel ; date proposée à 0 h 30 le 14/10 : **14/10** (l'ancien calcul donnait le 13) ; G2 (7 jours, dimanche visible) et G3 (événement du 19 au 21/10 visible le 21) avec et sans ; téléphone : les 4 vues sans défilement de côté. Événement d'essai effacé.
 
 ## Règles métier — Factures (vérifiées dans le code de l'outil en ligne)
 
@@ -479,25 +483,30 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 | **Livraisons attendues cette semaine** (accueil) | Voir les cartons attendus dans les jours qui viennent, avec le nombre de paires restant à recevoir | Une **date de livraison prévue** par marque × magasin × saison : colonne `parametres.livraison_prevue` (date), saisie dans Achats (ou importée avec le fichier des achats). Le reste à recevoir existe déjà (attendu − reçu). Pour aller plus loin : une date par modèle (`parametres.livraisons_modeles`, JSONB `{ modèle: date }`). Modification **additive** — à faire avec votre accord écrit |
 | **Dater l'avoir du jour de réception** | Aujourd'hui l'avoir du Plan de règlement est daté du jour de création de la ligne « Retour » ; le dater du jour où l'avoir est reçu | Une date de réception de l'avoir sur le défectueux (`defectueux.avoir_at`), remplie au passage à « Avoir reçu » ; le Plan l'utiliserait à la place de la date du retour (repli sur la date du retour si vide). Modification **additive** — à faire avec votre accord écrit |
 | **Avoir pour un retour saisi dans le Cahier** | Un retour saisi directement dans le Cahier (bouton Retour) n'a pas de défectueux, donc jamais d'avoir dans le Plan | Soit créer un défectueux lié à la saisie d'un retour au Cahier, soit un état d'avoir sur l'entrée elle-même (`entrees.avoir`, par ex. « attendu / reçu / refusé ») lu par le Plan. À concevoir — à faire avec votre accord écrit |
+| **Réorganisation des Réglages (U4)** | « Achats & assortiment » (modèles, quantités, prix de la saison rangés avec les Achats plutôt que dans Réglages → Marques), « Réglages → Équipe » (salariés), mode de règlement réglé dans la fiche fournisseur du Répertoire (un seul endroit au lieu de Réglages + fiche d'achat), magasins et fusion de marques dans une partie « Maintenance » | Aucune modification de la base : seulement l'emplacement des écrans. Non faite maintenant (décision du 12/10) |
 | **Total d'heures du planning, pause déduite** | Total d'heures **réellement travaillées** par salarié et par semaine (écran, éventuellement impression) — refusé sans la pause (décision B) | Une **durée de pause par créneau** : colonne `planning.pause` (nombre de minutes, vide = pas de pause), saisie avec les horaires (« Pause : 0 / 30 min / 1 h / autre »), et le total = Σ (fin − début − pause). Les créneaux existants resteraient sans pause (total à vérifier pour le passé). Modification **additive**, sans perte — à faire avec votre accord écrit. Variante sans changer la base : une pause fixe par règle (ex. 1 h dès 7 h de présence), moins juste |
 | **Numéros de facture partagés (et registre des factures)** | Voir « Plans préparés — B » | Voir « Plans préparés — B » |
 
 ---
 
-## 5. Ordre de construction (étape 3)
+## 5. Ordre de construction (étape 3) — fait
 
-1. **Socle** : charte dans le code, composants partagés (boutons, listes, champs, fenêtres, messages), menu + onglets, liens directs, chargement par morceaux (U10), icône d'écran d'accueil (U14). *(La connexion vient du chantier sécurité.)*
-2. **Cahier des entrées** (entrées, saisie, suivi des livraisons — U1).
-3. **Accueil « ma journée »**.
-4. **SAV & défectueux** (U5).
-5. **Commandes clients** (U6).
-6. **Réassorts** (U7, sans la suppression de « Demandé »).
-7. **Répertoire** (U8).
-8. **Planning** (U3) et **Éléments de paie**.
-9. **Direction** : Achats & assortiment, Plan de règlement (U2), Factures, Réglages.
+1. **Socle** : charte dans le code, composants partagés, menu + onglets, liens directs, chargement par morceaux (U10), icône d'écran d'accueil (U14) — ✅ validé (12/10).
+2. **Cahier des entrées** (entrées, saisie, suivi des livraisons — U1) — ✅ validé.
+3. **Accueil « ma journée »** — ✅ validé.
+4. **SAV & défectueux** (U5) — ✅ validé.
+5. **Commandes clients** (U6) — ✅ validé.
+6. **Réassorts** (U7, « Demandé » gardé) — ✅ validé.
+7. **Répertoire** (U8) — ✅ validé.
+8. **Planning** (U3) et **Éléments de paie** — ✅ validés.
+9. **Direction** : Achats, Plan de règlement (U2), Réglages — ✅ validés.
+10. **Connexion et choix du magasin** — ✅ validé.
+11. **Agenda** — ✅ validé.
+12. **Factures** — ✅ validé.
+13. **Finitions communes** (fenêtres d'import, confirmations « nom à retaper », intérieur des Réglages et des fiches d'achat, mode sombre) — ✅ validées.
 
 Un écran à la fois, montré en local, un commit par écran, suivi dans `SUIVI.md`.
-**Aucune modification de la structure de la base** n'est prévue pour la refonte elle-même.
+**Aucune modification de la structure de la base** pour la refonte elle-même (le « Mail commandes » est rangé dans les coordonnées par magasin existantes, la relance d'un réassort dans l'historique des étapes existant).
 
 ## Finitions communes — vérifications (12/10)
 
