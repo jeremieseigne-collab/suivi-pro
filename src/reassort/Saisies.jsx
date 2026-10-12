@@ -7,8 +7,6 @@ import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { ChoixMarque, ChoixModele, ChoixSalarie } from '../savdef/Champs'
 import { memeMagasin } from '../commandes/constants'
-import { useVariantes } from '../shell/essai'
-import { POINTS_REASSORTS } from './points'
 import { CATEGORIES, CAT_TO_KEY, ETAPES_CHOIX, sortSizes, cleanStock, resteParPointure, todayFr, etatPointure } from './constants'
 
 const KEY_TO_CAT = Object.fromEntries(Object.entries(CAT_TO_KEY).map(([c, k]) => [k, c]))
@@ -224,7 +222,6 @@ export function SaisieReassort({ top, reassort, proposition = {}, enCommande = {
 
 // ─── Réception (totale ou partielle) : crée l'entrée « Réassort » dans le Cahier (mêmes règles que l'outil actuel) ───
 export function SaisieReception({ top, reassort, magasinNom, onFermer, onToast }) {
-  const v = useVariantes(POINTS_REASSORTS)
   const reste = resteParPointure(reassort)
   const tailles = sortSizes(Object.keys(reste))
   const [qtes, setQtes] = useState(() => Object.fromEntries(tailles.map(s => [s, String(reste[s])])))
@@ -248,8 +245,8 @@ export function SaisieReception({ top, reassort, magasinNom, onFermer, onToast }
     setEnCours(true); setErreur('')
     try {
       const recuNow = {}; Object.entries(qtes).forEach(([s, x]) => { if (num(x) > 0) recuNow[s] = num(x) })
-      // Prix : prix du modèle (achats) ; sinon 0 €, comme aujourd'hui — ou le prix tapé quand le prix du modèle manque (point B)
-      const unit = unitCalc > 0 ? unitCalc : (v.prixReception && tape > 0 ? tape : 0)
+      // Prix : prix du modèle (achats), sinon le prix tapé quand le prix du modèle manque, sinon 0 € (pas de repli sur le prix moyen, comme le Cahier)
+      const unit = unitCalc > 0 ? unitCalc : (tape > 0 ? tape : 0)
       const pht = Math.round(unit * total * 100) / 100
       const entreeId = await db.entrees.add({ statut: 'Réassort', magasinId: reassort.magasinId, fournisseurId: reassort.fournisseurId, date: todayFr(), modele: reassort.modele,
         numero: top?.numero || '', categorie: top?.categorie || '', typeKey: top?.typeKey || 'F', total, pht, sizes: recuNow, season: reassort.season })
@@ -288,7 +285,7 @@ export function SaisieReception({ top, reassort, magasinNom, onFermer, onToast }
         ))}
       </div>
       <label className="case-a-cocher"><input type="checkbox" checked={majStock} onChange={e => setMajStock(e.target.checked)} /> Ajouter ces paires au stock du top modèle</label>
-      {unitCalc === 0 && v.prixReception && <>
+      {unitCalc === 0 && <>
         {!(tape > 0) && <div className="encart att" style={{ marginTop: 12 }}>Prix à 0 € : l'entrée sera à 0 € dans le Cahier et le Plan de règlement. Saisis le prix si tu le connais.</div>}
         <label className="etiquette">Prix unitaire HT (€, facultatif)<input className="champ" inputMode="decimal" value={prixManuel} onChange={e => setPrixManuel(e.target.value)} placeholder="Ex. 42,50" /></label>
       </>}

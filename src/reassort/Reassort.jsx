@@ -10,12 +10,9 @@ import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { PageShell, BoutonMagasin } from '../shell/EnTete'
 import { aller } from '../shell/navigation'
-import { useVariantes } from '../shell/essai'
-import PanneauEssai from '../shell/PanneauEssai'
 import { Numero } from '../cahier/Reperes'
 import { Toast } from '../cahier/Reperes'
 import { buildReassortMailUrl, coordMarque } from './mail'
-import { POINTS_REASSORTS } from './points'
 import { SaisieTop, SaisieStock, SaisieReassort, SaisieReception, GrillePointures } from './Saisies'
 import {
   ETAPES_VUES, ETAPES_CHOIX, CLASSE_ETAPE, etapeVue, etapeSuivante, aCommander,
@@ -62,7 +59,7 @@ function Frise({ r }) {
 }
 
 // Fiche d'un top modèle : réassort en cours, stock, actions, historique
-function FicheTop({ t, v, act, onFermer }) {
+function FicheTop({ t, act, onFermer }) {
   const r = t.actif
   const n = r ? retard(r) : null
   const cnt = {}; t.histo.forEach(h => Object.entries(h.sizes || {}).forEach(([s, q]) => { cnt[s] = (cnt[s] || 0) + (Number(q) || 0) }))
@@ -91,7 +88,8 @@ function FicheTop({ t, v, act, onFermer }) {
               </div>
               {r.note && <div className="aide">{r.note}</div>}
               {n && <div className={`retard-texte retard-${n}`}>En route depuis {joursDepuis(r.etapes?.['En route'])} jours — relancer la marque ?</div>}
-              {v.etapeManuelle && <div className="chips" style={{ flexWrap: 'wrap', marginTop: 10 }}>
+              {/* Étape modifiable à la main (décision du 13/10) ; revenir en arrière demande confirmation */}
+              {<div className="chips" style={{ flexWrap: 'wrap', marginTop: 10 }}>
                 {ETAPES_CHOIX.map(e => <button key={e} className="chip" aria-pressed={etapeVue(r.statut) === e} onClick={() => act.choisirEtape(r, e)}>{e}</button>)}
               </div>}
               <div className="actions-bloc">
@@ -141,7 +139,6 @@ function FicheTop({ t, v, act, onFermer }) {
 export default function Reassort() {
   const { season } = useSeason()
   const { magasin, setMagasin } = useMagasin()
-  const v = useVariantes(POINTS_REASSORTS)
   const [vue, setVue] = useState('magasin')
   const [rech, setRech] = useState('')
   const [filtre, setFiltre] = useState('')   // '' | rupture | encours | retard | recu | aucun | archive
@@ -261,7 +258,6 @@ export default function Reassort() {
         {vue === 'magasin' && <button className="btn btn-prim seulement-grand" onClick={() => setSaisie({ type: 'top' })}><Icone nom="ajout" taille={20} />Nouveau top modèle</button>}
       </>}
       tabs={[['magasin', magasin.nom], ['tous', 'Tous magasins']].map(([id, l]) => <button key={id} aria-pressed={vue === id} onClick={() => setVue(id)}>{l}</button>)}>
-      <PanneauEssai points={POINTS_REASSORTS} />
       {data === undefined ? <LoadingState /> : vue === 'magasin' ? <>
         <div className="recherche"><Icone nom="cherche" taille={20} style={{ color: 'var(--discret)' }} />
           <input className="champ" placeholder="Marque, modèle, N°, note…" value={rech} onChange={e => setRech(e.target.value)} aria-label="Rechercher" /></div>
@@ -273,7 +269,7 @@ export default function Reassort() {
         {!liste.length ? <div className="vide">{miens.length ? 'Aucun modèle ne correspond.' : 'Aucun top modèle pour ce magasin — touche « Nouveau top modèle ».'}</div> : (
           <div className="liste" style={{ marginTop: 10 }}>
             {liste.map(t => {
-              const a = v.actionLigne ? actionLigne(t) : null
+              const a = actionLigne(t)   // bouton discret par ligne (décision du 13/10)
               return (
                 <div key={t.id} className={`ligne ligne-entree ligne-cmd ligne-top${t.archive || t.termine ? ' faible termine' : ''}`} style={{ boxShadow: `inset 4px 0 0 ${trait(t)}` }}>
                   <button className="zone-ouvrir" onClick={() => setFicheId(t.id)}>
@@ -322,7 +318,7 @@ export default function Reassort() {
         )}
       </>}
 
-      {fiche && !saisie && <FicheTop t={fiche} v={v} act={act} onFermer={() => setFicheId(null)} />}
+      {fiche && !saisie && <FicheTop t={fiche} act={act} onFermer={() => setFicheId(null)} />}
       {saisie?.type === 'top' && <SaisieTop top={saisie.top} magasinId={magasin.id} onFermer={() => setSaisie(null)} onToast={setToast} />}
       {saisie?.type === 'stock' && <SaisieStock top={saisie.top} onFermer={() => setSaisie(null)} onToast={setToast} />}
       {saisie?.type === 'reassort' && <SaisieReassort top={saisie.top} reassort={saisie.reassort} proposition={saisie.top.prop} enCommande={saisie.top.enCommande} magasinNom={magasin.nom} onFermer={() => setSaisie(null)} onToast={setToast} />}
