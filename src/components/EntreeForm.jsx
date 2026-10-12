@@ -25,13 +25,15 @@ function numeroColor(n) {
   return { background: '#d1fae5', color: '#059669' }
 }
 
-const todayIso = new Date().toISOString().slice(0, 10)
-const todayFr  = toFrDate(todayIso)
+// Date du jour en heure française, calculée au moment où l'on ouvre la saisie
+// (avant : calculée une seule fois à l'ouverture de l'outil, et en heure anglaise → la veille entre minuit et 2 h,
+// ou toute la journée si l'outil était resté ouvert depuis la veille)
+const todayIso = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}` }
 
 function makeInitial(mag) {
-  return { statut: '', magasin: mag || '', date: todayFr, dateIso: todayIso, marque: '', modele: '', numero: '', categorie: '', typeKey: 'F' }
+  const iso = todayIso()
+  return { statut: '', magasin: mag || '', date: toFrDate(iso), dateIso: iso, marque: '', modele: '', numero: '', categorie: '', typeKey: 'F' }
 }
-const INITIAL = makeInitial('')
 
 export default function EntreeForm({ onClose, onSaved, defaultMagasin = '' }) {
   const { season } = useSeason()
@@ -197,7 +199,7 @@ export default function EntreeForm({ onClose, onSaved, defaultMagasin = '' }) {
         // Reste sur le formulaire : on garde magasin / date / marque, on vide le reste.
         // La liste sous la fenêtre se rafraîchit toute seule (temps réel) — surtout NE PAS
         // appeler onSaved() ici car le parent l'utilise pour fermer la fenêtre.
-        setForm(f => ({ ...INITIAL, magasin: f.magasin, marque: f.marque, date: f.date, dateIso: f.dateIso }))
+        setForm(f => ({ ...makeInitial(''), magasin: f.magasin, marque: f.marque, date: f.date, dateIso: f.dateIso }))
         setQuantities(Array(SIZE_TYPES.F.sizes.length).fill(''))
         setToast(true)
         setTimeout(() => setToast(false), 2000)
