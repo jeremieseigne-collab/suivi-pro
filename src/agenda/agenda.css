@@ -1,0 +1,48 @@
+/* Agenda — charte de la refonte (couleurs des magasins : celles de l'outil actuel) */
+.agenda-barre { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.agenda-nav { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.agenda-nav .libelle { font-weight: 700; min-width: 180px; text-align: center; }
+.agenda-legende { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-bottom: 14px; font-size: var(--t-meta); color: var(--doux); }
+.agenda-legende span { display: inline-flex; align-items: center; gap: 6px; }
+.agenda-legende i { width: 4px; height: 14px; border-radius: 2px; display: inline-block; }
+.agenda-jour { padding: 0; overflow: hidden; }
+.agenda-jour.aujourdhui { box-shadow: 0 0 0 2px var(--action-teinte); }
+.agenda-jour .entete-jour { display: flex; align-items: center; justify-content: space-between; padding: 6px 6px 6px 14px; border-bottom: 1px solid var(--trait); font-weight: 700; }
+.agenda-jour .entete-jour.petit { font-size: 13px; padding-left: 10px; }
+.agenda-jour.aujourdhui .entete-jour { color: var(--action-texte); background: var(--action-teinte); }
+.agenda-jour .evts { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.agenda-evt { width: 100%; text-align: left; border: 0; border-left: 3px solid; border-radius: 8px; cursor: pointer; background: var(--carte-2); padding: 8px 12px;
+  display: flex; flex-direction: column; gap: 1px; font: inherit; color: var(--texte); min-width: 0; }
+.agenda-evt.compact { padding: 5px 8px; }
+.agenda-evt .quand { font-size: 12px; font-weight: 700; }
+.agenda-evt .quoi { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agenda-evt.compact .quoi { font-size: 13px; }
+.agenda-semaine { display: grid; gap: 10px; }
+.agenda-semaine.empilee { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); }
+.icone-btn.petit { width: 32px; height: 32px; }
+.agenda-mois { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; padding: 12px; }
+.agenda-mois.points { gap: 3px; padding: 8px; }
+.agenda-mois .jour-semaine { text-align: center; font-size: 11px; font-weight: 700; color: var(--discret); text-transform: uppercase; }
+.case-mois { text-align: left; border: 1px solid var(--trait); border-radius: 8px; cursor: pointer; background: var(--carte); min-width: 0; overflow: hidden; min-height: 78px; padding: 6px;
+  display: flex; flex-direction: column; gap: 3px; font: inherit; color: var(--texte); }
+.case-mois:hover { background: color-mix(in srgb, var(--texte) 3%, var(--carte)); }
+.case-mois.hors { opacity: .4; }
+.case-mois.aujourdhui { background: var(--action-teinte); }
+.case-mois .num-jour { font-size: 12px; font-weight: 600; color: var(--doux); }
+.case-mois.aujourdhui .num-jour { color: var(--action-texte); font-weight: 800; }
+.case-mois .evt-mois { font-size: 11px; border-left: 2px solid; border-radius: 3px; padding: 1px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.case-mois .encore { font-size: 10px; color: var(--discret); }
+.agenda-mois.points .case-mois { min-height: 46px; padding: 4px 2px; align-items: center; }
+.case-mois .pastilles { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; max-width: 100%; }
+.case-mois .pastilles i { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+.agenda-annee { display: grid; gap: 14px; }
+.mois-annee { text-align: left; border: 0; cursor: pointer; font: inherit; color: var(--texte); padding: 12px; }
+.mois-annee .nom-mois { font-weight: 700; color: var(--action-texte); margin-bottom: 8px; }
+.grille-mini { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.grille-mini span { font-size: 10px; text-align: center; line-height: 18px; height: 18px; border-radius: 50%; color: var(--doux); }
+.grille-mini span.a-evt { color: var(--action-texte); font-weight: 700; background: var(--action-teinte); }
+.grille-mini span.auj { color: #fff; font-weight: 700; background: var(--action); }
+.etiquette-cal { display: inline-flex; font-size: 12px; font-weight: 600; color: #fff; padding: 3px 10px; border-radius: 999px; }
+.deux-champs-agenda { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.deux-champs-agenda .etiquette { margin: 0; }
+.deux-champs-agenda .champ { margin-top: 6px; }

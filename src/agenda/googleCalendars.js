@@ -36,14 +36,18 @@ export async function fetchGoogleEvents(timeMin, timeMax) {
       }
       const data = await res.json()
       for (const ev of (data.items || [])) {
-        const s = ev.start || {}
-        let date, heure
-        if (s.date) { date = s.date; heure = '' }               // événement journée entière
-        else if (s.dateTime) { const d = new Date(s.dateTime); date = isoDate(d); heure = timeOf(d) }
+        const s = ev.start || {}, f = ev.end || {}
+        let date, heure, dateFin
+        if (s.date) {                                              // événement journée entière (fin exclue chez Google)
+          date = s.date; heure = ''
+          if (f.date) { const d = new Date(Number(f.date.slice(0, 4)), Number(f.date.slice(5, 7)) - 1, Number(f.date.slice(8, 10))); d.setDate(d.getDate() - 1); dateFin = isoDate(d) }
+        }
+        else if (s.dateTime) { const d = new Date(s.dateTime); date = isoDate(d); heure = timeOf(d); if (f.dateTime) { const e = new Date(f.dateTime); if (e.getHours() === 0 && e.getMinutes() === 0) e.setDate(e.getDate() - 1); dateFin = isoDate(e) } }
         else continue
+        if (!dateFin || dateFin < date) dateFin = date               // dernier jour de l'événement (refonte : affichage sur plusieurs jours)
         out.push({
           id: 'g_' + cal.id + '_' + ev.id,
-          date, heure,
+          date, heure, dateFin,
           titre: ev.summary || '(sans titre)',
           note: ev.description || '',
           lieu: ev.location || '',

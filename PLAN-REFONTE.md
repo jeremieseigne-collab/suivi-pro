@@ -207,6 +207,12 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Choix du magasin | Même écran « Dans quel magasin es-tu ? », mêmes magasins, même effet (le choix vaut pour tout l'outil sur l'appareil) ; cartes → boutons pleine largeur sur téléphone ; **bouton ← en haut à gauche retiré** (règle du socle : le menu reste visible) | ✅ accordé |
 | Choix du magasin — choix S1 | ✅ « avec » : couleurs de la charte et icône au trait de l'outil (fin des couleurs et emojis propres à chaque outil sur cet écran) | ✅ accordé |
 | Déconnexion | Fenêtre du navigateur → fenêtre de confirmation de la charte, **même texte** ; ⚠️ **changé avec votre accord écrit (12/10)** : « Se déconnecter » ne déconnecte plus que **l'appareil** (avant : tous les appareils du compte) ; la déconnexion de tous les appareils reste à la Direction (Réglages → Appareils connectés). Aussi dans la branche de l'étape 2 | ✅ accordé |
+| Agenda — page | Mêmes 4 vues (Jour, Semaine, Mois, Année), même vue d'ouverture (Mois), même navigation (‹ › et « Aujourd'hui »), même légende des couleurs (Albi bleu, Rouffiac vert, 2 Zèbres orange) ; titre « 📅 Agenda » en double retiré (le titre de la page suffit) ; boutons ← → → chevrons ; téléphone : Mois en pastilles, Semaine empilée (comme avant) | ⏳ à valider |
+| Agenda — événements | Même affichage (heure, titre, trait de couleur) ; emoji 📝 d'une note → « · note » ; « Journée » pour un événement des calendriers sans heure (avant : « — ») | ⏳ à valider |
+| Agenda — saisie | Mêmes champs (titre, date, heure, note), mêmes contrôles ; fenêtre de la charte ; **correctif** : date proposée = aujourd'hui en **heure française** (avant : heure anglaise, la veille entre minuit et 2 h) ; **ajout** « Visible par les 3 magasins. » ; « Supprimer ? Oui / Non » dans la fenêtre → fenêtre de confirmation (« Supprimer cet événement ? ») ; emojis 🗑 ⏳ retirés | ⏳ à valider |
+| Agenda — détail d'un événement des calendriers | Même fiche en lecture seule (calendrier du magasin, heure ou « Journée entière », lieu, note, « Événement Google — lecture seule ») ; emojis 🕐 📆 📍 → icône au trait ; **ajout** « Du … au … » pour un événement sur plusieurs jours | ⏳ à valider |
+| Agenda — message « Google non configuré » | ⚠️ « Google non configuré » → « Calendriers des magasins non configurés » (sans emoji) | ⏳ à valider |
+| Agenda — points G1 à G4 | G1. événements de l'outil en violet ; G2. semaine du lundi au dimanche ; G3. événements des calendriers sur plusieurs jours affichés chaque jour ; G4. bouton « Nouvel événement » toujours visible — **chacun en « avec » / « sans »** | ⏸ à trancher |
 
 ## 2 ter. Codes couleur de l'outil actuel (conservés)
 
@@ -367,6 +373,27 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 **Essais (base de test, 12/10)** : 31/31 — visiteur sans connexion (écran de connexion seul ; 0 ligne lisible dans 6 tables ; écriture et mail refusés) ; mauvais mot de passe et adresse inconnue (Supabase répond pareil, 400 `invalid_credentials` ; même message affiché ; toujours pas connecté) ; compte magasin (connexion, session gardée après rechargement, paie illisible, salariés non modifiables, pas d'écrans Direction, choix du magasin, déconnexion avec « Annuler » et « Se déconnecter ») ; compte Direction (connexion, écrans Direction).
 
 **Déconnexion — décision du 12/10 (accord écrit)** : « Se déconnecter » ne coupe plus que l'appareil. Essai à deux appareils (navigateurs séparés, même compte), refonte et étape 2 : la déconnexion de A retire une seule session, B reste connecté et renouvelle sa session « une heure plus tard » ; la déconnexion à distance par la Direction retire les deux sessions (0 restante) et renvoie A et B à l'écran de connexion. Essais complets refaits : refonte (connexion) 30/30, étape 2 59/59.
+
+## Règles métier — Agenda (vérifiées dans le code de l'outil en ligne)
+
+**D'où viennent les événements, ce qui est lu, ce qui est écrit, qui modifie quoi**
+
+| Source | Lu | Écrit | Qui peut modifier |
+|---|---|---|---|
+| **Événements saisis dans l'outil** (table `evenements` : titre, date, heure, note) — communs aux 3 magasins | Tous, à chaque ouverture et à chaque changement (temps réel) | Ajout, modification, suppression depuis l'Agenda (même enregistrement qu'avant) | **Tous les comptes connectés** (magasins et Direction), sur tous les événements (règle de la base : « comptes connectés » ; inchangé). En production : 6 événements, du 21 au 26/09 |
+| **3 calendriers Google des magasins** (abonnements iCloud publiés : Albi, Rouffiac, 2 Zèbres) | Lus à la demande pour la période affichée, avec la clé Google de l'outil (calendriers publics) | **Jamais** : lecture seule dans l'outil (on les modifie dans le calendrier du magasin, sur le téléphone ou l'iPhone) | Personne depuis l'outil |
+
+| Règle | Outil actuel | Refonte |
+|---|---|---|
+| Emplacement | Sur l'accueil | Page « Agenda » (accordé le 13/10) ; l'accueil garde le bloc « À venir » |
+| Vues | Jour, Semaine (lundi → samedi), Mois (par défaut), Année | Identiques ; dimanche : point G2 |
+| Couleurs | Albi bleu, Rouffiac vert, 2 Zèbres orange (trait) ; événements de l'outil : bleu de l'outil | Magasins identiques ; événements de l'outil : point G1 |
+| Date proposée à l'ajout | Le jour touché, sinon aujourd'hui **en heure anglaise** (la veille entre minuit et 2 h) | Le jour touché, sinon aujourd'hui **en heure française** (correctif) |
+| Heure d'un événement Google | Heure française de l'appareil | Identique |
+| Événement Google sur plusieurs jours | Affiché seulement le **1er jour** ; s'il commence avant la période affichée, il n'apparaît pas (34 événements de sept. 2026 à juin 2027 en lecture seule, surtout journées entières à Albi et Rouffiac) | Point G3 |
+| Clé Google absente | Agenda utilisable sans les calendriers des magasins, message | Identique |
+
+**Essais (base de test, compte magasin Albi, 12/10)** : vue Mois comparée à l'outil actuel sur 4 mois (oct. 2026 → janv. 2027), mêmes données : **identique** jour par jour (12 jours avec événements) ; ajout, modification, suppression avec confirmation, vus aussi dans l'outil actuel ; date proposée à 0 h 30 le 14/10 : **14/10** (l'ancien calcul donnait le 13) ; G2 (7 jours, dimanche visible) et G3 (événement du 19 au 21/10 visible le 21) avec et sans ; téléphone : les 4 vues sans défilement de côté. Événement d'essai effacé.
 
 ## Idées pour plus tard (non construites)
 
