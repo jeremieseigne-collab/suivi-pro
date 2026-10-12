@@ -5,6 +5,7 @@ import { useSeason } from '../context/SeasonContext'
 import { SIZE_TYPES, DEFAULT_GRID_BY_MARQUE } from '../data/sizes'
 import { getClipboard, setClipboard } from '../data/clipboard'
 import Icone from '../components/ui/Icone'
+import Confirmation from '../components/ui/Confirmation'
 import { Numero, Statut } from './Reperes'
 import { STATUTS, CATEGORIES, CAT_TO_KEY, CAT_DE_GRILLE, libelleStatut, aujourdhuiFr, frVersIso, isoVersFr, classeNumero, fmtEur, pluriel } from './commun'
 
@@ -40,6 +41,9 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
   const [confirmDoublon, setConfirmDoublon] = useState(false)
   const [confirmSuppr, setConfirmSuppr] = useState(false)
   const [presse, setPresse]     = useState(() => getClipboard())
+  const [confirmFermer, setConfirmFermer] = useState(false)
+  const [creationMarque, setCreationMarque] = useState(false)
+  const [initial] = useState(() => JSON.stringify([f, tailles]))
   const saisieClavier = useRef('')   // chiffres tapés au clavier sur une pointure
 
   const set = (k, v) => { setF(x => ({ ...x, [k]: v })); setConfirmDoublon(false) }
@@ -181,7 +185,7 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
   }
 
   async function supprimer() {
-    if (!confirmSuppr) { setConfirmSuppr(true); return }
+    setConfirmSuppr(false)
     setEnCours(true)
     try { await db.entrees.delete(entree.id); onToast?.({ texte: 'Entrée supprimée' }); onFermer() }
     catch (err) { setErreur('Suppression impossible : ' + (err.message || err)); setConfirmSuppr(false) }
@@ -189,14 +193,35 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
   }
 
   const statutsSaisie = STATUTS.filter(s => s !== 'Retour')
+  const commencee = modif ? JSON.stringify([f, tailles]) !== initial : (!!f.modele || Object.values(tailles).some(Boolean))
+  const fermer = () => { if (commencee && !enCours) setConfirmFermer(true); else onFermer() }
+
+  // Créer une marque absente de la liste, sans quitter la saisie (comme depuis le SAV ou les défectueux)
+  const rechMarqueNette = rechMarque.trim().replace(/\s+/g, ' ')
+  const marqueExistante = (params?.fournisseurs || []).find(m => m.toLowerCase() === rechMarqueNette.toLowerCase())
+  async function creerMarque() {
+    if (!rechMarqueNette || creationMarque) return
+    if (marqueExistante) { choisirMarque(marqueExistante); return }
+    setCreationMarque(true); setErreur('')
+    try {
+      const deja = await db.fournisseurs.where('nom').equals(rechMarqueNette).first()
+      if (!deja) await db.fournisseurs.add({ nom: rechMarqueNette, modelesBySeason: {} })
+      choisirMarque(rechMarqueNette)
+      onToast?.({ texte: `Marque « ${rechMarqueNette} » créée` })
+    } catch (err) {
+      setErreur('Création de la marque impossible : ' + (err.message || 'vérifiez la connexion et réessayez.'))
+    } finally {
+      setCreationMarque(false)
+    }
+  }
 
   return (
     <>
-      <div className="feuille-fond" onClick={onFermer} />
+      <div className="feuille-fond" onClick={fermer} />
       <div className="feuille saisie-entree" role="dialog" aria-label={modif ? "Modifier l'entrée" : 'Nouvelle entrée'}>
         <div className="feuille-entete">
           <h2>{modif ? "Modifier l'entrée" : 'Nouvelle entrée'}</h2>
-          <button className="icone-btn" onClick={onFermer} aria-label="Fermer"><Icone nom="fermer" /></button>
+          <button className="icone-btn" onClick={fermer} aria-label="Fermer"><Icone nom="fermer" /></button>
         </div>
         <div className="feuille-corps">
           {!modif && (
@@ -225,14 +250,21 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
           <span className="etiquette">Marque</span>
           {panneau === 'marque' ? (
             <div className="choix-liste">
-              <input className="champ" autoFocus placeholder="Rechercher une marque" value={rechMarque} onChange={e => setRechMarque(e.target.value)} />
+              <input className="champ" autoFocus placeholder="Rechercher ou créer une marque" value={rechMarque} onChange={e => setRechMarque(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { if (marques.length === 1) choisirMarque(marques[0]); else if (rechMarqueNette && !marqueExistante) creerMarque() } }} />
               <div className="liste" style={{ background: 'var(--carte-2)', marginTop: 8, maxHeight: 280, overflowY: 'auto' }}>
                 {marques.map(m => (
                   <button key={m} className="ligne" style={{ minHeight: 48 }} onClick={() => choisirMarque(m)}>
                     <span className="txt"><span className="t1">{m}</span></span>{m === f.marque && <Icone nom="check" taille={18} style={{ color: 'var(--action-texte)' }} />}
                   </button>
                 ))}
-                {!marques.length && <div className="vide" style={{ padding: 16 }}>Aucune marque ne correspond.</div>}
+                {rechMarqueNette && !marqueExistante && (
+                  <button className="ligne" style={{ minHeight: 52, color: 'var(--action-texte)' }} onClick={creerMarque} disabled={creationMarque}>
+                    <Icone nom="ajout" taille={18} /><span className="txt"><span className="t1" style={{ color: 'inherit' }}>{creationMarque ? 'Création…' : `Créer la marque « ${rechMarqueNette} »`}</span>
+                      <div className="t2">Marque absente de la liste : elle sera ajoutée pour tous les magasins</div></span>
+                  </button>
+                )}
+                {!marques.length && !rechMarqueNette && <div className="vide" style={{ padding: 16 }}>Aucune marque enregistrée.</div>}
               </div>
             </div>
           ) : (
@@ -355,8 +387,7 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
           {erreur && <div className="encart err" style={{ marginTop: 14 }}>{erreur}</div>}
           {modif && (
             <div style={{ marginTop: 22 }}>
-              <button className="btn btn-danger" onClick={supprimer} disabled={enCours}>{confirmSuppr ? 'Confirmer la suppression' : "Supprimer l'entrée"}</button>
-              {confirmSuppr && <button className="btn" style={{ marginLeft: 8 }} onClick={() => setConfirmSuppr(false)}>Annuler</button>}
+              <button className="btn btn-danger" onClick={() => setConfirmSuppr(true)} disabled={enCours}>Supprimer l'entrée</button>
             </div>
           )}
         </div>
@@ -382,6 +413,16 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
           </button>
         </div>
       </div>
+      {confirmFermer && (
+        <Confirmation danger titre={modif ? 'Abandonner les modifications ?' : 'Abandonner cette saisie ?'}
+          texte={modif ? 'Les changements faits sur cette entrée ne seront pas enregistrés.' : `La saisie en cours (${f.marque || 'marque'}${f.modele ? ' · ' + f.modele : ''}${total ? ', ' + pluriel(total, 'paire') : ''}) ne sera pas enregistrée.`}
+          confirmer="Abandonner" annuler="Continuer la saisie" onAnnuler={() => setConfirmFermer(false)} onConfirmer={() => { setConfirmFermer(false); onFermer() }} />
+      )}
+      {confirmSuppr && (
+        <Confirmation danger titre="Supprimer cette entrée ?"
+          texte={`${entree.marque} · ${entree.modele || 'sans modèle'} · ${pluriel(entree.total || 0, 'paire')} du ${entree.date}. Cette suppression est définitive.`}
+          confirmer="Supprimer" onAnnuler={() => setConfirmSuppr(false)} onConfirmer={supprimer} />
+      )}
     </>
   )
 }

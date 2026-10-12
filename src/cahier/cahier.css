@@ -26,10 +26,15 @@
 .pointer .icone { opacity: 0; }
 .pointer[aria-pressed="true"] > span { background: var(--ok); border-color: var(--ok); }
 .pointer[aria-pressed="true"] .icone { opacity: 1; }
-.barre-selection { position: sticky; bottom: calc(68px + env(safe-area-inset-bottom)); z-index: 700; margin-top: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
-  background: var(--carte); border-radius: var(--rayon); box-shadow: var(--ombre-douce); padding: 10px 12px; border: 1px solid var(--trait); }
-@media (min-width: 768px) { .barre-selection { bottom: 16px; } }
-.barre-selection .flex { flex: 1; }
+.barre-selection { position: fixed; left: 12px; right: 12px; bottom: calc(68px + env(safe-area-inset-bottom)); z-index: 850; display: flex; flex-direction: column; gap: 8px;
+  background: var(--carte); border-radius: 16px; box-shadow: 0 8px 30px rgba(0, 0, 0, .18); padding: 12px; border: 1px solid var(--trait); }
+.compte-selection { font-size: 15px; }
+.actions-selection { display: flex; flex-wrap: wrap; gap: 8px; }
+.actions-selection .btn { min-height: 44px; padding: 0 14px; }
+@media (min-width: 768px) {
+  .barre-selection { left: calc(248px + 24px); right: 24px; bottom: 16px; flex-direction: row; align-items: center; justify-content: space-between; }
+  .coque:has(.barre-laterale.replie) .barre-selection { left: calc(68px + 24px); }
+}
 .champs-filtres .etiquette { margin-top: 12px; }
 .champs-filtres .champ { margin-top: 6px; }
 
@@ -78,3 +83,4 @@
 @media (min-width: 768px) { .toast-cahier { top: auto; bottom: 24px; } }   /* téléphone : en haut, pour ne masquer ni le bouton ni les avertissements */
 .toast-cahier button { color: #4da3ff; font: inherit; font-weight: 600; min-height: 36px; padding: 0 10px; border-radius: 8px; border: 0; background: none; cursor: pointer; }
 html[data-theme="dark"] .toast-cahier button { color: #0062cc; }
+.feuille.bas .ligne .puce { font-size: 15px; color: var(--texte); }   /* liste « Changer le statut » : même taille que « Aucun » */

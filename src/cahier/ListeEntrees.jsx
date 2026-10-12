@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { db } from '../db'
 import { SOCIETES } from '../data/societes'
 import Icone from '../components/ui/Icone'
@@ -10,14 +10,15 @@ const FILTRES_VIDES = { societe: '', magasin: null, marque: '', categorie: '', s
 const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b))
 
 // Liste des entrées de la saison : recherche, filtres, regroupement par jour, sélection multiple, pointage (Direction)
-export default function ListeEntrees({ entrees, magasinAppareil, estDirection, estPointe, onPointer, onOuvrir, onToast }) {
+export default function ListeEntrees({ entrees, magasinAppareil, estDirection, estPointe, onPointer, onOuvrir, onToast, onModeSelection }) {
   const [recherche, setRecherche] = useState('')
   const [rapide, setRapide]       = useState('toutes')   // toutes | apointer | retours
   const [filtres, setFiltres]     = useState(FILTRES_VIDES)
   const [feuilleFiltres, setFeuilleFiltres] = useState(false)
   const [nb, setNb]               = useState(PAR_PAGE)
   const [selection, setSelection] = useState(null)        // null = pas en mode sélection ; sinon Set d'ids
-  const [statutGroupe, setStatutGroupe] = useState('Enregistré')
+  const [choixStatut, setChoixStatut] = useState(false)    // feuille « Changer le statut »
+  useEffect(() => { onModeSelection?.(!!selection) }, [selection, onModeSelection])
 
   const magasinFiltre = filtres.magasin === null ? magasinAppareil : filtres.magasin   // '' = tous les magasins
   const plusieursMagasins = !magasinFiltre
@@ -48,11 +49,16 @@ export default function ListeEntrees({ entrees, magasinAppareil, estDirection, e
   const sel = selection || new Set()
   const basculerSel = id => setSelection(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
   const toutSelectionne = filtrees.length > 0 && filtrees.every(e => sel.has(e.id))
-  async function appliquerStatut() {
+  // Changement de statut groupé (comme l'outil actuel), avec « Annuler » qui remet les statuts d'avant
+  async function appliquerStatut(statut) {
     const ids = [...sel]; if (!ids.length) return
+    const avant = Object.fromEntries(entrees.filter(e => sel.has(e.id)).map(e => [e.id, e.statut || '']))
+    setChoixStatut(false)
     let echecs = 0
-    for (const id of ids) { try { await db.entrees.update(id, { statut: statutGroupe }) } catch { echecs++ } }
-    onToast({ texte: echecs ? `${ids.length - echecs} entrée(s) modifiée(s), ${echecs} en échec` : `Statut « ${libelleStatut(statutGroupe)} » appliqué à ${pluriel(ids.length, 'entrée')}` })
+    for (const id of ids) { try { await db.entrees.update(id, { statut }) } catch { echecs++ } }
+    onToast(echecs ? { texte: `${ids.length - echecs} entrée(s) modifiée(s), ${echecs} en échec : vérifiez la connexion.` }
+      : { texte: `Statut « ${libelleStatut(statut)} » appliqué à ${pluriel(ids.length, 'entrée')}`,
+          annuler: async () => { for (const [id, st] of Object.entries(avant)) { try { await db.entrees.update(Number(id), { statut: st }) } catch { /* ignore */ } } } })
     setSelection(null)
   }
   function pointerSel(val) { onPointer([...sel], val); setSelection(null) }
@@ -115,18 +121,35 @@ export default function ListeEntrees({ entrees, magasinAppareil, estDirection, e
       ))}
       {filtrees.length > nb && <div style={{ textAlign: 'center', marginTop: 16 }}><button className="btn" onClick={() => setNb(n => n + PAR_PAGE)}>Afficher {Math.min(PAR_PAGE, filtrees.length - nb)} de plus ({filtrees.length - nb} restantes)</button></div>}
 
+      {selection && <div style={{ height: 120 }} aria-hidden="true" />}
       {selection && (
-        <div className="barre-selection">
-          <b>{pluriel(sel.size, 'sélectionnée')}</b>
-          <button className="lien" onClick={() => setSelection(toutSelectionne ? new Set() : new Set(filtrees.map(e => e.id)))}>{toutSelectionne ? 'Tout désélectionner' : `Tout sélectionner (${filtrees.length})`}</button>
-          <span className="flex" />
-          <label className="sr-only" htmlFor="statut-groupe">Statut</label>
-          <select id="statut-groupe" className="champ" style={{ width: 'auto', minWidth: 160 }} value={statutGroupe} onChange={e => setStatutGroupe(e.target.value)}>
-            {STATUTS.map(s => <option key={s || 'aucun'} value={s}>{s ? libelleStatut(s) : '— Vide —'}</option>)}
-          </select>
-          <button className="btn btn-prim" disabled={!sel.size} onClick={appliquerStatut}>Appliquer</button>
-          {estDirection && <><button className="btn" disabled={!sel.size} onClick={() => pointerSel(true)}>Pointer</button><button className="btn" disabled={!sel.size} onClick={() => pointerSel(false)}>Dépointer</button></>}
+        <div className="barre-selection" role="toolbar" aria-label="Actions sur la sélection">
+          <b className="compte-selection">{sel.size ? pluriel(sel.size, 'sélectionnée') : 'Touchez les lignes à sélectionner'}</b>
+          <div className="actions-selection">
+            <button className="btn btn-prim" disabled={!sel.size} onClick={() => setChoixStatut(true)}>Changer le statut</button>
+            {estDirection && <button className="btn" disabled={!sel.size} onClick={() => pointerSel(true)}>Pointer</button>}
+            {estDirection && <button className="btn" disabled={!sel.size} onClick={() => pointerSel(false)}>Dépointer</button>}
+            <button className="btn" onClick={() => setSelection(toutSelectionne ? new Set() : new Set(filtrees.map(e => e.id)))}>{toutSelectionne ? 'Tout désélectionner' : `Tout sélectionner (${filtrees.length})`}</button>
+            <button className="btn btn-ghost" onClick={() => setSelection(null)}>Annuler</button>
+          </div>
         </div>
+      )}
+      {choixStatut && (
+        <>
+          <div className="feuille-fond" style={{ zIndex: 960 }} onClick={() => setChoixStatut(false)} />
+          <div className="feuille bas" style={{ zIndex: 961 }} role="dialog" aria-label="Changer le statut">
+            <div className="feuille-entete"><h2>Statut de {pluriel(sel.size, 'entrée')}</h2><button className="icone-btn" onClick={() => setChoixStatut(false)} aria-label="Fermer"><Icone nom="fermer" /></button></div>
+            <div className="feuille-corps">
+              <div className="liste" style={{ background: 'var(--carte-2)' }}>
+                {STATUTS.map(st => (
+                  <button key={st || 'aucun'} className="ligne" style={{ minHeight: 52 }} onClick={() => appliquerStatut(st)}>
+                    <span className="txt">{st ? <Statut s={st} /> : <span className="t1" style={{ fontWeight: 500 }}>Aucun (vider le statut)</span>}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {feuilleFiltres && (

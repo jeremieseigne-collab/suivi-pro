@@ -127,3 +127,14 @@ button.ligne:hover { background: color-mix(in srgb, var(--texte) 3%, transparent
 /* Pourcentages de livraison : mêmes niveaux que les jauges */
 .pc { font-weight: 600; } .pc.ok { color: var(--ok); } .pc.bleu { color: var(--action-texte); } .pc.orange { color: var(--att); } .pc.zero { color: var(--discret); }
 .ligne.faible .txt, .ligne.faible .puce { opacity: .5; }
+/* ─── Confirmation (au-dessus de tout) ─── */
+.confirmation-fond { position: fixed; inset: 0; z-index: 3000; background: rgba(0, 0, 0, .4); display: flex; align-items: flex-end; justify-content: center; padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+@media (min-width: 768px) { .confirmation-fond { align-items: center; } }
+.confirmation { width: 100%; max-width: 420px; background: var(--carte); color: var(--texte); border-radius: 18px; padding: 20px; box-shadow: var(--ombre-douce); }
+.confirmation h2 { margin: 0 0 8px; font-size: var(--t-titre); }
+.confirmation p { margin: 0 0 18px; color: var(--doux); font-size: 15px; line-height: 1.45; }
+.confirmation-boutons { display: flex; gap: 10px; }
+.confirmation-boutons .btn { flex: 1; }
+.btn-danger-plein { background: var(--err); color: #fff; }
+.btn-danger-plein:hover { background: color-mix(in srgb, #000 12%, var(--err)); }

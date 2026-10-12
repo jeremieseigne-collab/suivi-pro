@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { db } from '../db'
 import { SIZE_TYPES } from '../data/sizes'
 import Icone from '../components/ui/Icone'
+import Confirmation from '../components/ui/Confirmation'
 import { Numero, Statut } from './Reperes'
 import { STATUTS, fmtEur, pluriel, libelleJour } from './commun'
 
@@ -23,7 +24,7 @@ export default function FicheEntree({ entree: e, estDirection, pointe, onPointer
     } catch (err) { setErreur('Changement impossible : ' + (err.message || err)) }
   }
   async function supprimer() {
-    if (!confirmSuppr) { setConfirmSuppr(true); return }
+    setConfirmSuppr(false)
     try { await db.entrees.delete(e.id); onToast({ texte: 'Entrée supprimée' }); onFermer() }
     catch (err) { setErreur('Suppression impossible : ' + (err.message || err)); setConfirmSuppr(false) }
   }
@@ -62,11 +63,15 @@ export default function FicheEntree({ entree: e, estDirection, pointe, onPointer
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 20 }}>
             {estDirection && <button className="btn" onClick={() => onPointer(!pointe)}><Icone nom="check" taille={18} />{pointe ? 'Dépointer' : 'Pointer'}</button>}
             <button className="btn" onClick={onModifier}>Modifier</button>
-            <button className="btn btn-danger" onClick={supprimer}>{confirmSuppr ? 'Confirmer la suppression' : 'Supprimer'}</button>
-            {confirmSuppr && <button className="btn" onClick={() => setConfirmSuppr(false)}>Annuler</button>}
+            <button className="btn btn-danger" onClick={() => setConfirmSuppr(true)}>Supprimer</button>
           </div>
         </div>
       </div>
+      {confirmSuppr && (
+        <Confirmation danger titre="Supprimer cette entrée ?"
+          texte={`${e.marque} · ${e.modele || 'sans modèle'} · ${pluriel(e.total || 0, 'paire')} du ${e.date}. Cette suppression est définitive.`}
+          confirmer="Supprimer" onAnnuler={() => setConfirmSuppr(false)} onConfirmer={supprimer} />
+      )}
     </>
   )
 }

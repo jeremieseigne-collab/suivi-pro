@@ -29,6 +29,7 @@ export default function Cahier() {
   const [ficheId, setFicheId] = useState(null)
   const [importer, setImporter] = useState(false)
   const [toast, setToast] = useState(null)
+  const [enSelection, setEnSelection] = useState(false)  // le bouton « + Entrée » s'efface pendant une sélection
   const [pointeLocal, setPointeLocal] = useState({})  // affichage immédiat du pointage avant le retour temps réel
 
   // Entrées de la saison avec les noms (comme l'outil actuel)
@@ -78,12 +79,12 @@ export default function Cahier() {
     >
       {onglet === 'entrees' && (entrees === undefined ? <LoadingState /> : (
         <ListeEntrees entrees={entrees} magasinAppareil={magasinAppareil} estDirection={estDirection} estPointe={estPointe}
-          onPointer={pointer} onOuvrir={e => setFicheId(e.id)} onToast={setToast} />
+          onPointer={pointer} onOuvrir={e => setFicheId(e.id)} onToast={setToast} onModeSelection={setEnSelection} />
       ))}
-      {onglet === 'entrees' && <div className="seulement-petit" style={{ textAlign: 'center', marginTop: 24 }}><button className="btn btn-ghost" onClick={() => setImporter(true)}>Importer des entrées (CSV)</button></div>}
+      {onglet === 'entrees' && !enSelection && <div className="seulement-petit" style={{ textAlign: 'center', marginTop: 24 }}><button className="btn btn-ghost" onClick={() => setImporter(true)}>Importer des entrées (CSV)</button></div>}
       {onglet === 'suivi' && <SuiviLivraisons magasinAppareil={magasinAppareil} />}
 
-      {onglet === 'entrees' && <button className="btn btn-prim action-flottante" onClick={nouvelle}><Icone nom="ajout" taille={20} />Entrée</button>}
+      {onglet === 'entrees' && !enSelection && <button className="btn btn-prim action-flottante" onClick={nouvelle}><Icone nom="ajout" taille={20} />Entrée</button>}
 
       {fiche && !saisie && (
         <FicheEntree entree={fiche} estDirection={estDirection} pointe={estPointe(fiche)} onPointer={v => pointer([fiche.id], v)}
