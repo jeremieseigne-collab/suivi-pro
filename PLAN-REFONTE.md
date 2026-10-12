@@ -216,6 +216,10 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Factures — aperçu, impression, PDF, mail | **Identiques** (même facture, mêmes mentions légales, mêmes couleurs fixes, même brouillon Gmail depuis l'adresse de la société) ; sur ordinateur, même mise en page qu'avant | ✅ accordé |
 | Factures — téléphone | **Ajout** : utilisable sur téléphone (avant : formulaire et aperçu côte à côte, débordant) ; l'aperçu est réduit à la largeur de l'écran ; l'impression et le PDF partent d'une facture **pleine taille** (largeur fixe) | ✅ accordé |
 | Factures — choix F1, F2 | ✅ « avec » : sur téléphone, onglets « Saisie » / « Aperçu » ; mention « Numéro suivant d'après cet appareil » sous le n° | ✅ accordé |
+| Finitions — couleurs des anciens écrans | Fenêtres d'import CSV, fiches d'achat, onglets de Réglages, confirmations « nom à retaper » : **même contenu et même fonctionnement**, couleurs de la charte (fond, cartes, bleu d'action, traits) au lieu de l'ancienne palette — en mode clair, le bleu devient celui du reste de l'outil ; **en mode sombre, fin du bleu nuit** de ces écrans | ⏳ à valider |
+| Finitions — fenêtres, boutons, champs, tableaux | Fenêtres aux coins arrondis de la charte (fond assombri, sans flou), bouton de fermeture rond ; boutons arrondis (pleins pour l'action principale) ; champs gris clair de 44 px de haut, contour bleu au toucher ; titres de colonnes et libellés des champs en minuscules (avant : MAJUSCULES espacées) ; message d'erreur en encadré rouge | ⏳ à valider |
+| Finitions — emojis | Retirés des titres, boutons et messages : 📂 / 📥 (titres des imports), ✅ « Import terminé », ⚠️ (avertissements, titre des confirmations « nom à retaper »), ⏳ (« Import… », « Enregistrement… », « Fusion… »), 💾 Enregistrer, 🛒 (titres des fiches d'achat), 🗑️ → icône corbeille, ✏️ Renommer, 🏪 Magasins / Quantités du magasin, 👤 Salariés, 🛠 Maintenance, 🔀 Fusionner, 🗓 Plan chèque / Dates perso, 🏢 pilote ; grand ✅ de réussite → coche dans un rond ; « ❌ » d'un magasin non reconnu à l'import → « (inconnu) ». **Gardés** : les emojis des stratégies (🆕 🚀 🛡️ 📉 🛑) et des statuts d'achat (✅ ⏳ ❌), qui sont des valeurs enregistrées | ⏳ à valider |
+| Finitions — mode sombre, couleurs de code | Stratégies, modes de règlement (menus colorés de Réglages, pastilles du Plan), avoirs : **mêmes couleurs**, en teinte transparente sur fond sombre et texte clair (avant : pastilles claires éblouissantes, texte foncé peu lisible) ; mode clair inchangé. Ligne « Total » des Achats : fond de la charte | ⏳ à valider |
 
 ## 2 ter. Codes couleur de l'outil actuel (conservés)
 
@@ -492,3 +496,8 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 
 Un écran à la fois, montré en local, un commit par écran, suivi dans `SUIVI.md`.
 **Aucune modification de la structure de la base** n'est prévue pour la refonte elle-même.
+
+## Finitions communes — vérifications (12/10)
+
+- **Mode sombre** : 31 écrans et fenêtres parcourus (accueil, agenda, cahier et suivi, réassorts, commandes, SAV, défectueux, répertoire, factures, planning, paie, achats, plan de règlement, les 6 onglets de Réglages, fiche et nouvelle fiche d'achat, les 4 imports CSV, confirmation « nom à retaper », plan chèque, choix du magasin, connexion) : **aucun fond resté clair ni bleu nuit** (hors la facture, volontairement en couleurs fixes d'impression, et la pastille choisie, claire par conception de la charte).
+- **Rien de changé dans le fonctionnement** : essais refaits après les finitions — Direction 16/16 (Achats identiques à l'outil actuel sur 8 filtres et 139 lignes, fiche d'achat, suppression de saison avec le nom à retaper, accès refusés au compte magasin), import CSV du Répertoire 8/8.

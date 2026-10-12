@@ -8,6 +8,7 @@ import { SIZE_TYPES, DEFAULT_GRID_BY_MARQUE } from '../data/sizes'
 import { getSociete } from '../data/societes'
 import { confirmDanger } from '../components/DangerConfirm'
 import { supabase } from '../lib/supabase'
+import Icone from '../components/ui/Icone'
 
 const MODES_REGLEMENT = ['', 'PRELEVEMENT', 'CHEQUE', 'GARANT', 'VIREMENT', 'GMS', 'LCR']
 
@@ -95,7 +96,7 @@ function AddForm({ placeholder, onAdd, disabled }) {
           className="search-input" style={{ maxWidth: 280 }} disabled={disabled} />
         <button type="submit" className="btn-primary" disabled={disabled || !value.trim()}>+ Ajouter</button>
       </div>
-      {error && <p style={{ margin: '6px 0 0', fontSize: 13, color: '#dc2626' }}>⚠️ {error}</p>}
+      {error && <p style={{ margin: '6px 0 0', fontSize: 13, color: '#dc2626' }}>{error}</p>}
     </form>
   )
 }
@@ -134,7 +135,7 @@ function SectionMagasins() {
 
   return (
     <div className="store-card">
-      <h3 style={{ marginBottom: 16, fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>🏪 Magasins</h3>
+      <h3 style={{ marginBottom: 16, fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Magasins</h3>
       {(magasins || []).length === 0
         ? <p style={{ color: 'var(--text-4)', fontSize: 14 }}>Aucun magasin — ajoutez-en un ci-dessous.</p>
         : <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -176,7 +177,7 @@ function SectionSalaries() {
 
   return (
     <div className="store-card">
-      <h3 style={{ marginBottom: 16, fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>👤 Salariés</h3>
+      <h3 style={{ marginBottom: 16, fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Salariés</h3>
       {(salaries || []).length === 0 ? (
         <p style={{ color: 'var(--text-4)', fontSize: 14 }}>Aucun salarié — ajoutez-en un ci-dessous.</p>
       ) : (
@@ -374,7 +375,7 @@ function ImportCSVPanel({ magasinId, magasinNom, season }) {
     <div style={{ marginTop: 16, padding: 16, background: 'var(--surface)', borderRadius: 10, border: '1px dashed var(--text-5)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: 1 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)' }}>📂 Import CSV</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)' }}>Import CSV</span>
           <span style={{ fontSize: 12, color: 'var(--text-4)', marginLeft: 8 }}>
 Colonnes lues : <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>Marque ; Code Modèle ; Couleur ; Taille ; Famille ; Prix d'achat ; Quantité commandé</code>. Modèle = <em>Code, Couleur</em> ; quantités agrégées par pointure ; grille auto ; lignes filtrées sur la société de <strong>{magasinNom || '—'}</strong>.
           </span>
@@ -386,11 +387,11 @@ Colonnes lues : <code style={{ background: 'var(--surface-3)', padding: '1px 5px
         </button>
       </div>
 
-      {!magasinId && <p style={{ marginTop: 8, fontSize: 12, color: '#f59e0b' }}>⚠️ Crée d'abord un magasin pour importer des quantités.</p>}
+      {!magasinId && <p style={{ marginTop: 8, fontSize: 12, color: '#f59e0b' }}>Crée d'abord un magasin pour importer des quantités.</p>}
 
       {done && (
         <div style={{ marginTop: 10, padding: '8px 12px', background: '#d1fae5', borderRadius: 8, fontSize: 13, color: '#059669' }}>
-          ✅ {done.modeles} modèle{done.modeles !== 1 ? 's' : ''} importé{done.modeles !== 1 ? 's' : ''} ({done.marques} marque{done.marques !== 1 ? 's' : ''}) pour {magasinNom}.
+          {done.modeles} modèle{done.modeles !== 1 ? 's' : ''} importé{done.modeles !== 1 ? 's' : ''} ({done.marques} marque{done.marques !== 1 ? 's' : ''}) pour {magasinNom}.
           {done.skipped > 0 && <span style={{ color: 'var(--text-3)' }}> — {done.skipped} ligne{done.skipped !== 1 ? 's' : ''} ignorée{done.skipped !== 1 ? 's' : ''} (autre société).</span>}
         </div>
       )}
@@ -402,7 +403,7 @@ Colonnes lues : <code style={{ background: 'var(--surface-3)', padding: '1px 5px
             {preview.skippedSociete > 0 && <span style={{ color: 'var(--text-4)', marginLeft: 6 }}>({preview.skippedSociete} ligne{preview.skippedSociete !== 1 ? 's' : ''} autre société ignorée{preview.skippedSociete !== 1 ? 's' : ''})</span>}
           </p>
           {preview.models.length === 0 && (
-            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#f59e0b' }}>⚠️ Aucun modèle pour la société de ce magasin — vérifie le magasin sélectionné ou le fichier.</p>
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#f59e0b' }}>Aucun modèle pour la société de ce magasin — vérifie le magasin sélectionné ou le fichier.</p>
           )}
           <div style={{ maxHeight: 240, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)' }}>
             {preview.models.map((row, i) => {
@@ -425,7 +426,7 @@ Colonnes lues : <code style={{ background: 'var(--surface-3)', padding: '1px 5px
           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
             <button type="button" onClick={handleImport} disabled={importing || preview.models.length === 0}
               style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--accent-2)', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13, opacity: preview.models.length === 0 ? 0.5 : 1 }}>
-              {importing ? '⏳ Importation…' : `✅ Importer (${magasinNom})`}
+              {importing ? 'Importation…' : `Importer (${magasinNom})`}
             </button>
             <button type="button" onClick={() => setPreview(null)}
               style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 13 }}>
@@ -626,7 +627,7 @@ function SectionFournisseurs() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Sélecteur de magasin pour les quantités */}
       <div className="store-card" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: 16 }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)' }}>🏪 Quantités du magasin :</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)' }}>Quantités du magasin :</span>
         <select value={selectedMagasin || ''} onChange={e => setSelM(Number(e.target.value))} className="sel">
           {(magasins || []).map(m => <option key={m.id} value={m.id}>{m.nom}</option>)}
         </select>
@@ -635,9 +636,9 @@ function SectionFournisseurs() {
 
       {/* Fusion de marques en doublon — action irréversible, repliée par défaut */}
       <details className="store-card" style={{ padding: 16 }}>
-        <summary style={{ cursor: 'pointer', fontSize: 14, fontWeight: 600, color: 'var(--text-3)' }}>🛠 Maintenance : fusionner deux marques en doublon</summary>
+        <summary style={{ cursor: 'pointer', fontSize: 14, fontWeight: 600, color: 'var(--text-3)' }}>Maintenance : fusionner deux marques en doublon</summary>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)' }}>🔀 Fusionner :</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)' }}>Fusionner :</span>
         <select value={mergeSource} onChange={e => setMergeSource(e.target.value)} className="sel" title="Marque en doublon (sera supprimée)">
           <option value="">Marque à fusionner…</option>
           {(fournisseurs || []).map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
@@ -648,7 +649,7 @@ function SectionFournisseurs() {
           {(fournisseurs || []).filter(f => String(f.id) !== mergeSource).map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
         </select>
         <button className="btn-primary" disabled={!mergeSource || !mergeTarget || merging} onClick={mergeFournisseurs}>
-          {merging ? '⏳ Fusion…' : 'Fusionner'}
+          {merging ? 'Fusion…' : 'Fusionner'}
         </button>
         <span style={{ fontSize: 12, color: 'var(--text-4)', flexBasis: '100%' }}>La 1ʳᵉ marque (doublon) est rattachée à la 2ᵉ puis supprimée. La marque conservée garde ses infos ; les données manquantes sont complétées depuis le doublon.</span>
       </div>
@@ -673,9 +674,9 @@ function SectionFournisseurs() {
               )}
               <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                 {editingId !== f.id && (
-                  <button onClick={() => { setEditingId(f.id); setEditingNom(f.nom) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13, padding: '4px 8px', borderRadius: 6 }}>✏️ Renommer</button>
+                  <button onClick={() => { setEditingId(f.id); setEditingNom(f.nom) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13, padding: '4px 8px', borderRadius: 6 }}>Renommer</button>
                 )}
-                <button onClick={() => del(f.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 13, padding: '4px 8px', borderRadius: 6 }}>🗑️ Supprimer</button>
+                <button onClick={() => del(f.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 13, padding: '4px 8px', borderRadius: 6 }}>Supprimer</button>
               </div>
             </div>
 
@@ -758,9 +759,9 @@ function ChequePlanModal({ fournisseur, magasin, seasonLabel, initial, onSave, o
   const inp = { padding: '7px 9px', border: '1px solid var(--border)', borderRadius: 7, fontSize: 13, outline: 'none', background: 'var(--surface)', color: 'var(--text)' }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0, 0, 0, .32)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
       <div style={{ background: 'var(--surface)', borderRadius: 14, padding: 24, width: 440, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px var(--shadow-lg)' }} onClick={e => e.stopPropagation()}>
-        <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>🗓 Plan chèque</h2>
+        <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>Plan chèque</h2>
         <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-3)' }}>
           {fournisseur} × {magasin} — <strong>{seasonLabel}</strong><br />
           Saisis chaque chèque (date d'encaissement + montant). Remplace le calcul automatique.
@@ -773,7 +774,7 @@ function ChequePlanModal({ fournisseur, magasin, seasonLabel, initial, onSave, o
             <input type="number" min="0" step="0.01" placeholder="montant" value={r.montant} onChange={e => set(i, 'montant', e.target.value)} style={{ ...inp, width: 110 }} />
             <span style={{ fontSize: 13, color: 'var(--text-3)' }}>€</span>
             <button onClick={() => del(i)} title="Supprimer" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#cbd5e1', fontSize: 15 }}
-              onMouseEnter={e => e.currentTarget.style.color = '#ef4444'} onMouseLeave={e => e.currentTarget.style.color = '#cbd5e1'}>🗑</button>
+              onMouseEnter={e => e.currentTarget.style.color = '#ef4444'} onMouseLeave={e => e.currentTarget.style.color = '#cbd5e1'} aria-label="Supprimer ce chèque"><Icone nom="corbeille" taille={18} /></button>
           </div>
         ))}
 
@@ -880,7 +881,7 @@ function SectionModes() {
         <p style={{ fontSize: 13, color: 'var(--text-3)', margin: 0 }}>
           Mode de règlement <strong>et conditions</strong> par <strong>fournisseur</strong> × magasin (utilisé dans le plan de règlement).
           <br />Renseigne le champ <strong>« Fournisseur réel »</strong> sous une marque pour la rattacher à un vrai fournisseur (ex. <em>No Name</em> et <em>Schmoove</em> → <em>Rautureau Apple Shoes</em>) : le règlement se configure alors <strong>une seule fois</strong> pour le fournisseur (sur sa 1ʳᵉ marque), et le plan additionne ses marques.
-          <br /><strong>CHEQUE</strong> : nombre de chèques (montant ÷ N sur N fins de mois) <em>ou</em> bouton 🗓 pour saisir un <strong>plan chèque personnalisé</strong> (dates + montants), <strong>par saison</strong> (saison active : <strong>{seasonLabel}</strong>) — le plan perso remplace le calcul auto. <strong>Autres</strong> : délais en jours, séparés par des virgules — ex. <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>0</code> (jour de livraison), <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>30, 60</code> (2 échéances). Vide = valeur par défaut.
+          <br /><strong>CHEQUE</strong> : nombre de chèques (montant ÷ N sur N fins de mois) <em>ou</em> bouton « Dates perso » pour saisir un <strong>plan chèque personnalisé</strong> (dates + montants), <strong>par saison</strong> (saison active : <strong>{seasonLabel}</strong>) — le plan perso remplace le calcul auto. <strong>Autres</strong> : délais en jours, séparés par des virgules — ex. <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>0</code> (jour de livraison), <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>30, 60</code> (2 échéances). Vide = valeur par défaut.
         </p>
       </div>
       <div style={{ overflowX: 'auto' }}>
@@ -902,7 +903,7 @@ function SectionModes() {
                   <strong>{f.nom}</strong>
                   {grouped && (
                     <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 10, background: 'var(--accent-bg)', color: 'var(--accent)' }}>
-                      {isPilote ? '🏢 pilote' : `↳ ${gk}`}
+                      {isPilote ? 'pilote' : `↳ ${gk}`}
                     </span>
                   )}
                   <div style={{ marginTop: 4 }}>
@@ -956,7 +957,7 @@ function SectionModes() {
                                 background: plan.length ? 'var(--accent-bg)' : 'var(--surface)',
                                 color: plan.length ? 'var(--accent)' : 'var(--text-3)', fontWeight: plan.length ? 700 : 400,
                               }}>
-                              🗓 {plan.length ? `${plan.length} date(s)` : 'Dates perso'}
+                              {plan.length ? `${plan.length} date(s)` : 'Dates perso'}
                             </button>
                           </div>
                         )

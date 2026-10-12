@@ -364,7 +364,7 @@ export default function Achats() {
             </tbody>
             {filtered.length > 0 && (
               <tfoot>
-                <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
+                <tr style={{ background: 'var(--carte-2)', fontWeight: 700 }}>
                   <td colSpan={3} style={{ padding: '10px 12px' }}>Total ({filtered.length})</td>
                   <td style={{ textAlign: 'right', padding: '10px 12px', ...(ghost ? { filter: 'blur(6px)', userSelect: 'none' } : null) }}>
                     {totalRecuN1.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}

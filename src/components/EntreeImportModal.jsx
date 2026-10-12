@@ -148,13 +148,13 @@ export default function EntreeImportModal({ onClose, onSaved }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{ maxWidth: 820 }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>📂 Importer les entrées (CSV)</h2>
+          <h2>Importer les entrées (CSV)</h2>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
           {done ? (
             <>
-              <p style={{ fontSize: 15, color: 'var(--text)' }}>✅ Import terminé : <strong>{done.nb}</strong> entrée(s) créée(s) dans la saison active.</p>
+              <p style={{ fontSize: 15, color: 'var(--text)' }}>Import terminé : <strong>{done.nb}</strong> entrée(s) créée(s) dans la saison active.</p>
               <div className="modal-actions"><button className="btn-primary" onClick={() => { onSaved?.(); onClose?.() }}>Fermer</button></div>
             </>
           ) : (
@@ -163,13 +163,13 @@ export default function EntreeImportModal({ onClose, onSaved }) {
                 Une <strong>ligne par pointure</strong> (comme l'import Marques) + une colonne <strong>Date</strong>. Colonnes lues : <strong>Magasin, Marque, Code Modèle, Couleur, Taille, Quantité, Date, N°, Catégorie/Famille, Prix d'achat</strong> (optionnel), <strong>Statut</strong> (optionnel). Les lignes d'une même <strong>entrée</strong> (magasin + marque + modèle + date + N°) sont regroupées, quantités additionnées par pointure. Import dans la <strong>saison active</strong>.
               </p>
               <input type="file" accept=".csv,text/csv,text/plain" onChange={handleFile} style={{ fontSize: 13 }} />
-              {error && <div className="form-error" style={{ marginTop: 10 }}>⚠️ {error}</div>}
+              {error && <div className="form-error" style={{ marginTop: 10 }}>{error}</div>}
 
               {preview && (
                 <div style={{ marginTop: 14 }}>
                   <div style={{ fontSize: 13, marginBottom: 8 }}>
                     <strong>{preview.entries.length}</strong> entrée(s) après regroupement.
-                    {preview.warnings.length > 0 && <span style={{ color: '#f59e0b' }}> ⚠️ {preview.warnings.join(' · ')}</span>}
+                    {preview.warnings.length > 0 && <span style={{ color: '#f59e0b' }}> {preview.warnings.join(' · ')}</span>}
                   </div>
                   <div style={{ maxHeight: 320, overflow: 'auto', border: '1px solid var(--border)', borderRadius: 8 }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -198,7 +198,7 @@ export default function EntreeImportModal({ onClose, onSaved }) {
               <div className="modal-actions">
                 <button className="btn-secondary" onClick={onClose}>Annuler</button>
                 <button className="btn-primary" onClick={handleImport} disabled={!preview || importing}>
-                  {importing ? `⏳ Import… ${progress ? `${progress.done}/${progress.total}` : ''}` : `Importer${preview ? ` (${preview.entries.length})` : ''}`}
+                  {importing ? `Import… ${progress ? `${progress.done}/${progress.total}` : ''}` : `Importer${preview ? ` (${preview.entries.length})` : ''}`}
                 </button>
               </div>
             </>

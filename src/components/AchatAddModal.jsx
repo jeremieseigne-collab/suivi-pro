@@ -3,6 +3,7 @@ import { useParams } from '../hooks/useParams'
 import { db } from '../db'
 import ModeLecture from '../achats/ModeLecture'
 import { useSeason } from '../context/SeasonContext'
+import Icone from './ui/Icone'
 
 const STRATEGIES      = ['🆕 NOUVEAU', '🚀 BOOSTER', '🛡️ MAINTENIR', '📉 RÉDUIRE', '🛑 ARRÊTER']
 const STATUTS         = ['', '✅', '⏳', '❌']
@@ -86,7 +87,7 @@ export default function AchatAddModal({ onClose, onSaved }) {
         .first()
 
       if (existing) {
-        setError(`${form.fournisseur} × ${form.magasin} existe déjà. Utilisez le bouton ✏️ pour le modifier.`)
+        setError(`${form.fournisseur} × ${form.magasin} existe déjà. Utilisez le bouton le crayon pour le modifier.`)
         return
       }
 
@@ -119,13 +120,13 @@ export default function AchatAddModal({ onClose, onSaved }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 560 }}>
         <div className="modal-header">
-          <h2>🛒 Nouveau fournisseur</h2>
+          <h2>Nouveau fournisseur</h2>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
         {saved ? (
           <div className="modal-success">
-            <div style={{ fontSize: 40 }}>✅</div>
+            <div className="signe-ok"><Icone nom="check" taille={30} /></div>
             <p>Ligne ajoutée{isNewFournisseur ? ' et fournisseur créé' : ''} !</p>
           </div>
         ) : (
@@ -156,7 +157,7 @@ export default function AchatAddModal({ onClose, onSaved }) {
               </datalist>
               {isNewFournisseur && (
                 <div style={{ marginTop: 5, fontSize: 12, color: '#059669', fontWeight: 500 }}>
-                  ✅ Nouveau fournisseur — sera créé automatiquement
+                  Nouveau fournisseur — sera créé automatiquement
                 </div>
               )}
             </div>
@@ -233,12 +234,12 @@ export default function AchatAddModal({ onClose, onSaved }) {
               </div>
             </div>
 
-            {error && <div className="form-error">⚠️ {error}</div>}
+            {error && <div className="form-error">{error}</div>}
 
             <div className="modal-actions">
               <button type="button" className="btn-secondary" onClick={onClose}>Annuler</button>
               <button type="submit" className="btn-primary" disabled={saving}>
-                {saving ? '⏳ Enregistrement…' : '💾 Enregistrer'}
+                {saving ? 'Enregistrement…' : 'Enregistrer'}
               </button>
             </div>
           </form>

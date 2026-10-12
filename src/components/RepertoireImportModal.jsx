@@ -133,18 +133,18 @@ export default function RepertoireImportModal({ onClose, onDone }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{ maxWidth: 720 }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>📥 Importer des contacts (CSV)</h2>
+          <h2>Importer des contacts (CSV)</h2>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
           {done ? (
             <>
               <p style={{ fontSize: 15, color: 'var(--text)' }}>
-                ✅ Import terminé : <strong>{done.fournisseurs}</strong> fournisseur(s) mis à jour à partir de <strong>{done.lignes}</strong> ligne(s).
+                Import terminé : <strong>{done.fournisseurs}</strong> fournisseur(s) mis à jour à partir de <strong>{done.lignes}</strong> ligne(s).
               </p>
               {done.unknownMag > 0 && (
                 <p style={{ fontSize: 13, color: '#f59e0b' }}>
-                  ⚠️ {done.unknownMag} ligne(s) avec un <strong>magasin non reconnu</strong> : les contacts « par magasin » de ces lignes n'ont pas été importés (vérifie l'orthographe du magasin). Les infos communes (compta/adresse/notes) ont été enregistrées.
+                  {done.unknownMag} ligne(s) avec un <strong>magasin non reconnu</strong> : les contacts « par magasin » de ces lignes n'ont pas été importés (vérifie l'orthographe du magasin). Les infos communes (compta/adresse/notes) ont été enregistrées.
                 </p>
               )}
               <div className="modal-actions">
@@ -159,7 +159,7 @@ export default function RepertoireImportModal({ onClose, onDone }) {
 
               <input type="file" accept=".csv,text/csv,text/plain" onChange={onFile} style={{ fontSize: 13 }} />
               {fileName && <div style={{ fontSize: 12, color: 'var(--text-4)', marginTop: 4 }}>Fichier : {fileName}</div>}
-              {error && <div className="form-error" style={{ marginTop: 10 }}>⚠️ {error}</div>}
+              {error && <div className="form-error" style={{ marginTop: 10 }}>{error}</div>}
 
               {parsed && (
                 <div style={{ marginTop: 14 }}>
@@ -198,7 +198,7 @@ export default function RepertoireImportModal({ onClose, onDone }) {
               <div className="modal-actions">
                 <button className="btn-secondary" onClick={onClose}>Annuler</button>
                 <button className="btn-primary" onClick={doImport} disabled={!parsed || importing}>
-                  {importing ? '⏳ Import…' : `Importer${parsed ? ` (${parsed.rows.length})` : ''}`}
+                  {importing ? 'Import…' : `Importer${parsed ? ` (${parsed.rows.length})` : ''}`}
                 </button>
               </div>
             </>

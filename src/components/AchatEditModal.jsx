@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from '../hooks/useParams'
 import { db } from '../db'
 import ModeLecture from '../achats/ModeLecture'
+import Icone from './ui/Icone'
 
 const STRATEGIES      = ['🆕 NOUVEAU', '🚀 BOOSTER', '🛡️ MAINTENIR', '📉 RÉDUIRE', '🛑 ARRÊTER']
 const STATUTS         = ['', '✅', '⏳', '❌']
@@ -118,10 +119,10 @@ export default function AchatEditModal({ row, onClose, onSaved }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 560 }}>
         <div className="modal-header">
-          <h2>🛒 Modifier achat</h2>
+          <h2>Modifier achat</h2>
           <button type="button" onClick={() => setConfirmDelete(true)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, marginLeft: 'auto', marginRight: 8, color: '#ef4444' }}>
-            🗑️
+            <Icone nom="corbeille" taille={18} />
           </button>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
@@ -129,12 +130,12 @@ export default function AchatEditModal({ row, onClose, onSaved }) {
         {confirmDelete && (
           <div style={{ margin: '0 24px 16px', padding: 16, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 10 }}>
             <p style={{ margin: '0 0 12px', fontWeight: 600, color: '#dc2626' }}>
-              ⚠️ Supprimer <em>"{row.fournisseur}"</em> de vos achats ?
+              Supprimer <em>"{row.fournisseur}"</em> de vos achats ?
             </p>
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" onClick={handleDelete} disabled={saving}
                 style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#dc2626', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>
-                {saving ? '⏳…' : '🗑️ Oui, supprimer'}
+                {saving ? '…' : 'Oui, supprimer'}
               </button>
               <button type="button" onClick={() => setConfirmDelete(false)}
                 style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' }}>
@@ -146,7 +147,7 @@ export default function AchatEditModal({ row, onClose, onSaved }) {
 
         {saved ? (
           <div className="modal-success">
-            <div style={{ fontSize: 40 }}>✅</div>
+            <div className="signe-ok"><Icone nom="check" taille={30} /></div>
             <p>Modifications enregistrées !</p>
           </div>
         ) : (
@@ -252,12 +253,12 @@ export default function AchatEditModal({ row, onClose, onSaved }) {
               </div>
             </div>
 
-            {error && <div className="form-error">⚠️ {error}</div>}
+            {error && <div className="form-error">{error}</div>}
 
             <div className="modal-actions">
               <button type="button" className="btn-secondary" onClick={onClose}>Annuler</button>
               <button type="submit" className="btn-primary" disabled={saving}>
-                {saving ? '⏳ Enregistrement…' : '💾 Enregistrer'}
+                {saving ? 'Enregistrement…' : 'Enregistrer'}
               </button>
             </div>
           </form>

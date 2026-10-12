@@ -11,6 +11,7 @@ import { useVue, aller } from './shell/navigation'
 import { PageShell } from './shell/EnTete'
 import './App.css'
 import './styles/charte.css'
+import './styles/pont.css'
 
 // Chaque écran n'est chargé qu'au moment où on l'ouvre (ouverture de l'outil plus rapide, surtout sur téléphone)
 const Cahier          = lazy(() => import('./cahier/Cahier'))

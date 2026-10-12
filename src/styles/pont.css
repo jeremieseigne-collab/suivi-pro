@@ -1,0 +1,82 @@
+/* ─── Passerelle : anciens écrans et fenêtres (fenêtres d'import, fiches d'achat, onglets de Réglages, confirmations « nom à retaper »)
+   branchés sur la charte. Seule l'apparence change : mêmes éléments, mêmes textes, même fonctionnement.
+   1. L'ancienne palette suit les couleurs de la charte (clair et sombre : fin du bleu nuit des anciens écrans en mode sombre). ─── */
+html[data-theme], :root {
+  --bg: var(--fond);
+  --bg-grad: var(--fond);
+  --surface: var(--carte);
+  --surface-2: var(--carte-2);
+  --surface-3: color-mix(in srgb, var(--texte) 7%, var(--carte));
+  --border: var(--trait);
+  --text: var(--texte);
+  --text-2: color-mix(in srgb, var(--texte) 75%, var(--doux));
+  --text-3: var(--doux);
+  --text-4: var(--discret);
+  --text-5: color-mix(in srgb, var(--discret) 55%, transparent);
+  --accent: var(--action);
+  --accent-2: var(--action-texte);
+  --accent-bg: var(--action-teinte);
+  --accent-bg-2: color-mix(in srgb, var(--action) 22%, transparent);
+  --accent-border: color-mix(in srgb, var(--action) 40%, transparent);
+  --on-accent: #ffffff;
+}
+
+/* 2. Fenêtres */
+.modal-overlay { z-index: 950; background: rgba(0, 0, 0, .32); backdrop-filter: none; }
+.modal { background: var(--carte); color: var(--texte); border-radius: 18px; box-shadow: var(--ombre-douce); }
+.modal-header { border-bottom: 1px solid var(--trait); background: var(--carte); padding: 12px 12px 12px 20px; min-height: 56px; }
+.modal-header h2 { font-size: var(--t-titre); }
+.modal-close { width: 44px; height: 44px; border-radius: 999px; color: var(--doux); font-size: 18px; }
+.modal-close:hover { background: var(--carte-2); color: var(--texte); }
+.modal-actions { border-top: 1px solid var(--trait); }
+.signe-ok { width: 56px; height: 56px; margin: 0 auto 8px; border-radius: 50%; background: var(--ok-teinte); color: var(--ok); display: flex; align-items: center; justify-content: center; }
+
+/* 3. Boutons */
+.btn-primary, .btn-secondary { min-height: 44px; padding: 0 18px; border-radius: 999px; font: inherit; font-weight: 600; border: 0; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-primary { background: var(--action); color: #fff; }
+.btn-primary:hover { background: color-mix(in srgb, #000 12%, var(--action)); }
+.btn-primary:disabled, .btn-secondary:disabled { opacity: .4; cursor: default; background: var(--action); }
+.btn-secondary { background: var(--carte-2); color: var(--texte); }
+.btn-secondary:disabled { background: var(--carte-2); }
+.btn-secondary:hover { background: color-mix(in srgb, var(--texte) 9%, var(--carte-2)); }
+
+/* 4. Champs */
+.form-field label { font-size: var(--t-meta); font-weight: 500; color: var(--doux); text-transform: none; letter-spacing: 0; }
+.form-field input, .form-field select, .form-field textarea, .modal input:not([type=checkbox]):not([type=radio]):not([type=file]), .modal select, .modal textarea,
+.sel, .search-input {
+  min-height: 44px; border-radius: var(--rayon-champ); border: 1px solid transparent; background: var(--carte-2); color: var(--texte); font: inherit; font-size: 15px; }
+.form-field input:focus, .form-field select:focus, .modal input:focus, .modal select:focus, .modal textarea:focus, .sel:focus, .search-input:focus {
+  border-color: var(--action); box-shadow: 0 0 0 3px var(--action-teinte); background: var(--carte); outline: none; }
+.form-error { background: var(--err-teinte); color: var(--err); border: 0; border-radius: 12px; }
+
+/* 5. Cartes, chiffres, tableaux */
+.store-card { background: var(--carte); border: 0; border-radius: var(--rayon); box-shadow: none; }
+.stat-card { background: var(--carte); border: 0; border-radius: var(--rayon); box-shadow: none; }
+.stat-label { text-transform: none; letter-spacing: 0; color: var(--doux); }
+.data-table thead th { text-transform: none; letter-spacing: 0; font-size: var(--t-meta); color: var(--doux); background: transparent; border-bottom: 1px solid var(--trait); }
+.data-table tbody tr { border-bottom: 1px solid var(--trait); }
+.data-table tbody tr:hover { background: color-mix(in srgb, var(--texte) 3%, transparent); }
+.data-table tfoot td { border-top: 1px solid var(--trait); }
+.edit-btn { border-radius: 999px; }
+
+/* 6. Mode sombre : couleurs de code (stratégies, modes de règlement, avoirs…) gardées, mais en teinte transparente sur fond sombre.
+   En mode clair, rien ne change. (Les couleurs viennent du code des anciens écrans, écrites dans l'attribut style.) */
+html[data-theme="dark"] [style*="rgb(237, 233, 254)"] { background-color: rgba(139, 92, 246, .24) !important; color: var(--texte) !important; }
+html[data-theme="dark"] [style*="rgb(219, 234, 254)"] { background-color: rgba(59, 130, 246, .24) !important; color: var(--texte) !important; }
+html[data-theme="dark"] [style*="rgb(209, 250, 229)"] { background-color: rgba(16, 185, 129, .22) !important; color: var(--texte) !important; }
+html[data-theme="dark"] [style*="rgb(254, 243, 199)"] { background-color: rgba(245, 158, 11, .22) !important; color: var(--texte) !important; }
+html[data-theme="dark"] [style*="rgb(254, 226, 226)"] { background-color: rgba(239, 68, 68, .22) !important; color: var(--texte) !important; }
+html[data-theme="dark"] [style*="rgb(252, 231, 243)"] { background-color: rgba(236, 72, 153, .22) !important; color: var(--texte) !important; }
+html[data-theme="dark"] [style*="rgb(204, 251, 241)"] { background-color: rgba(20, 184, 166, .22) !important; color: var(--texte) !important; }
+html[data-theme="dark"] [style*="background: rgb(241, 245, 249)"], html[data-theme="dark"] [style*="background-color: rgb(241, 245, 249)"] { background-color: var(--carte-2) !important; }
+/* textes foncés de ces pastilles → version claire de la même couleur */
+html[data-theme="dark"] [style*="color: rgb(29, 78, 216)"] { color: #93c5fd !important; }
+html[data-theme="dark"] [style*="color: rgb(6, 95, 70)"] { color: #6ee7b7 !important; }
+html[data-theme="dark"] [style*="color: rgb(146, 64, 14)"] { color: #fcd34d !important; }
+html[data-theme="dark"] [style*="color: rgb(91, 33, 182)"] { color: #c4b5fd !important; }
+html[data-theme="dark"] [style*="color: rgb(153, 27, 27)"] { color: #fca5a5 !important; }
+html[data-theme="dark"] [style*="color: rgb(157, 23, 77)"] { color: #f9a8d4 !important; }
+html[data-theme="dark"] [style*="color: rgb(15, 118, 110)"] { color: #5eead4 !important; }
+html[data-theme="dark"] [style*="color: rgb(71, 85, 105)"] { color: var(--doux) !important; }
+html[data-theme="dark"] [style*="color: rgb(30, 41, 59)"], html[data-theme="dark"] [style*="color: rgb(51, 65, 85)"] { color: var(--texte) !important; }

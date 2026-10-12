@@ -104,16 +104,16 @@ export default function AchatImportModal({ season, onClose, onDone }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{ maxWidth: 820 }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>📂 Importer les achats (CSV)</h2>
+          <h2>Importer les achats (CSV)</h2>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
           {done ? (
             <>
               <p style={{ fontSize: 15, color: 'var(--text)' }}>
-                ✅ Import terminé : <strong>{done.nb}</strong> ligne(s) marque × magasin enregistrée(s) dans la saison active.
+                Import terminé : <strong>{done.nb}</strong> ligne(s) marque × magasin enregistrée(s) dans la saison active.
               </p>
-              {done.ignored > 0 && <p style={{ fontSize: 13, color: '#f59e0b' }}>⚠️ {done.ignored} ligne(s) ignorée(s) (magasin non reconnu).</p>}
+              {done.ignored > 0 && <p style={{ fontSize: 13, color: '#f59e0b' }}>{done.ignored} ligne(s) ignorée(s) (magasin non reconnu).</p>}
               <div className="modal-actions"><button className="btn-primary" onClick={() => { onDone?.(); onClose?.() }}>Fermer</button></div>
             </>
           ) : (
@@ -123,13 +123,13 @@ export default function AchatImportModal({ season, onClose, onDone }) {
               </p>
               <input type="file" accept=".csv,text/csv,text/plain" onChange={onFile} style={{ fontSize: 13 }} />
               {fileName && <div style={{ fontSize: 12, color: 'var(--text-4)', marginTop: 4 }}>Fichier : {fileName}</div>}
-              {error && <div className="form-error" style={{ marginTop: 10 }}>⚠️ {error}</div>}
+              {error && <div className="form-error" style={{ marginTop: 10 }}>{error}</div>}
 
               {rows && (
                 <div style={{ marginTop: 14 }}>
                   <div style={{ fontSize: 13, marginBottom: 8 }}>
                     <strong>{rows.length}</strong> ligne(s) marque × magasin après regroupement.
-                    {unmatched.length > 0 && <span style={{ color: '#f59e0b' }}> ⚠️ {unmatched.length} avec magasin non reconnu (seront ignorées) : {[...new Set(unmatched.map(u => u.magNom))].join(', ')}.</span>}
+                    {unmatched.length > 0 && <span style={{ color: '#f59e0b' }}> {unmatched.length} avec magasin non reconnu (seront ignorées) : {[...new Set(unmatched.map(u => u.magNom))].join(', ')}.</span>}
                   </div>
                   <div style={{ maxHeight: 320, overflow: 'auto', border: '1px solid var(--border)', borderRadius: 8 }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -147,7 +147,7 @@ export default function AchatImportModal({ season, onClose, onDone }) {
                         {rows.map((r, i) => (
                           <tr key={i} style={{ opacity: r.magasinId ? 1 : 0.5 }}>
                             <td style={{ ...cell, textAlign: 'left' }}><strong>{r.fournisseur}</strong></td>
-                            <td style={{ ...cell, textAlign: 'left', color: r.magasinId ? 'var(--text-2)' : '#dc2626' }}>{r.magNom}{r.magasinId ? '' : ' ❌'}</td>
+                            <td style={{ ...cell, textAlign: 'left', color: r.magasinId ? 'var(--text-2)' : '#dc2626' }}>{r.magNom}{r.magasinId ? '' : ' (inconnu)'}</td>
                             <td style={{ ...cell, textAlign: 'right' }}>{eur(r.recuN1)}</td>
                             <td style={{ ...cell, textAlign: 'right' }}>{eur(r.objectifN)}</td>
                             <td style={{ ...cell, textAlign: 'right' }}>{eur(r.reelN)}</td>
@@ -165,7 +165,7 @@ export default function AchatImportModal({ season, onClose, onDone }) {
               <div className="modal-actions">
                 <button className="btn-secondary" onClick={onClose}>Annuler</button>
                 <button className="btn-primary" onClick={doImport} disabled={!rows || importing}>
-                  {importing ? '⏳ Import…' : `Importer${rows ? ` (${rows.filter(r => r.magasinId).length})` : ''}`}
+                  {importing ? 'Import…' : `Importer${rows ? ` (${rows.filter(r => r.magasinId).length})` : ''}`}
                 </button>
               </div>
             </>

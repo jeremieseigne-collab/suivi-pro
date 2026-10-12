@@ -29,7 +29,7 @@ function DangerConfirm({ title, message, word, pin, confirmLabel = 'Supprimer d�
     <div className="modal-overlay" style={{ zIndex: 3000 }} onClick={() => onDone(false)}>
       <form className="modal" style={{ maxWidth: 440, padding: 24 }} onClick={e => e.stopPropagation()}
         onSubmit={e => { e.preventDefault(); if (ok) onDone(true) }}>
-        <h2 style={{ margin: '0 0 10px', fontSize: 18, color: '#dc2626' }}>⚠️ {title}</h2>
+        <h2 style={{ margin: '0 0 10px', fontSize: 18, color: '#dc2626' }}>{title}</h2>
         <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.5, whiteSpace: 'pre-line' }}>{message}</div>
         <p style={{ fontSize: 14, fontWeight: 700, color: '#dc2626', margin: '14px 0 0' }}>Cette action est irréversible.</p>
 
