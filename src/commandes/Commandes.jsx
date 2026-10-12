@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { actionDemandee, effacerAction } from '../shell/navigation'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { LoadingState, fmtTel } from '../components/shared'
@@ -50,7 +51,8 @@ export default function Commandes({ onHome }) {
   const [fStatut,    setFStatut]    = useState('')
   const [fProv,      setFProv]      = useState('')
   const [fSalarie,   setFSalarie]   = useState('')
-  const [showForm,   setShowForm]   = useState(false)
+  const [showForm,   setShowForm]   = useState(() => actionDemandee('nouveau'))   // raccourci « Commande client » de l'accueil
+  useEffect(() => { effacerAction() }, [])
   const [editCmd,    setEditCmd]    = useState(null)
   const [confirmDel, setConfirmDel] = useState(null)
   const [noteView,   setNoteView]   = useState(null)

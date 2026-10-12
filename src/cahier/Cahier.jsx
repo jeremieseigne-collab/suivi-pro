@@ -10,7 +10,7 @@ import StoreSelect from '../components/StoreSelect'
 import EntreeImportModal from '../components/EntreeImportModal'
 import Icone from '../components/ui/Icone'
 import { PageShell, BoutonMagasin } from '../shell/EnTete'
-import { aller } from '../shell/navigation'
+import { aller, actionDemandee, effacerAction } from '../shell/navigation'
 import ListeEntrees from './ListeEntrees'
 import SaisieEntree from './SaisieEntree'
 import FicheEntree from './FicheEntree'
@@ -25,7 +25,9 @@ export default function Cahier() {
   const { estDirection } = useCompte()
   const magasinAppareil = magasinCourant?.nom || ''
   const [onglet, setOnglet] = useState('entrees')
-  const [saisie, setSaisie] = useState(null)          // null | { entree?: … } (absence d'entree = nouvelle entrée)
+  const [saisie, setSaisie] = useState(() => actionDemandee('nouveau') ? {} : null)   // null | { entree?: … } (absence d'entree = nouvelle entrée) ; raccourci de l'accueil
+  const [rapideInitial] = useState(() => actionDemandee('apointer') ? 'apointer' : 'toutes')   // « entrées à pointer » depuis l'accueil
+  useEffect(() => { effacerAction() }, [])
   const [ficheId, setFicheId] = useState(null)
   const [importer, setImporter] = useState(false)
   const [toast, setToast] = useState(null)
@@ -78,7 +80,7 @@ export default function Cahier() {
       ))}
     >
       {onglet === 'entrees' && (entrees === undefined ? <LoadingState /> : (
-        <ListeEntrees entrees={entrees} magasinAppareil={magasinAppareil} estDirection={estDirection} estPointe={estPointe}
+        <ListeEntrees rapideInitial={rapideInitial} entrees={entrees} magasinAppareil={magasinAppareil} estDirection={estDirection} estPointe={estPointe}
           onPointer={pointer} onOuvrir={e => setFicheId(e.id)} onToast={setToast} onModeSelection={setEnSelection} />
       ))}
       {onglet === 'entrees' && !enSelection && <div className="seulement-petit" style={{ textAlign: 'center', marginTop: 24 }}><button className="btn btn-ghost" onClick={() => setImporter(true)}>Importer des entrées (CSV)</button></div>}

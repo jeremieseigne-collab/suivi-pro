@@ -10,6 +10,15 @@ export function useVue() {
   )
 }
 
+// Ouvrir un écran avec une action (ex. « #/cahier?nouveau » depuis les raccourcis de l'accueil).
+// L'écran lit l'action à son ouverture (actionDemandee) puis l'efface (effacerAction) pour qu'un rechargement ne la rejoue pas.
+export function ouvrirAvec(vue, action) { location.hash = `#/${vue}?${action}`; window.scrollTo(0, 0) }
+export const actionDemandee = action => (location.hash.split('?')[1] || '').split('&').includes(action)
+export function effacerAction() {
+  const [base, q] = location.hash.split('?')
+  if (q !== undefined) history.replaceState(null, '', location.pathname + location.search + base)
+}
+
 export function aller(vue) {
   const cible = vue === 'home' ? '#/' : `#/${vue}`
   if (location.hash !== cible) location.hash = cible

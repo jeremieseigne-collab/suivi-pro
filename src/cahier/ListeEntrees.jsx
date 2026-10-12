@@ -10,9 +10,9 @@ const FILTRES_VIDES = { societe: '', magasin: null, marque: '', categorie: '', s
 const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b))
 
 // Liste des entrées de la saison : recherche, filtres, regroupement par jour, sélection multiple, pointage (Direction)
-export default function ListeEntrees({ entrees, magasinAppareil, estDirection, estPointe, onPointer, onOuvrir, onToast, onModeSelection }) {
+export default function ListeEntrees({ rapideInitial = 'toutes', entrees, magasinAppareil, estDirection, estPointe, onPointer, onOuvrir, onToast, onModeSelection }) {
   const [recherche, setRecherche] = useState('')
-  const [rapide, setRapide]       = useState('toutes')   // toutes | apointer | retours
+  const [rapide, setRapide]       = useState(estDirection ? rapideInitial : 'toutes')   // toutes | apointer | retours
   const [filtres, setFiltres]     = useState(FILTRES_VIDES)
   const [feuilleFiltres, setFeuilleFiltres] = useState(false)
   const [nb, setNb]               = useState(PAR_PAGE)

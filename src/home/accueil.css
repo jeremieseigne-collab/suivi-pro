@@ -1,0 +1,27 @@
+/* Accueil « ma journée » — version sobre : la couleur ne sert qu'aux repères (trait des compteurs, barre des magasins) et à l'urgence */
+.entete-accueil { margin-bottom: 12px; }
+.date-accueil { font-size: var(--t-meta); color: var(--doux); }
+/* Raccourcis : sur téléphone « Saisir une entrée » sur toute la largeur, les deux autres côte à côte ; en ligne au-delà */
+.raccourcis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0 6px; }
+.raccourcis .btn-prim { grid-column: 1 / -1; }
+.raccourcis .btn { padding: 0 8px; gap: 6px; white-space: nowrap; font-size: 15px; }
+@media (min-width: 768px) { .raccourcis { display: flex; flex-wrap: wrap; gap: 10px; } .raccourcis .btn { padding: 0 18px; font-size: inherit; } }
+
+.compteurs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 14px 0 4px; }
+.compteur { position: relative; overflow: hidden; background: var(--carte); border: 0; border-radius: var(--rayon); padding: 12px 14px 12px 18px; text-align: left;
+  display: flex; flex-direction: column; gap: 2px; min-height: 72px; cursor: pointer; font: inherit; color: var(--texte); }
+.compteur::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c); }
+.compteur b { font-size: 24px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--texte); }
+.compteur span { font-size: var(--t-meta); color: var(--doux); }
+.compteur em { font-style: normal; font-size: 12px; font-weight: 600; color: var(--doux); }
+.compteur em.urgent, .accueil .t2.urgent { color: var(--att); }
+.compteur:hover { background: color-mix(in srgb, var(--texte) 3%, var(--carte)); }
+
+.grille-accueil { display: grid; gap: 0 20px; }
+@media (min-width: 1000px) { .grille-accueil { grid-template-columns: 1.4fr 1fr; } }
+.icone-tache { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--carte-2); color: var(--doux); }
+
+.jour-agenda { font-size: var(--t-meta); font-weight: 700; color: var(--texte); padding: 10px 16px 0; }
+.jour-agenda + .ligne::before { display: none; }
+.ligne-agenda { min-height: 56px; }
+.barre-agenda { width: 4px; align-self: stretch; border-radius: 2px; flex-shrink: 0; }

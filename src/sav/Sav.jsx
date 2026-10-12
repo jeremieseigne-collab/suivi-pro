@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { actionDemandee, effacerAction } from '../shell/navigation'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { buildSavRetourMailUrl } from './mail'
@@ -246,7 +247,8 @@ function SavCard({ row, onCloturer, onTerminer }) {
 }
 
 export default function Sav({ onHome }) {
-  const [showModal, setShowModal]   = useState(false)
+  const [showModal, setShowModal]   = useState(() => actionDemandee('nouveau'))   // raccourci « Dossier SAV » de l'accueil
+  useEffect(() => { effacerAction() }, [])
   const [editSav,   setEditSav]     = useState(null)
   const [filterType, setFilterType] = useState('') // '' | 'retour' | 'forme'
   const [search, setSearch] = useState('')

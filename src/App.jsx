@@ -26,6 +26,7 @@ const Planning        = lazy(() => import('./planning/Planning'))
 const Sav             = lazy(() => import('./sav/Sav'))
 const Factures        = lazy(() => import('./factures/Factures'))
 const Reassort        = lazy(() => import('./reassort/Reassort'))
+const AgendaBoard     = lazy(() => import('./agenda/AgendaBoard'))
 
 // Écrans réservés aux comptes Direction (la base refuse de toute façon les écritures sensibles aux comptes magasin)
 const DIRECTION_VIEWS = new Set(['reglement', 'parametres', 'achats'])
@@ -64,7 +65,8 @@ function Root() {
   else if (vue === 'sav')        content = <Sav onHome={home} />
   else if (vue === 'reassort')   content = <ReassortApp />
   else if (vue === 'clients')    content = <VueClients alerts={alerts} />
-  else                           content = <HomeScreen onOpen={aller} alerts={alerts} />
+  else if (vue === 'agenda')     content = <PageShell title="Agenda" withSeason={false}><AgendaBoard /></PageShell>
+  else                           content = <HomeScreen alerts={alerts} />
 
   return (
     <Coque vue={vue} alerts={alerts} magasin={magasin} setMagasin={setMagasin}>

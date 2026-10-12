@@ -1,72 +1,99 @@
+import { useLiveQuery } from '../lib/useLiveQuery'
+import { db } from '../db'
 import { useMagasin } from '../context/MagasinContext'
-import { useMediaQuery, PHONE, TABLET } from '../lib/useMediaQuery'
-import AgendaBoard from '../agenda/AgendaBoard'
+import { useCompte } from '../context/CompteContext'
+import { useSeason } from '../context/SeasonContext'
+import Icone from '../components/ui/Icone'
+import { aller, ouvrirAvec } from '../shell/navigation'
+import { SAV_ATTENTE_JOURS } from './useAlerts'
+import AVenir from './AVenir'
+import './accueil.css'
 
-function Widget({ icon, value, label, sub, color, onClick }) {
-  const zero = !value
-  return (
-    <button onClick={onClick}
-      style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, padding: '16px 18px', borderRadius: 16,
-        border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', textAlign: 'left',
-        boxShadow: '0 1px 4px var(--shadow)', transition: 'transform .15s, box-shadow .15s', position: 'relative', overflow: 'hidden',
-      }}
-      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 24px var(--shadow)' }}
-      onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 1px 4px var(--shadow)' }}>
-      <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: zero ? 'var(--surface-3)' : color }} />
-      <span style={{ fontSize: 20 }}>{icon}</span>
-      <span style={{ fontSize: 30, fontWeight: 800, lineHeight: 1, color: zero ? 'var(--text-5)' : color, letterSpacing: -1 }}>{value ?? '…'}</span>
-      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)' }}>{label}</span>
-      {sub && <span style={{ fontSize: 12, fontWeight: 600, color: sub.color || 'var(--text-4)' }}>{sub.text}</span>}
-    </button>
-  )
-}
+const pluriel = (n, mot, pl = mot + 's') => `${n} ${n > 1 ? pl : mot}`
 
-export default function HomeScreen({ onOpen, alerts, onMenu }) {
+// Accueil « ma journée » (version sobre) : raccourcis, compteurs (trait de couleur, chiffre en noir, zéro masqué),
+// tâches en retard, et bloc « À venir » de l'agenda. Le pointage n'apparaît que pour la Direction.
+export default function HomeScreen({ alerts }) {
   const { magasin } = useMagasin()
-  const phone = useMediaQuery(PHONE)
-  const tablet = useMediaQuery(TABLET)
-  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+  const { estDirection } = useCompte()
+  const { season, seasons } = useSeason()
+  const date = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
   const salut = new Date().getHours() < 18 ? 'Bonjour' : 'Bonsoir'
 
+  // Entrées à pointer (Direction) : même calcul que le filtre « À pointer » du Cahier — saison affichée, magasin de l'appareil
+  const aPointer = useLiveQuery(async () => {
+    if (!estDirection) return 0
+    const lignes = await db.entrees.where('season').equals(season).toArray()
+    return lignes.filter(e => (!magasin || e.magasinId === magasin.id) && !e.pointe).length
+  }, [estDirection, season, magasin?.id])
+
+  // Compteurs : mêmes intitulés et couleurs que l'outil actuel ; la couleur ne sert qu'au trait à gauche
+  const compteurs = [
+    { n: alerts?.aCommander, label: 'Réassorts à commander', couleur: '#ef4444', vue: 'reassort' },
+    { n: alerts?.enRoute, label: 'Réassorts en route', couleur: '#8b5cf6', vue: 'reassort', sous: alerts?.retard ? { texte: `dont ${alerts.retard} en retard`, urgent: true } : null },
+    { n: alerts?.cmdAPrevenir, label: 'Clients à prévenir', couleur: '#0891b2', vue: 'commandes', sous: alerts?.cmdACommander ? { texte: `${alerts.cmdACommander} à commander` } : null },
+    { n: alerts?.defATraiter, label: 'Défectueux à traiter', couleur: '#e11d48', vue: 'defectueux' },
+    { n: alerts?.savEnCours, label: 'Dossiers SAV en cours', couleur: '#0e7490', vue: 'sav' },
+  ].filter(c => c.n > 0)
+
+  // Tâches en retard
+  const taches = []
+  const r = alerts?.retards || []
+  if (r.length) taches.push({ icone: 'reassort', vue: () => aller('reassort'), urgent: r.some(x => x.niveau === 'rouge'),
+    titre: `${pluriel(r.length, 'réassort')} en retard`,
+    sous: `${[r[0].marque, r[0].modele].filter(Boolean).join(' · ')} · en route depuis ${r[0].jours} jours${r.length > 1 ? ` · et ${pluriel(r.length - 1, 'autre')}` : ''}` })
+  const s = alerts?.savAnciens || []
+  if (s.length) taches.push({ icone: 'sav', vue: () => aller('sav'),
+    titre: `${pluriel(s.length, 'dossier SAV ouvert', 'dossiers SAV ouverts')} depuis plus de ${SAV_ATTENTE_JOURS} jours`,
+    sous: `${[s[0].client, s[0].marque].filter(Boolean).join(' · ')} · ${s[0].jours} jours · ${s[0].mailEnvoye ? 'mail envoyé à la marque' : 'mail à la marque pas encore envoyé'}${s.length > 1 ? ` · et ${pluriel(s.length - 1, 'autre')}` : ''}` })
+  if (estDirection && aPointer > 0) taches.push({ icone: 'entrees', vue: () => ouvrirAvec('cahier', 'apointer'),
+    titre: `${pluriel(aPointer, 'entrée')} à pointer`,
+    sous: `${seasons.find(x => x.id === season)?.label || season}${magasin ? ' · ' + magasin.nom : ''}` })
+
   return (
-    <main style={{ minHeight: '100vh', background: 'var(--bg)', padding: phone ? '14px 12px 72px' : tablet ? '24px 24px 72px' : '32px 40px 64px' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <header style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: phone ? 16 : 24 }}>
-          {tablet && onMenu && (
-            <button onClick={onMenu} aria-label="Menu"
-              style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', fontSize: 18, color: 'var(--text-2)' }}>☰</button>
-          )}
-          <div style={{ minWidth: 0 }}>
-            <h1 style={{ fontSize: phone ? 22 : 30, fontWeight: 800, color: 'var(--text)', letterSpacing: -0.8, margin: 0 }}>{salut} 👋</h1>
-            <div style={{ fontSize: 14, color: 'var(--text-3)', marginTop: 2 }}>
-              <span style={{ textTransform: 'capitalize' }}>{today}</span>
-              {magasin && <> · <strong style={{ color: 'var(--text-2)' }}>{magasin.nom}</strong></>}
-            </div>
-          </div>
-        </header>
+    <div className="page-coque accueil">
+      <header className="entete-accueil">
+        <div className="date-accueil">{date.charAt(0).toUpperCase() + date.slice(1)}{magasin ? ` · ${magasin.nom}` : ''}</div>
+        <h1 className="titre-page">{salut}</h1>
+      </header>
 
-        {!magasin && (
-          <div style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 12, background: 'var(--accent-bg)', color: 'var(--accent)', fontSize: 14, fontWeight: 600 }}>
-            🏪 Choisis ton magasin dans le menu{tablet ? ' (onglet « Plus » sur téléphone)' : ' à gauche'} : tous les outils l'utiliseront directement.
-          </div>
-        )}
+      {!magasin && <div className="encart neutre" style={{ marginBottom: 14 }}>Choisissez votre magasin dans le menu (« Plus » sur téléphone) : tous les outils l'utiliseront directement.</div>}
 
-        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: 'var(--text-4)', marginBottom: 10 }}>
-          Aujourd'hui {magasin ? `· ${magasin.nom}` : '· tous magasins'}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${phone ? 140 : 190}px, 1fr))`, gap: phone ? 8 : 12, marginBottom: phone ? 24 : 32 }}>
-          <Widget icon="⚠️" value={alerts?.aCommander} label="Réassorts à commander" color="#ef4444" onClick={() => onOpen('reassort')} />
-          <Widget icon="🚚" value={alerts?.enRoute} label="Réassorts en route" color="#8b5cf6" onClick={() => onOpen('reassort')}
-            sub={alerts?.retard ? { text: `⏰ dont ${alerts.retard} en retard`, color: '#f97316' } : null} />
-          <Widget icon="🛍️" value={alerts?.cmdAPrevenir} label="Clients à prévenir" color="#0891b2" onClick={() => onOpen('commandes')}
-            sub={alerts?.cmdACommander ? { text: `${alerts.cmdACommander} à commander` } : null} />
-          <Widget icon="🛠️" value={alerts?.defATraiter} label="Défectueux à traiter" color="#e11d48" onClick={() => onOpen('defectueux')} />
-          <Widget icon="🔧" value={alerts?.savEnCours} label="Dossiers SAV en cours" color="#0e7490" onClick={() => onOpen('sav')} />
-        </div>
-
-        <AgendaBoard />
+      <div className="raccourcis">
+        <button className="btn btn-prim" onClick={() => ouvrirAvec('cahier', 'nouveau')}><Icone nom="ajout" taille={20} />Saisir une entrée</button>
+        <button className="btn" onClick={() => ouvrirAvec('commandes', 'nouveau')}><Icone nom="commande" taille={20} />Commande client</button>
+        <button className="btn" onClick={() => ouvrirAvec('sav', 'nouveau')}><Icone nom="sav" taille={20} />Dossier SAV</button>
       </div>
-    </main>
+
+      {compteurs.length > 0 && (
+        <div className="compteurs">
+          {compteurs.map(c => (
+            <button key={c.label} className="compteur" style={{ '--c': c.couleur }} onClick={() => aller(c.vue)}>
+              <b>{c.n}</b><span>{c.label}</span>{c.sous && <em className={c.sous.urgent ? 'urgent' : ''}>{c.sous.texte}</em>}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="grille-accueil">
+        <section>
+          <h2 className="groupe-titre">En retard</h2>
+          <div className="liste">
+            {taches.length ? taches.map(t => (
+              <button key={t.titre} className="ligne" onClick={t.vue}>
+                <span className="icone-tache"><Icone nom={t.icone} taille={20} /></span>
+                <span className="txt"><span className="t1">{t.titre}</span><div className={`t2${t.urgent ? ' urgent' : ''}`}>{t.sous}</div></span>
+                <Icone nom="chevron" taille={18} style={{ color: 'var(--discret)' }} />
+              </button>
+            )) : <div className="ligne"><span className="txt"><span className="t1" style={{ fontWeight: 500, color: 'var(--doux)' }}>Rien en retard</span></span></div>}
+          </div>
+        </section>
+        <section>
+          <h2 className="groupe-titre">À venir</h2>
+          <AVenir />
+          <div style={{ textAlign: 'right', marginTop: 6 }}><button className="lien" onClick={() => aller('agenda')}>Voir l'agenda</button></div>
+        </section>
+      </div>
+    </div>
   )
 }
