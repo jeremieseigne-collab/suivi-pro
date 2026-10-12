@@ -4,14 +4,12 @@ import { supabase } from '../lib/supabase'
 import { useCompte } from '../context/CompteContext'
 import { getSociete, SOCIETE_MAP } from '../data/societes'
 import Icone from '../components/ui/Icone'
-import { useVariantes } from '../shell/essai'
-import { POINTS_PAIE } from './points'
 import { SOCIETES, SOCIETE_MAGASINS, HOUR_SECTIONS, RANGE_SECTIONS, periodeLabel } from './constants'
 
 const num = v => parseFloat(String(v).replace(',', '.')) || 0
 const fmt = d => { if (!d) return '?'; const [y, m, j] = d.split('-'); return `${j}/${m}/${y}` }
 
-// Société d'après le magasin de la salariée (P1) ; « Bailly Rouffiac », « Bailly Rouffiac-Tolosan »… reconnus. Rien si le magasin est inconnu.
+// Société pré-remplie d'après le magasin de la salariée (modifiable) ; « Bailly Rouffiac », « Bailly Rouffiac-Tolosan »… reconnus. Rien si le magasin est inconnu.
 const normMag = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
 function deduireSociete(magasin) {
   if (!magasin) return ''
@@ -25,10 +23,9 @@ function deduireSociete(magasin) {
 // Saisie des éléments variables d'une salariée pour le mois, puis écran « Vérifie ta saisie » avant l'enregistrement définitif.
 // Règles d'accès de l'étape 2 : un compte magasin dépose la fiche sans pouvoir la relire ; seule la Direction corrige.
 export default function PaieForm({ salarie, magasinSalarie, periode, existing, onSaved, onCancel }) {
-  const v = useVariantes(POINTS_PAIE)
   const init = existing?.data || {}
   const societeDeduite = deduireSociete(magasinSalarie)
-  const [societe, setSociete] = useState(existing?.societe || (v.paie_societe_auto ? societeDeduite : ''))
+  const [societe, setSociete] = useState(existing?.societe || societeDeduite)
   const [data, setData] = useState({
     heuresSupp: init.heuresSupp || [],
     dimanche:   init.dimanche   || [],
@@ -81,7 +78,7 @@ export default function PaieForm({ salarie, magasinSalarie, periode, existing, o
     }
   }
 
-  if (verif) return <Verification salarie={salarie} societe={societe} data={clean} periode={periode} v={v} saving={saving} onBack={() => setVerif(false)} onConfirm={save} />
+  if (verif) return <Verification salarie={salarie} societe={societe} data={clean} periode={periode} saving={saving} onBack={() => setVerif(false)} onConfirm={save} />
 
   return (
     <div className="paie-page">
@@ -99,7 +96,7 @@ export default function PaieForm({ salarie, magasinSalarie, periode, existing, o
             <option key={s} value={s}>{s}{SOCIETE_MAGASINS[s] ? ` (${SOCIETE_MAGASINS[s]})` : ''}</option>
           ))}
         </select>
-        {v.paie_societe_auto && !existing && societeDeduite && societe === societeDeduite && <div className="aide" style={{ marginTop: 6 }}>D’après ton magasin ({magasinSalarie}) — change-la si besoin.</div>}
+        {!existing && societeDeduite && societe === societeDeduite && <div className="aide" style={{ marginTop: 6 }}>D’après ton magasin ({magasinSalarie}) — change-la si besoin.</div>}
       </section>
 
       {/* Rubriques heures (date + heures) */}
@@ -153,7 +150,7 @@ export default function PaieForm({ salarie, magasinSalarie, periode, existing, o
 }
 
 // ─── Écran « Vérifie ta saisie » : dernier contrôle avant l'enregistrement définitif ───
-function Verification({ salarie, societe, data, periode, v, saving, onBack, onConfirm }) {
+function Verification({ salarie, societe, data, periode, saving, onBack, onConfirm }) {
   const horsMois = d => !!d && d.slice(0, 7) !== periode
   const touche = (du, au) => du.slice(0, 7) <= periode && au.slice(0, 7) >= periode
   const mois = periodeLabel(periode).split(' ')[0].toLowerCase()
@@ -163,7 +160,7 @@ function Verification({ salarie, societe, data, periode, v, saving, onBack, onCo
     // une période qui touche le mois (ex. congés du 28/09 au 03/10 pour octobre) n'est pas signalée
     ...RANGE_SECTIONS.map(s => [s, data[s.key].map(r => ({ t: `du ${fmt(r.du)} au ${fmt(r.au)}`, hors: !touche(r.du || r.au, r.au || r.du) })), null]),
   ].filter(([, l]) => l.length)
-  const nbHors = v.paie_dates_mois ? lignes.reduce((n, [, l]) => n + l.filter(x => x.hors).length, 0) : 0
+  const nbHors = lignes.reduce((n, [, l]) => n + l.filter(x => x.hors).length, 0)
   return (
     <div className="paie-page etroite">
       <h2 style={{ margin: '0 0 6px', fontSize: 20 }}>Vérifie ta saisie — {salarie}</h2>
@@ -180,8 +177,8 @@ function Verification({ salarie, societe, data, periode, v, saving, onBack, onCo
         {lignes.length === 0 && <div className="aide" style={{ marginTop: 8, fontSize: 15 }}>Rien à signaler ce mois-ci.</div>}
         {lignes.map(([s, l, total]) => (
           <div key={s.key} style={{ marginTop: 10 }}>
-            <strong>{s.icon} {s.label}{v.paie_total_verif && total != null ? ` (${total} h)` : ''} :</strong>
-            {l.map((x, i) => <div key={i} style={{ paddingLeft: 12 }}>• {x.t}{v.paie_dates_mois && x.hors && <span className="hors-mois"> — pas en {mois}</span>}</div>)}
+            <strong>{s.icon} {s.label}{total != null ? ` (${total} h)` : ''} :</strong>
+            {l.map((x, i) => <div key={i} style={{ paddingLeft: 12 }}>• {x.t}{x.hors && <span className="hors-mois"> — pas en {mois}</span>}</div>)}
           </div>
         ))}
         {data.commentaire && <div style={{ marginTop: 10 }}><strong>📝 Commentaire :</strong> {data.commentaire}</div>}

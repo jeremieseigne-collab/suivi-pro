@@ -3,8 +3,6 @@ import { db } from '../db'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { LoadingState } from '../components/shared'
 import Icone from '../components/ui/Icone'
-import PanneauEssai from '../shell/PanneauEssai'
-import { POINTS_PAIE } from './points'
 import { currentPeriode, periodeLabel, shiftPeriode, isGerant } from './constants'
 import { sendPaieRecap, buildRecapText, sendModificationRequest, modificationGmailUrl, sendPaieCompleteNotification } from './mail'
 import { supabase } from '../lib/supabase'
@@ -268,7 +266,6 @@ export default function Paie() {
         })}
       </div>
 
-      <PanneauEssai points={POINTS_PAIE} />
     </div>
   )
 }

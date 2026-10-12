@@ -3,7 +3,7 @@ import { db } from '../db'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { useMediaQuery, PHONE } from '../lib/useMediaQuery'
 import { isoDate, mondayOf, parseLocal, fmtShort } from '../agenda/dates'
-import { JOURS, MIN_ROWS, EMPLOYEE_COLORS } from './constants'
+import { JOURS, EMPLOYEE_COLORS } from './constants'
 import { isGerant } from '../paie/constants'
 import { useMagasin } from '../context/MagasinContext'
 import { PageShell } from '../shell/EnTete'
@@ -11,10 +11,7 @@ import { LoadingState } from '../components/shared'
 import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { Toast } from '../cahier/Reperes'
-import { useVariantes } from '../shell/essai'
-import PanneauEssai from '../shell/PanneauEssai'
-import { POINTS_PLANNING } from './points'
-import { addDays, fmtH, weekLabel, minutes, fmtDuree } from './temps'
+import { addDays, fmtH, weekLabel } from './temps'
 import { buildWeekSection, buildPrintPage, openPrintWindow } from './impression'
 import '../cahier/cahier.css'
 import './planning.css'
@@ -100,7 +97,7 @@ function SaisieCreneau({ shift, salarie, jour, dateJour, anchorRect, enFeuille, 
   )
 }
 
-// ── Choix de l'impression : 1, 2 ou 3 semaines à partir de la semaine affichée (point C « avec ») ──
+// ── Choix de l'impression : 1, 2 ou 3 semaines à partir de la semaine affichée (décision C, remplace « attendre la semaine suivante ») ──
 function ChoixImpression({ semaine, onImprimer, onFermer }) {
   const [n, setN] = useState(1)
   const semaines = Array.from({ length: n }, (_, i) => addDays(semaine, 7 * i))
@@ -117,7 +114,6 @@ function ChoixImpression({ semaine, onImprimer, onFermer }) {
 }
 
 export default function Planning() {
-  const v = useVariantes(POINTS_PLANNING)
   const telephone = useMediaQuery(PHONE)
   const today = isoDate(new Date())
   const [semaine,        setSemaine]        = useState(() => isoDate(mondayOf(new Date())))
@@ -127,7 +123,6 @@ export default function Planning() {
   const [saving,         setSaving]         = useState(false)
   const [clipboard,      setClipboard]      = useState(null)
   const [undoStack,      setUndoStack]      = useState([])
-  const [pendingWeeks,   setPendingWeeks]   = useState(() => { try { return JSON.parse(localStorage.getItem('planning_pending_weeks') || '[]') } catch { return [] } })
   const [showPrintModal, setShowPrintModal] = useState(false)
   const [extraRows,      setExtraRows]      = useState([])
   const [addingExtra,    setAddingExtra]    = useState(false)
@@ -185,15 +180,12 @@ export default function Planning() {
   const allTempNames   = new Set([...tempFromShifts, ...extraRows.map(r => r.nom).filter(Boolean)])
   const tempRows       = [...allTempNames].map(nom => ({ id: `t-${nom}`, nom, isTemp: true }))
   const allRows        = [...employees, ...tempRows]
-  const displayRows    = !v.planning_lignes_vides || allRows.length >= MIN_ROWS
-    ? allRows
-    : [...allRows, ...Array.from({ length: MIN_ROWS - allRows.length }, (_, i) => ({ id: `_${i}`, nom: '' }))]
+  const displayRows    = allRows   // plus de lignes vides ajoutées d'office (décision D) ; « Ajouter un remplaçant » en bas
 
   const colorMap = {}
   allRows.forEach((s, i) => { colorMap[s.nom] = EMPLOYEE_COLORS[i % EMPLOYEE_COLORS.length] })
 
   function getShift(nom, jourIdx) { return (shifts || []).find(s => s.salarie === nom && s.jour === jourIdx) }
-  const totalSemaine = nom => (shifts || []).filter(s => s.salarie === nom).reduce((t, s) => t + minutes(s), 0)
 
   async function handleSave(salarie, jour, value) {
     setActive(null)
@@ -250,21 +242,7 @@ export default function Planning() {
   }
 
   // ── Impression ──
-  function savePending(arr) {
-    setPendingWeeks(arr)
-    try { localStorage.setItem('planning_pending_weeks', JSON.stringify(arr)) } catch { /* ignore */ }
-  }
-  const cancelPending = () => savePending([])
-  function onPrintClick() {
-    if (!v.planning_impression && pendingWeeks.length >= 2) doPrint([...pendingWeeks, semaine])   // 2 semaines déjà en attente → imprimer les 3
-    else setShowPrintModal(true)
-  }
-  function onWaitNextWeek() {
-    setShowPrintModal(false)
-    savePending([...pendingWeeks, semaine])
-    changerSemaine(addDays(semaine, 7))
-  }
-  const onPrintNow = () => doPrint([...pendingWeeks, semaine])
+  const onPrintClick = () => setShowPrintModal(true)
   async function doPrint(weeks) {
     setShowPrintModal(false)
     const sections = []
@@ -275,16 +253,12 @@ export default function Planning() {
       sections.push(buildWeekSection(w, weekShifts, { employees, salaryNames, colorMap }))
     }
     if (!openPrintWindow(buildPrintPage(magasin, sections.join('')))) setToast({ texte: 'Le navigateur a bloqué la fenêtre d’impression : autorise les fenêtres pour ce site.' })
-    if (!v.planning_impression) savePending([])
   }
 
   // ── Valeurs d'affichage ──
   const todayJour    = JOURS.findIndex((_, i) => addDays(semaine, i) === today)
-  const nbTotal      = pendingWeeks.length + 1
-  const enAttente    = !v.planning_impression && pendingWeeks.length > 0
-  const printLabel   = enAttente ? `Imprimer les ${nbTotal} semaines` : 'Imprimer'
   const jourMobile   = jourVu ?? (todayJour >= 0 ? todayJour : 0)
-  const jourParJour  = telephone && v.planning_jour_par_jour
+  const jourParJour  = telephone   // téléphone : jour par jour (décision E)
   const dateDuJour   = j => fmtShort(parseLocal(addDays(semaine, j)))
   function changerSemaine(w) { setSemaine(w); setJourVu(null); setActive(null) }
   const ouvrir = (nom, jour, e) => { if (!saving) setActive({ salarie: nom, jour, anchorRect: e?.currentTarget?.getBoundingClientRect(), shift: getShift(nom, jour) }) }
@@ -334,7 +308,6 @@ export default function Planning() {
               <span className="barre-couleur" style={{ background: colorMap[row.nom] }} />
               <span className="txt">
                 <span className="t1">{row.nom}{row.isTemp && <span> · remplaçant</span>}</span>
-                {v.planning_total_heures && <span className="t2" style={{ display: 'block' }}>Semaine : {fmtDuree(totalSemaine(row.nom))}</span>}
               </span>
               {s ? creneau(s, colorMap[row.nom]) : <span className="aide">Pas d’horaire</span>}
             </button>
@@ -353,15 +326,11 @@ export default function Planning() {
             {JOURS.map((j, i) => (
               <th key={j} className={i === todayJour ? 'aujourdhui' : ''}>{j}<span className="date">{dateDuJour(i)}</span></th>
             ))}
-            {v.planning_total_heures && <th className="col-total">Total</th>}
           </tr>
         </thead>
         <tbody>
           {displayRows.map(row => {
             const nom = row.nom || ''
-            if (!nom) return (
-              <tr key={row.id} className="ligne-fantome"><td className="col-nom" />{JOURS.map((j, i) => <td key={j} className={i === todayJour ? 'aujourdhui' : ''} />)}{v.planning_total_heures && <td className="col-total" />}</tr>
-            )
             const color = colorMap[nom]
             return (
               <tr key={row.id}>
@@ -382,17 +351,16 @@ export default function Planning() {
                     </td>
                   )
                 })}
-                {v.planning_total_heures && <td className="col-total">{fmtDuree(totalSemaine(nom))}</td>}
               </tr>
             )
           })}
-          <tr className="ligne-ajout"><td colSpan={v.planning_total_heures ? 9 : 8}>{ajoutRemplacant}</td></tr>
+          <tr className="ligne-ajout"><td colSpan={8}>{ajoutRemplacant}</td></tr>
         </tbody>
       </table>
     </div>
   )
 
-  const actions = magasin ? <button className={`btn ${enAttente ? 'btn-prim' : ''}`} onClick={onPrintClick}>{printLabel}</button> : null
+  const actions = magasin ? <button className="btn" onClick={onPrintClick}>Imprimer</button> : null
 
   return (
     <PageShell title="Planning" withSeason={false} rightExtra={actions}>
@@ -408,9 +376,9 @@ export default function Planning() {
           <button className="chip" onClick={() => changerSemaine(isoDate(mondayOf(new Date())))}>Aujourd’hui</button>
         </div>
 
-        {magasin && (v.planning_copier_semaine || undoStack.length > 0 || clipboard) && (
+        {magasin && (
           <div className="outils-planning">
-            {v.planning_copier_semaine && <button className="chip" onClick={preparerReprise}>Reprendre la semaine précédente</button>}
+            <button className="chip" onClick={preparerReprise}>Reprendre la semaine précédente</button>
             {undoStack.length > 0 && <button className="chip" onClick={annulerDerniere} title="Ctrl+Z">Annuler la dernière modification ({undoStack.length})</button>}
             {clipboard && (
               <span className="chip copie">{fmtH(clipboard.heureDebut)}–{fmtH(clipboard.heureFin)} copié
@@ -420,22 +388,7 @@ export default function Planning() {
           </div>
         )}
 
-        {enAttente && (
-          <div className="encart neutre" style={{ marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ flex: 1, minWidth: 200 }}>
-              {pendingWeeks.length === 1
-                ? <><strong>{weekLabel(pendingWeeks[0])}</strong> en attente</>
-                : <><strong>{weekLabel(pendingWeeks[0])}</strong> et <strong>{weekLabel(pendingWeeks[1])}</strong> en attente</>}
-              {pendingWeeks.length < 2
-                ? <> — remplis cette semaine puis touche <strong>{printLabel}</strong> pour tout imprimer.</>
-                : <> — touche <strong>{printLabel}</strong> pour imprimer les 3 semaines ensemble.</>}
-            </span>
-            <button className="btn" onClick={cancelPending}>Annuler</button>
-          </div>
-        )}
-
         {grille}
-        {magasin && v.planning_total_heures && <div className="aide" style={{ marginTop: 8 }}>Total : de l’heure de début à l’heure de fin de chaque jour, pauses non déduites.</div>}
       </div>
 
       {active && (
@@ -444,15 +397,7 @@ export default function Planning() {
           onSave={val => handleSave(active.salarie, active.jour, val)} onClose={() => setActive(null)} />
       )}
 
-      {showPrintModal && (v.planning_impression
-        ? <ChoixImpression semaine={semaine} onImprimer={doPrint} onFermer={() => setShowPrintModal(false)} />
-        : <Confirmation titre="Impression du planning"
-            texte={pendingWeeks.length === 0
-              ? 'Veux-tu attendre le planning de la semaine suivante pour les imprimer ensemble sur une même page ?'
-              : 'Tu as déjà 1 semaine en attente. Veux-tu attendre encore la semaine suivante pour imprimer 3 plannings sur la même page ?'}
-            annuler="Fermer" secondaire={{ texte: pendingWeeks.length === 0 ? 'Non, imprimer maintenant' : `Imprimer les ${nbTotal} semaines`, onClick: onPrintNow }}
-            confirmer={pendingWeeks.length === 0 ? 'Oui, attendre' : 'Attendre encore'}
-            onAnnuler={() => setShowPrintModal(false)} onConfirmer={onWaitNextWeek} />)}
+      {showPrintModal && <ChoixImpression semaine={semaine} onImprimer={doPrint} onFermer={() => setShowPrintModal(false)} />}
 
       {reprise && (
         <Confirmation titre="Reprendre la semaine précédente ?"
@@ -461,7 +406,6 @@ export default function Planning() {
       )}
 
       <Toast toast={toast} onFermer={() => setToast(null)} />
-      <PanneauEssai points={POINTS_PLANNING} />
     </PageShell>
   )
 }

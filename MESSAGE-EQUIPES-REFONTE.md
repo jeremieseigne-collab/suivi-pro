@@ -70,13 +70,17 @@ Sur l'**Accueil** :
 - Touchez une case pour saisir l'horaire (9h30 → 17h30 proposés), une note si besoin, puis OK ; « Repos » efface la case. Sur téléphone, la saisie s'ouvre en bas de l'écran.
 - Copier un horaire : « Copier » dans la saisie (ou au survol de la case sur ordinateur), puis « Coller » dans une autre case.
 - **Nouveau** : un bouton « Annuler la dernière modification » (Ctrl+Z fonctionne toujours sur ordinateur).
-- *(selon les choix restant à faire : « Reprendre la semaine précédente », total d'heures de la semaine, impression de 1, 2 ou 3 semaines, affichage jour par jour sur téléphone)*
+- **Nouveau** : « Reprendre la semaine précédente » recopie les horaires de la semaine d'avant dans les cases vides (rien n'est écrasé) ; un message propose « Annuler ».
+- **Nouveau** : « Imprimer » demande combien de semaines mettre sur la page (1, 2 ou 3, à partir de la semaine affichée).
+- Sur téléphone, le planning s'affiche **jour par jour** : touchez un jour en haut, puis un prénom.
+- Un remplaçant : « Ajouter un remplaçant » en bas du planning.
 
 ## Détail — Éléments de paie
 
 - Rien ne change dans le fonctionnement : chaque salariée remplit sa fiche du mois, vérifie sa saisie, puis confirme. Une fois confirmée, la fiche ne peut plus être relue ni modifiée ; pour une correction, touchez votre prénom et envoyez une demande à la direction.
 - Rappel dans le menu du 15 au 25 : « À remplir avant le 25 ».
-- *(selon les choix restant à faire : société pré-remplie d'après votre magasin, avertissement si une date n'est pas dans le mois)*
+- **Nouveau** : la société est pré-remplie d'après votre magasin (vous pouvez la changer).
+- **Nouveau** : sur « Vérifie ta saisie », le total d'heures de chaque rubrique s'affiche, et un avertissement signale une date qui n'est pas dans le mois (vous pouvez quand même confirmer si c'est voulu).
 
 ## Détail — Cahier des entrées
 
