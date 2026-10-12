@@ -129,6 +129,8 @@ Deux façons de faire fonctionner le journal des mails :
 
 # Étape 2 — Paie réservée à la Direction, code PIN vérifié par la base
 
+> ✅ **EN LIGNE depuis le 13/10/2026 vers 0 h 15** (accord écrit du 12/10) : sauvegarde `prod-2026-10-13_00h01-avant-etape2` ; E1 + fonctions, puis code 31eec8e (paquet identique octet pour octet), reconnexion Direction, puis règles E3, E4, E4 bis, E7. Vérifié : visiteur 0 ligne ; compte magasin 0 fiche de paie, 0 envoi, écritures salariés / pointages / achats / entrée pointée refusées ; Direction : 24 fiches, 4 envois.
+
 > Statut (11/10/2026) : **accord écrit pour E1-E5 + E4 bis sur la base de TEST uniquement — faits et testés** (instructions : `supabase-securite-etape2.sql`, code : branche `securite-etape2`).
 > **E6 n'a pas été nécessaire** : l'appareil compare la liste des salariés aux prénoms fournis par `paie_remplies` (aucune fonction en plus).
 > Production : nouvel accord écrit, **pas avant que les 3 magasins se soient connectés sans problème lundi 12/10**.
