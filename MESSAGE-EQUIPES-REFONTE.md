@@ -36,10 +36,12 @@ Sur l'**Accueil** :
 ## Détail — SAV & défectueux
 
 - Le SAV et les défectueux sont réunis dans **un seul écran** à deux onglets : « SAV » et « Défectueux » (menu « SAV & défectueux », ou « Clients » sur téléphone).
-- **Nouveau dossier** : comme avant (retour client, mise à la forme, réparation). Touche ton prénom, tape le nom du client, cherche la marque (si elle n'existe pas, l'outil propose d'abord une marque au nom proche), puis le modèle et la pointure.
-- Sur chaque dossier : l'enveloppe (mail à la marque), le crayon (modifier), la corbeille (supprimer), et le **journal** pour noter les échanges (Entrée pour ajouter une note).
-- **Clôturer** un dossier SAV propose de clôturer aussi le défectueux lié — plus besoin de le faire deux fois. Et passer un défectueux à « Avoir reçu » propose de clôturer le dossier SAV.
-- **Défectueux** : touche une ligne pour ouvrir sa fiche (changer l'état, envoyer le mail, modifier, supprimer).
+- **Nouveau dossier** : comme avant (retour client, mise à la forme, réparation). Touchez votre prénom, tapez le nom du client, cherchez la marque (si elle n'existe pas, l'outil propose d'abord une marque au nom proche), puis le modèle et la pointure.
+- Sur chaque dossier : l'enveloppe (mail à la marque), le crayon (modifier), la corbeille (supprimer), et le **journal** pour noter les échanges (Entrée ou « Ajouter » pour enregistrer la note).
+- **Clôturer** un dossier SAV : si le défectueux lié est déjà « Avoir reçu », l'outil propose de le clôturer en même temps ; sinon il vous rappelle de le passer à « Avoir reçu » ou « Refusé ». Passer un défectueux à « Avoir reçu » propose aussi de clôturer le dossier SAV.
+- Dans la fiche d'un défectueux, une ligne indique l'effet de l'état : « Avoir reçu » = l'avoir est compté dans le Plan de règlement, « Refusé » = aucun avoir.
+- Si le prix du retour est à 0 €, un avertissement s'affiche : aucun avoir ne sera compté (saisissez le prix si vous le connaissez).
+- **Défectueux** : touchez une ligne pour ouvrir sa fiche (changer l'état, envoyer le mail, modifier, supprimer).
 
 ## Détail — Cahier des entrées
 

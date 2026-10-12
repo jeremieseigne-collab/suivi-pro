@@ -27,8 +27,9 @@ function Minuteur({ enCoursAt }) {
 
 const horodatage = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${String(d.getFullYear()).slice(-2)} ${p(d.getHours())}h${p(d.getMinutes())}` }
 
-// Journal du dossier (comme aujourd'hui) : la ligne du bas ajoute une note horodatée (Entrée valide) ;
-// toucher une ligne la modifie (la vider la supprime). Lecture seule sur un dossier clôturé.
+// Journal du dossier : la ligne du bas ajoute une note horodatée avec Entrée ou le bouton « Ajouter »
+// (quitter le champ n'ajoute rien : le texte reste dans le champ). Toucher une ligne la modifie (la vider la supprime).
+// Lecture seule sur un dossier clôturé.
 function Journal({ row }) {
   const champ = row.type === 'forme' ? 'note' : 'probleme'
   const texte = row[champ] || ''
@@ -45,8 +46,11 @@ function Journal({ row }) {
         ? <input key={i} className="journal-saisie" autoFocus value={brouillonLigne} onChange={e => setBrouillonLigne(e.target.value)} onBlur={() => garder(i)}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); garder(i) } else if (e.key === 'Escape') setEdit(null) }} aria-label="Modifier la note" />
         : <button key={i} className="journal-ligne" onClick={() => { setEdit(i); setBrouillonLigne(l) }} title="Toucher pour modifier cette ligne">{l}</button>)}
-      <input className="journal-saisie nouvelle" value={nouveau} onChange={e => setNouveau(e.target.value)} onBlur={() => { if (nouveau.trim()) ajouter() }}
-        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); ajouter() } else if (e.key === 'Escape') setNouveau('') }} placeholder="Ajouter une note (Entrée pour valider)…" aria-label="Ajouter une note" />
+      <div className="journal-ajout">
+        <input className="journal-saisie nouvelle" value={nouveau} onChange={e => setNouveau(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); ajouter() } else if (e.key === 'Escape') setNouveau('') }} placeholder="Ajouter une note…" aria-label="Ajouter une note" />
+        {nouveau.trim() && <button className="btn btn-prim petit" onMouseDown={e => e.preventDefault()} onClick={ajouter}>Ajouter</button>}
+      </div>
     </div>
   )
 }
@@ -93,7 +97,7 @@ export default function ListeSav({ rows, magasinNom, onModifier, onToast }) {
   const [rech, setRech] = useState('')
   const [aSupprimer, setASupprimer] = useState(null)
   const [aRouvrir, setARouvrir] = useState(null)
-  const [cloture, setCloture] = useState(null)        // { row, def } : proposer de clôturer aussi le défectueux lié (U5)
+  const [cloture, setCloture] = useState(null)        // { row, def } : clôture du SAV quand un défectueux est lié (U5)
 
   const filtres = useMemo(() => rows.filter(r => {
     if (type && r.type !== type) return false
@@ -116,6 +120,8 @@ export default function ListeSav({ rows, magasinNom, onModifier, onToast }) {
         annuler: row.type === 'forme' ? undefined : async () => { await db.sav.update(row.id, { statut: row.statut || '' }); if (aussiDef) await db.defectueux.update(aussiDef.id, { statut: aussiDef.statut }) } })
     } catch (e) { onToast({ texte: 'Clôture impossible : ' + (e.message || 'vérifie la connexion.') }) }
   }
+  // Règle (13/10) : on ne propose de clôturer aussi le défectueux que s'il est déjà « Avoir reçu » (aucun effet sur le Plan de règlement).
+  // S'il est encore « À traiter » ou « Mail envoyé », on rappelle seulement de changer son état : aucun avoir n'apparaît sans choix volontaire.
   async function demanderCloture(row) {
     if (avecMarque(row.type) && row.defectueuxId) {
       const def = await db.defectueux.get(row.defectueuxId).catch(() => null)
@@ -142,12 +148,16 @@ export default function ListeSav({ rows, magasinNom, onModifier, onToast }) {
           {filtres.map(r => <CarteDossier key={r.id} row={r} onMail={mail} onModifier={x => x.statut === 'Clôturé' ? setARouvrir(x) : onModifier(x)} onSupprimer={setASupprimer} onCloturer={demanderCloture} onTerminer={terminer} />)}
         </div>
       )}
-      {cloture && (
+      {cloture && (cloture.def.statut === 'Avoir reçu' ? (
         <Confirmation titre="Clôturer le dossier SAV" confirmer="Clôturer les deux" annuler="Annuler"
-          texte={`Le défectueux lié (${cloture.row.marqueNom || 'marque'} · ${cloture.row.modele || 'modèle'}) est « ${cloture.def.statut} ». Le clôturer aussi ?`}
+          texte={`Le défectueux lié (${cloture.row.marqueNom || 'marque'} · ${cloture.row.modele || 'modèle'}) est « Avoir reçu ». Le clôturer aussi ?`}
           secondaire={{ texte: 'Seulement le SAV', onClick: () => cloturer(cloture.row, null) }}
           onAnnuler={() => setCloture(null)} onConfirmer={() => cloturer(cloture.row, cloture.def)} />
-      )}
+      ) : (
+        <Confirmation titre="Clôturer le dossier SAV" confirmer="Clôturer le SAV" annuler="Annuler"
+          texte={`Le défectueux est encore « ${cloture.def.statut} » : pense à le passer à Avoir reçu ou Refusé.`}
+          onAnnuler={() => setCloture(null)} onConfirmer={() => cloturer(cloture.row, null)} />
+      ))}
       {aRouvrir && <Confirmation titre="Modifier un dossier clôturé ?" texte="Ce dossier est clôturé. Tu veux vraiment le modifier ?" confirmer="Modifier" onAnnuler={() => setARouvrir(null)} onConfirmer={() => { const r = aRouvrir; setARouvrir(null); onModifier(r) }} />}
       {aSupprimer && (
         <Confirmation danger titre="Supprimer ce dossier ?" confirmer="Supprimer" onAnnuler={() => setASupprimer(null)} onConfirmer={supprimer}

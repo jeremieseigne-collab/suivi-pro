@@ -13,7 +13,6 @@ import ListeSav from './ListeSav'
 import ListeDefectueux from './ListeDefectueux'
 import SaisieSav from './SaisieSav'
 import SaisieDefectueux from './SaisieDefectueux'
-import { PanneauVariantes } from './PanneauVariantes'
 import '../cahier/cahier.css'
 import './savdef.css'
 
@@ -49,7 +48,6 @@ export default function SavDefectueux({ vue }) {
         <button className="btn btn-prim seulement-grand" onClick={nouveau}><Icone nom="ajout" taille={20} />{libNouveau}</button>
       </>}
       tabs={[['sav', 'SAV'], ['def', 'Défectueux']].map(([id, l]) => <button key={id} aria-pressed={onglet === id} onClick={() => aller(id === 'sav' ? 'sav' : 'defectueux')}>{l}</button>)}>
-      <PanneauVariantes />
       {data === undefined ? <LoadingState /> : onglet === 'sav'
         ? <ListeSav rows={data.savs.filter(r => r.magasinId === magasin.id)} magasinNom={magasin.nom} onModifier={r => setSaisie({ type: 'sav', ligne: r })} onToast={setToast} />
         : <ListeDefectueux rows={data.defs.filter(r => r.magasinId === magasin.id)} magasinNom={magasin.nom} onModifier={d => setSaisie({ type: 'def', ligne: d })} onToast={setToast} />}

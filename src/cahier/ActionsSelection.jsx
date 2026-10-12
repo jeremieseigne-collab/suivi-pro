@@ -44,8 +44,8 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
   const entreesN = pluriel(n, 'entrée')
 
   // ── Modifications groupées (statut, date, catégorie, magasin, saison), avec « Annuler » qui remet les valeurs d'avant ──
-  async function modifierLot(champ, valeur, message) {
-    const lignes = choisies(); if (!lignes.length) return
+  async function modifierLot(champ, valeur, message, ids) {
+    const lignes = choisies().filter(e => !ids || ids.includes(e.id)); if (!lignes.length) return
     const avant = lignes.map(e => [e.id, e[champ] ?? ''])
     setFeuille(null); setModif(null)
     let echecs = 0
@@ -55,7 +55,30 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
           annuler: async () => { for (const [id, v] of avant) { try { await db.entrees.update(id, { [champ]: v }) } catch { /* ignore */ } } } })
     onFin()
   }
-  const demander = (champ, valeur, titre, texte, message) => { setFeuille(null); setModif({ champ, valeur, titre, texte, message }) }
+  // Protection des avoirs (13/10) : les lignes « Retour » portent les avoirs du Plan de règlement.
+  // - la confirmation annonce combien de retours sont concernés (statut, date, magasin, saison les retirent ou les déplacent) ;
+  // - compte magasin : les retours liés à un défectueux sont exclus des changements groupés de statut et de date.
+  const avertRetours = (nb, verbe) => nb ? `Dont ${pluriel(nb, 'retour')} : cela ${verbe} ${pluriel(nb, 'avoir')} du Plan de règlement.` : ''
+  async function demander(champ, valeur, titre, texte, message, direct = false) {
+    setFeuille(null)
+    const lignes = choisies()
+    let exclues = []
+    if (!estDirection && (champ === 'statut' || champ === 'date')) {
+      const retours = lignes.filter(e => e.statut === 'Retour')
+      if (retours.length) {
+        const lies = new Set((await db.defectueux.toArray().catch(() => [])).map(d => d.entreeId).filter(Boolean))
+        exclues = retours.filter(e => lies.has(e.id))
+      }
+    }
+    const gardees = lignes.filter(e => !exclues.includes(e))
+    const touchePlan = champ === 'date' || champ === 'magasinId' || champ === 'season' || (champ === 'statut' && valeur !== 'Retour')
+    const nbRetours = touchePlan ? gardees.filter(e => e.statut === 'Retour' && e[champ] !== valeur).length : 0
+    const exclu = exclues.length ? `${pluriel(exclues.length, 'retour')} lié${exclues.length > 1 ? 's' : ''} à un défectueux ne ${exclues.length > 1 ? 'seront' : 'sera'} pas modifié${exclues.length > 1 ? 's' : ''} : seule la Direction peut changer ${exclues.length > 1 ? 'leur' : 'sa'} ${champ === 'date' ? 'date' : 'statut'}.` : ''
+    if (!gardees.length) { setModif({ impossible: true, titre: 'Modification impossible', texte: exclu }); return }
+    if (direct && !exclu && !nbRetours) { modifierLot(champ, valeur, message); return }   // statut sans retour : un toucher, comme avant
+    setModif({ champ, valeur, titre: gardees.length !== lignes.length ? titre.replace(entreesN, pluriel(gardees.length, 'entrée')) : titre, texte, message, ids: gardees.map(e => e.id),
+      avert: [exclu, avertRetours(nbRetours, champ === 'statut' ? 'retirera' : 'déplacera')].filter(Boolean) })
+  }
 
   async function ouvrirMagasins() {
     setFeuille('magasin')
@@ -148,7 +171,7 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
         <Feuille onFermer={() => setFeuille(null)} titre={`Statut de ${entreesN}`}>
           <div className="liste" style={{ background: 'var(--carte-2)' }}>
             {STATUTS.map(st => (
-              <button key={st || 'aucun'} className="ligne" style={{ minHeight: 52 }} onClick={() => modifierLot('statut', st, `Statut « ${libelleStatut(st)} » appliqué`)}>
+              <button key={st || 'aucun'} className="ligne" style={{ minHeight: 52 }} onClick={() => demander('statut', st, `Changer le statut de ${entreesN} ?`, `Nouveau statut : ${libelleStatut(st)}.`, `Statut « ${libelleStatut(st)} » appliqué`, true)}>
                 <span className="txt">{st ? <Statut s={st} /> : <span className="t1" style={{ fontWeight: 500 }}>Aucun (vider le statut)</span>}</span>
               </button>
             ))}
@@ -214,10 +237,12 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
         </Feuille>
       )}
 
-      {modif && (
-        <Confirmation titre={modif.titre} texte={modif.texte} confirmer="Appliquer" onAnnuler={() => setModif(null)}
-          onConfirmer={() => modifierLot(modif.champ, modif.valeur, modif.message)} />
-      )}
+      {modif && (modif.impossible
+        ? <Confirmation titre={modif.titre} texte={modif.texte} confirmer="Compris" annuler="Fermer" onConfirmer={() => setModif(null)} onAnnuler={() => setModif(null)} />
+        : <Confirmation titre={modif.titre} texte={modif.texte} confirmer="Appliquer" onAnnuler={() => setModif(null)}
+            onConfirmer={() => modifierLot(modif.champ, modif.valeur, modif.message, modif.ids)}>
+            {modif.avert?.map(a => <div key={a} className="encart att" style={{ marginBottom: 12 }}>{a}</div>)}
+          </Confirmation>)}
 
       {suppr && (() => {
         const nb = suppr.lignes.length, paires = suppr.lignes.reduce((t, e) => t + (Number(e.total) || 0), 0)
@@ -227,6 +252,7 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
         return (
           <Confirmation danger titre={`Supprimer ${pluriel(nb, 'entrée')} ?`} confirmer="Supprimer" actif={!aTaper || tape.trim() === String(nb)}
             texte={`${pluriel(nb, 'entrée')} · ${pluriel(paires, 'paire')} au total. ${bloq}`} onAnnuler={() => setSuppr(null)} onConfirmer={supprimerSel}>
+            {suppr.lignes.some(e => e.statut === 'Retour') && <div className="encart att" style={{ marginBottom: 12 }}>{avertRetours(suppr.lignes.filter(e => e.statut === 'Retour').length, 'retirera')}</div>}
             <ul className="liste-resume">
               {suppr.lignes.slice(0, 5).map(e => <li key={e.id}><span>{e.marque} · {e.modele || 'sans modèle'}</span><span>{e.date} · {e.total || 0} p.</span></li>)}
               {nb > 5 && <li><span>… et {pluriel(nb - 5, 'autre entrée')}</span><span /></li>}

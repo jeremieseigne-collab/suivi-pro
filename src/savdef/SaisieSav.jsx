@@ -9,7 +9,7 @@ import Confirmation from '../components/ui/Confirmation'
 import { buildSavRetourMailUrl } from '../sav/mail'
 import { ChoixSalarie, ChoixMarque, ChoixModele, ChoixPointure, EtapesMail } from './Champs'
 import { TYPES_SAV, avecMarque, aujourdhuiFr, prixUnitaire, infosModele, marquerMailSav } from './regles'
-import { useVariantes } from './variantes'
+import { useCompte } from '../context/CompteContext'
 
 // Création et modification d'un dossier SAV (retour client, mise à la forme, réparation).
 // Données enregistrées identiques à l'outil actuel : à la création d'un retour ou d'une réparation, une entrée « Retour » (−1)
@@ -17,14 +17,14 @@ import { useVariantes } from './variantes'
 export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
   const modif = !!sav?.id
   const { season } = useSeason()
-  const variantes = useVariantes()
+  const { estDirection } = useCompte()
   const magasins = useLiveQuery(() => db.magasins.orderBy('nom').toArray(), [])
   const salaries = useLiveQuery(() => db.salaries.orderBy('nom').toArray(), [])
   const fournisseurs = useLiveQuery(() => db.fournisseurs.orderBy('nom').toArray(), [])
 
   const [type, setType] = useState(sav?.type ?? 'retour')
   const [f, setF] = useState(() => ({
-    magasinId: sav?.magasinId ?? magasinAppareil?.id ?? '', salarie: sav?.salarie ?? '',
+    magasinId: sav?.magasinId ?? (estDirection ? '' : magasinAppareil?.id ?? ''), salarie: sav?.salarie ?? '',
     clientNom: sav?.clientNom ?? '', clientTel: fmtTel(sav?.clientTel ?? ''),
     fournisseurId: sav?.fournisseurId ?? '', modele: sav?.modele ?? '', pointure: sav?.pointure ?? '', marque: sav?.marque ?? '',
     probleme: sav?.probleme ?? '', note: sav?.note ?? '',
@@ -55,6 +55,15 @@ export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
     infosModele(f.fournisseurId, f.modele).then(r => { if (actif) setInfos(r) })
     return () => { actif = false }
   }, [f.fournisseurId, f.modele])
+  // Prix qui sera enregistré sur la ligne « Retour » (même calcul qu'à l'enregistrement) : 0 € → avertissement
+  const clePrix = modif || !avecMarque(type) || !f.fournisseurId || !f.modele || !f.magasinId ? '' : `${f.fournisseurId}|${f.magasinId}|${season}|${f.modele}`
+  const [prix0, setPrix0] = useState({ cle: '', u: null })
+  const prixCalcule = clePrix && prix0.cle === clePrix ? prix0.u : null
+  useEffect(() => {
+    let actif = true
+    if (clePrix) prixUnitaire(Number(f.fournisseurId), Number(f.magasinId), season, f.modele).then(u => { if (actif) setPrix0({ cle: clePrix, u }) })
+    return () => { actif = false }
+  }, [clePrix])  // eslint-disable-line react-hooks/exhaustive-deps
 
   async function ajouterModele(nom) {
     const ex = fournisseur?.modelesBySeason || {}, arr = ex[season] || []
@@ -150,13 +159,10 @@ export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
                 </div>
               )}
 
-              {variantes.magasinSav ? (
-                <label className="etiquette">Magasin
-                  <select className="champ" value={f.magasinId} onChange={e => set('magasinId', e.target.value)}>
-                    <option value="">Choisir</option>
-                    {(magasins || []).map(m => <option key={m.id} value={m.id}>{m.nom}</option>)}
-                  </select></label>
-              ) : null}
+              <span className="etiquette" style={{ marginTop: 0 }}>Magasin{estDirection && !f.magasinId ? <span className="aide att"> — à choisir</span> : null}</span>
+              <div className="chips" style={{ flexWrap: 'wrap' }}>
+                {(magasins || []).map(m => <button key={m.id} type="button" className="chip" aria-pressed={Number(f.magasinId) === m.id} onClick={() => set('magasinId', m.id)}>{m.nom}</button>)}
+              </div>
 
               <span className="etiquette">Traité par</span>
               <ChoixSalarie valeur={f.salarie} onChange={v => set('salarie', v)} salaries={salariesMag} />
@@ -188,6 +194,7 @@ export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
                   onChoisir={m => setF(x => ({ ...x, modele: m, pointure: x.modele === m ? x.pointure : '' }))} onAjouter={ajouterModele} />
                 <span className="etiquette">Pointure</span>
                 <ChoixPointure key={'p' + f.modele} tailles={infos.tailles} valeur={f.pointure} onChange={v => set('pointure', v)} desactive={!f.modele} />
+                {prixCalcule === 0 && <div className="encart att" style={{ marginTop: 12 }}>Prix à 0 € : aucun avoir n'apparaîtra dans le Plan de règlement.</div>}
                 <label className="etiquette">{type === 'retour' ? 'Description du problème' : 'Note / problème'}
                   <textarea className="champ" rows={3} value={f.probleme} onChange={e => set('probleme', e.target.value)}
                     placeholder={type === 'retour' ? 'Décris le défaut ou le problème signalé par le client…' : 'Décris les réparations à faire…'} /></label>

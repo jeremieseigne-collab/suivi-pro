@@ -36,6 +36,8 @@
 .journal-ligne.vide-j { color: var(--discret); border: 0; cursor: default; }
 .journal-saisie { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; border: 0; border-bottom: 1px solid var(--action); background: transparent; color: var(--texte); padding: 7px 0; outline: none; }
 .journal-saisie.nouvelle { border-bottom: 0; min-height: 40px; }
+.journal-ajout { display: flex; align-items: center; gap: 8px; }
+.btn.petit { min-height: 34px; padding: 0 12px; font-size: 14px; }
 
 /* Défectueux */
 .etat-mot { font-size: var(--t-meta); font-weight: 600; white-space: nowrap; color: var(--doux); }
@@ -53,8 +55,5 @@
 @media (max-width: 420px) { .segment-plein button { font-size: 13px; } }
 textarea.champ { resize: vertical; min-height: 72px; }
 
-/* Panneau d'essai local (points à trancher) */
-.panneau-variantes { border: 1px dashed var(--discret); border-radius: 12px; padding: 8px 12px; margin-bottom: 12px; font-size: 14px; color: var(--doux); }
-.panneau-variantes summary { cursor: pointer; font-weight: 600; }
-.ligne-variante { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--trait); }
-.ligne-variante span { color: var(--texte); }
+/* Fiche défectueux : effet de l'état sur le Plan de règlement (ligne discrète) */
+.effet-etat { margin-top: 6px; }

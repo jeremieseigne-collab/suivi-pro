@@ -1,16 +1,31 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { db } from '../db'
 import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { Numero } from '../cahier/Reperes'
 import { buildDefectueuxMailUrl } from '../defectueux/mail'
 import { STATUTS_DEF, DEF_TERMINES, DEF_FIN, CLASSE_DEF, fmtDate, changerEtatDefectueux, cloturerSav } from './regles'
-import { useVariantes } from './variantes'
+import { useCompte } from '../context/CompteContext'
 
 const EtatDef = ({ s }) => <span className={`etat-mot ${CLASSE_DEF[s] || ''}`}>{s || '—'}</span>
 
+// Effet de l'état sur le Plan de règlement (même règle que le Plan : avoir compté si « Avoir reçu » ou « Clôturé », et prix différent de 0)
+const EFFET = {
+  'À traiter': "l'avoir n'est pas encore compté dans le Plan de règlement",
+  'Mail envoyé': "l'avoir n'est pas encore compté dans le Plan de règlement",
+  'Avoir reçu': "l'avoir est compté dans le Plan de règlement",
+  'Clôturé': "l'avoir est compté dans le Plan de règlement",
+  'Refusé': 'aucun avoir',
+}
+
 // Fiche d'un défectueux : état en un toucher (avec « Annuler »), mail au SAV de la marque, modifier, supprimer
-function FicheDefectueux({ d, avecMagSoc, onChangerEtat, onMail, onModifier, onSupprimer, onFermer }) {
+function FicheDefectueux({ d, onChangerEtat, onMail, onModifier, onSupprimer, onFermer }) {
+  const [pht, setPht] = useState(null)   // prix de la ligne « Retour » liée
+  useEffect(() => {
+    let actif = true
+    if (d.entreeId) db.entrees.get(d.entreeId).then(e => { if (actif) setPht(e ? Number(e.pht) || 0 : null) }).catch(() => {})
+    return () => { actif = false }
+  }, [d.entreeId])
   return (
     <>
       <div className="feuille-fond" onClick={onFermer} />
@@ -20,13 +35,14 @@ function FicheDefectueux({ d, avecMagSoc, onChangerEtat, onMail, onModifier, onS
           <div style={{ fontWeight: 600, fontSize: 16 }}>{d.modele || 'Sans modèle'}<Numero n={d.numero} /></div>
           <div className="resume-saisie" style={{ marginTop: 6 }}>
             <span>Pointure <b>{d.pointure || '—'}</b></span><span>Le <b>{fmtDate(d.createdAt)}</b></span><span>Salarié <b>{d.salarie || '—'}</b></span>
-            {avecMagSoc && <><span>Magasin <b>{d.magasin}</b></span><span>Société <b>{d.societe || '—'}</b></span></>}
+            <span>Magasin <b>{d.magasin}</b></span><span>Société <b>{d.societe || '—'}</b></span>
           </div>
           {d.note && <><span className="etiquette" style={{ marginTop: 16 }}>Note / problème</span><div className="carte" style={{ background: 'var(--carte-2)', whiteSpace: 'pre-wrap' }}>{d.note}</div></>}
           <span className="etiquette" style={{ marginTop: 16 }}>État</span>
           <div className="chips" style={{ flexWrap: 'wrap' }}>
             {STATUTS_DEF.map(s => <button key={s} className="chip" aria-pressed={d.statut === s} onClick={() => onChangerEtat(d, s)}>{s}</button>)}
           </div>
+          {EFFET[d.statut] && <div className="aide effet-etat">{d.statut} : {pht === 0 && d.statut !== 'Refusé' ? 'aucun avoir (retour à 0 €)' : EFFET[d.statut]}</div>}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 20 }}>
             <button className="btn" onClick={() => onMail(d)}><Icone nom="mail" taille={20} />Mail au SAV de la marque</button>
             <button className="btn" onClick={() => onModifier(d)}>Modifier</button>
@@ -40,7 +56,7 @@ function FicheDefectueux({ d, avecMagSoc, onChangerEtat, onMail, onModifier, onS
 
 // Onglet Défectueux : recherche, filtre par état, une ligne par défectueux du magasin
 export default function ListeDefectueux({ rows, magasinNom, onModifier, onToast }) {
-  const { magSoc } = useVariantes()
+  const { estDirection } = useCompte()   // magasin sur la ligne : comptes Direction (même règle que le Cahier) ; société : dans la fiche
   const [rech, setRech] = useState('')
   const [etat, setEtat] = useState('')
   const [ficheId, setFicheId] = useState(null)
@@ -99,7 +115,7 @@ export default function ListeDefectueux({ rows, magasinNom, onModifier, onToast 
             <button key={d.id} className={`ligne ligne-def${DEF_TERMINES.includes(d.statut) ? ' faible termine' : ''}`} onClick={() => setFicheId(d.id)}>
               <span className="txt">
                 <span className="t1">{d.marque} <span>· {d.modele || 'sans modèle'}</span><Numero n={d.numero} />{d.pointure && <span> · {d.pointure}</span>}</span>
-                <span className="t2">{[fmtDate(d.createdAt), d.salarie, magSoc ? d.magasin : null, magSoc ? d.societe : null].filter(Boolean).join(' · ')}</span>
+                <span className="t2">{[fmtDate(d.createdAt), d.salarie, estDirection ? d.magasin : null].filter(Boolean).join(' · ')}</span>
                 {d.note && <span className="t2 note-def">{d.note}</span>}
               </span>
               <EtatDef s={d.statut} />
@@ -107,7 +123,7 @@ export default function ListeDefectueux({ rows, magasinNom, onModifier, onToast 
           ))}
         </div>
       )}
-      {fiche && <FicheDefectueux d={fiche} avecMagSoc onChangerEtat={changerEtat} onMail={mail} onModifier={modifier} onSupprimer={setASupprimer} onFermer={() => setFicheId(null)} />}
+      {fiche && <FicheDefectueux d={fiche} onChangerEtat={changerEtat} onMail={mail} onModifier={modifier} onSupprimer={setASupprimer} onFermer={() => setFicheId(null)} />}
       {aussiSav && (
         <Confirmation titre={`Passer à « ${aussiSav.statut} »`} confirmer="Clôturer le SAV aussi" annuler="Annuler"
           texte={`Le dossier SAV lié (${aussiSav.sav.clientNom || 'client'}) n'est pas clôturé. Le clôturer aussi ?`}

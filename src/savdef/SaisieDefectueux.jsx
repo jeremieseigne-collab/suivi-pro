@@ -8,14 +8,12 @@ import Confirmation from '../components/ui/Confirmation'
 import { buildDefectueuxMailUrl } from '../defectueux/mail'
 import { ChoixSalarie, ChoixMarque, ChoixModele, ChoixPointure, EtapesMail } from './Champs'
 import { STATUTS_DEF, aujourdhuiFr, prixUnitaire, infosModele, changerEtatDefectueux } from './regles'
-import { useVariantes } from './variantes'
 
 // Création et modification d'un défectueux. Données identiques à l'outil actuel : à la création, une entrée « Retour » (−1)
 // est ajoutée au Cahier (prix du modèle, ou prix tapé), puis on propose le mail au SAV de la marque.
 export default function SaisieDefectueux({ defect, magasinAppareil, onFermer, onToast }) {
   const modif = !!defect?.id
   const { season } = useSeason()
-  const variantes = useVariantes()
   const magasins = useLiveQuery(() => db.magasins.orderBy('nom').toArray(), [])
   const salaries = useLiveQuery(() => db.salaries.orderBy('nom').toArray(), [])
   const fournisseurs = useLiveQuery(() => db.fournisseurs.orderBy('nom').toArray(), [])
@@ -53,6 +51,17 @@ export default function SaisieDefectueux({ defect, magasinAppareil, onFermer, on
     return () => { actif = false }
   }, [f.fournisseurId, f.modele, modif])
 
+  // Prix qui sera enregistré sur la ligne « Retour » : prix tapé, sinon prix du modèle ; 0 € → avertissement
+  const clePrix = modif || !f.fournisseurId || !f.modele || !f.magasinId ? '' : `${f.fournisseurId}|${f.magasinId}|${season}|${f.modele}`
+  const [prix0, setPrix0] = useState({ cle: '', u: null })
+  const prixCalcule = clePrix && prix0.cle === clePrix ? prix0.u : null
+  useEffect(() => {
+    let actif = true
+    if (clePrix) prixUnitaire(Number(f.fournisseurId), Number(f.magasinId), season, f.modele).then(u => { if (actif) setPrix0({ cle: clePrix, u }) })
+    return () => { actif = false }
+  }, [clePrix])  // eslint-disable-line react-hooks/exhaustive-deps
+  const prixZero = prixCalcule === 0 && !(parseFloat(String(prixManuel).replace(',', '.')) > 0)
+
   async function ajouterModele(nom) {
     const ex = fournisseur?.modelesBySeason || {}, arr = ex[season] || []
     if (!arr.includes(nom)) await db.fournisseurs.update(fournisseur.id, { modelesBySeason: { ...ex, [season]: [...arr, nom] } })
@@ -82,7 +91,7 @@ export default function SaisieDefectueux({ defect, magasinAppareil, onFermer, on
       }
       const defId = deja.current.defId || await db.defectueux.add({
         magasinId, fournisseurId, salarie: f.salarie, modele: f.modele, numero: f.numero, pointure: f.pointure, note: f.note,
-        statut: variantes.etat ? f.statut : 'À traiter', season, entreeId: deja.current.entreeId,
+        statut: 'À traiter', season, entreeId: deja.current.entreeId,   // créé « À traiter » ; l'état se change dans la fiche
       })
       deja.current.defId = defId
       setEnCours(false); setCree({ defId, fournisseur, societe }); setEtape('mail')
@@ -94,8 +103,7 @@ export default function SaisieDefectueux({ defect, magasinAppareil, onFermer, on
 
   function envoyer(email) {
     window.open(buildDefectueuxMailUrl({ modele: f.modele, pointure: f.pointure, note: f.note, salarie: f.salarie, societe: cree?.societe || '', email, numeroClient: cree?.fournisseur?.numeroClient }), '_blank')
-    const statutCree = variantes.etat ? f.statut : 'À traiter'
-    return statutCree === 'À traiter' ? db.defectueux.update(cree.defId, { statut: 'Mail envoyé' }).catch(() => {}) : Promise.resolve()
+    return db.defectueux.update(cree.defId, { statut: 'Mail envoyé' }).catch(() => {})
   }
 
   const titre = etape === 'mail' ? 'Défectueux enregistré' : modif ? 'Modifier le défectueux' : 'Nouveau défectueux'
@@ -115,7 +123,7 @@ export default function SaisieDefectueux({ defect, magasinAppareil, onFermer, on
                     <option value="">Choisir</option>
                     {(magasins || []).map(m => <option key={m.id} value={m.id}>{m.nom}</option>)}
                   </select></label>
-                {(variantes.etat || modif) && <label className="etiquette">État
+                {modif && <label className="etiquette">État
                   <select className="champ" value={f.statut} onChange={e => set('statut', e.target.value)}>
                     {STATUTS_DEF.map(s => <option key={s}>{s}</option>)}
                   </select></label>}
@@ -135,6 +143,7 @@ export default function SaisieDefectueux({ defect, magasinAppareil, onFermer, on
                 {!modif && <label className="etiquette">Prix unitaire HT (€, facultatif)
                   <input className="champ" inputMode="decimal" value={prixManuel} onChange={e => setPrixManuel(e.target.value)} placeholder="Vide = prix du modèle" /></label>}
               </div>
+              {prixZero && <div className="encart att" style={{ marginTop: 12 }}>Prix à 0 € : aucun avoir n'apparaîtra dans le Plan de règlement. Saisis le prix si tu le connais.</div>}
               <span className="etiquette">Pointure</span>
               <ChoixPointure key={'p' + f.modele} tailles={infos.tailles} valeur={f.pointure} onChange={v => set('pointure', v)} libre={false} desactive={!f.modele} />
               <label className="etiquette">Note / problème
