@@ -1043,7 +1043,7 @@ function SectionAppareils() {
     if (!a) return
     const ok = await confirmDanger({
       title: `Déconnecter tous les appareils de « ${a} » ?`,
-      message: "Tous les appareils connectés avec ce compte devront se reconnecter (au plus tard dans l'heure).\nPensez d'abord à changer le mot de passe du compte si quelqu'un d'extérieur le connaît.",
+      message: "Tous les appareils connectés avec ce compte devront se reconnecter (au plus tard dans l'heure).\nPense d'abord à changer le mot de passe du compte si quelqu'un d'extérieur le connaît.",
       word: a,
       confirmLabel: 'Déconnecter',
     })
@@ -1058,8 +1058,8 @@ function SectionAppareils() {
     <div className="store-card" style={{ padding: 18 }}>
       <h3 style={{ margin: '0 0 6px', fontSize: 16, color: 'var(--text)' }}>Déconnecter à distance</h3>
       <p style={{ margin: '0 0 14px', fontSize: 14, color: 'var(--text-3)', lineHeight: 1.5 }}>
-        Salarié qui part, téléphone perdu ou volé : <strong>1.</strong> changez le mot de passe du compte (Supabase → Authentication → Users),
-        <strong> 2.</strong> déconnectez ici tous ses appareils, <strong>3.</strong> reconnectez les appareils du magasin avec le nouveau mot de passe.
+        Salarié qui part, téléphone perdu ou volé : <strong>1.</strong> change le mot de passe du compte (Supabase → Authentication → Users),
+        <strong> 2.</strong> déconnecte ici tous ses appareils, <strong>3.</strong> reconnecte les appareils du magasin avec le nouveau mot de passe.
       </p>
       <form onSubmit={deconnecter} style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <input type="email" value={adresse} onChange={e => setAdresse(e.target.value)} placeholder="Adresse du compte (ex. contact.baillyalbi@gmail.com)"

@@ -50,7 +50,7 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
     setFeuille(null); setModif(null)
     let echecs = 0
     for (const e of lignes) { try { await db.entrees.update(e.id, { [champ]: valeur }) } catch { echecs++ } }
-    onToast(echecs ? { texte: `${lignes.length - echecs} entrée(s) modifiée(s), ${echecs} en échec : vérifiez la connexion.` }
+    onToast(echecs ? { texte: `${lignes.length - echecs} entrée(s) modifiée(s), ${echecs} en échec : vérifie la connexion.` }
       : { texte: `${message} — ${pluriel(lignes.length, 'entrée')}`,
           annuler: async () => { for (const [id, v] of avant) { try { await db.entrees.update(id, { [champ]: v }) } catch { /* ignore */ } } } })
     onFin()
@@ -80,7 +80,7 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
       const t = document.createElement('textarea'); t.value = texte; document.body.appendChild(t); t.select()
       try { document.execCommand('copy') } catch { /* ignore */ } t.remove()
     }
-    onToast({ texte: `Récapitulatif copié (${entreesN}) : collez-le dans un mail ou un message` })
+    onToast({ texte: `Récapitulatif copié (${entreesN}) : colle-le dans un mail ou un message` })
   }
 
   // ── Exporter la sélection en CSV (Direction) : une ligne par entrée, lisible dans Excel ──
@@ -121,9 +121,9 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
     const remettre = async () => {
       let ko = 0
       for (const c of copies) { try { await db.entrees.put(c) } catch { ko++ } }
-      onToast(ko ? { texte: `${ko} entrée(s) n'ont pas pu être remises : vérifiez la connexion.` } : { texte: `${pluriel(copies.length, 'entrée')} remise${copies.length > 1 ? 's' : ''}` })
+      onToast(ko ? { texte: `${ko} entrée(s) n'ont pas pu être remises : vérifie la connexion.` } : { texte: `${pluriel(copies.length, 'entrée')} remise${copies.length > 1 ? 's' : ''}` })
     }
-    onToast(echecs ? { texte: `${pluriel(faites.length, 'entrée')} supprimée(s), ${echecs} en échec : vérifiez la connexion.`, annuler: faites.length ? remettre : undefined, duree: 10000 }
+    onToast(echecs ? { texte: `${pluriel(faites.length, 'entrée')} supprimée(s), ${echecs} en échec : vérifie la connexion.`, annuler: faites.length ? remettre : undefined, duree: 10000 }
       : { texte: `${pluriel(faites.length, 'entrée')} supprimée${faites.length > 1 ? 's' : ''}`, annuler: remettre, duree: 10000 })
     onFin()
   }
@@ -133,7 +133,7 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
   return (
     <>
       <div className="barre-selection" role="toolbar" aria-label="Actions sur la sélection">
-        <b className="compte-selection" aria-label={n ? `${n} ${n > 1 ? 'sélectionnées' : 'sélectionnée'}` : 'Aucune entrée sélectionnée'}>{n ? <>{n}<span className="long"> {n > 1 ? 'sélectionnées' : 'sélectionnée'}</span></> : <span className="long">Touchez les lignes à sélectionner</span>}{!n && <span className="court">0</span>}</b>
+        <b className="compte-selection" aria-label={n ? `${n} ${n > 1 ? 'sélectionnées' : 'sélectionnée'}` : 'Aucune entrée sélectionnée'}>{n ? <>{n}<span className="long"> {n > 1 ? 'sélectionnées' : 'sélectionnée'}</span></> : <span className="long">Touche les lignes à sélectionner</span>}{!n && <span className="court">0</span>}</b>
         <div className="actions-selection">
           <button className="btn btn-prim" disabled={!n} onClick={() => setFeuille('statut')}><span className="long">Changer le statut</span><span className="court">Statut</span></button>
           {estDirection && <button className="btn" disabled={!n} onClick={() => { onPointer([...sel], true); onFin() }}>Pointer</button>}
@@ -233,7 +233,7 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
             </ul>
             {suppr.lies > 0 && <div className="encart att" style={{ marginBottom: 14 }}>{suppr.lies > 1 ? `${suppr.lies} défectueux sont liés` : 'Un défectueux est lié'} à ces entrées : {suppr.lies > 1 ? 'ils resteront' : 'il restera'} dans la Gestion des défectueux.</div>}
             {aTaper && <label className="champ-confirmer" style={{ display: 'block' }}>
-              <span className="etiquette">Pour confirmer, tapez le nombre d'entrées : <b>{nb}</b></span>
+              <span className="etiquette">Pour confirmer, tape le nombre d'entrées : <b>{nb}</b></span>
               <input className="champ" inputMode="numeric" autoFocus value={tape} onChange={ev => setTape(ev.target.value)} aria-label="Nombre d'entrées à supprimer" />
             </label>}
           </Confirmation>

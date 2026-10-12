@@ -71,7 +71,7 @@ export default function ListeEntrees({ rapideInitial = 'toutes', entrees, magasi
       {plusieursMagasins && <div className="sous-info">Tous les magasins · {pluriel(filtrees.length, 'entrée')}</div>}
 
       {!filtrees.length && (
-        <div className="vide">{entrees.length ? <>Aucune entrée ne correspond.<br /><button className="lien" onClick={() => { setFiltres(FILTRES_VIDES); setRapide('toutes'); setRecherche('') }}>Tout afficher</button></> : 'Aucune entrée pour cette saison — touchez « Nouvelle entrée ».'}</div>
+        <div className="vide">{entrees.length ? <>Aucune entrée ne correspond.<br /><button className="lien" onClick={() => { setFiltres(FILTRES_VIDES); setRapide('toutes'); setRecherche('') }}>Tout afficher</button></> : 'Aucune entrée pour cette saison — touche « Nouvelle entrée ».'}</div>
       )}
 
       {parJour.map(g => (

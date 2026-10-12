@@ -12,6 +12,7 @@ import './coque.css'
 const MENU = [
   { items: [
     { id: 'home',       icone: 'accueil',    label: 'Accueil' },
+    { id: 'agenda',     icone: 'agenda',     label: 'Agenda' },
     { id: 'cahier',     icone: 'entrees',    label: 'Cahier des entrées' },
     { id: 'reassort',   icone: 'reassort',   label: 'Top modèles & réassorts' },
     { id: 'commandes',  icone: 'commande',   label: 'Commandes clients' },

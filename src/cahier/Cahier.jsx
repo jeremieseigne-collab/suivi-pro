@@ -57,7 +57,7 @@ export default function Cahier() {
       try { await db.entrees.update(id, { pointe: val }) }
       catch { echecs++; setPointeLocal(p => { const n = { ...p }; delete n[id]; return n }) }
     }
-    setToast(echecs ? { texte: `Pointage impossible pour ${echecs} entrée(s) : vérifiez la connexion.` }
+    setToast(echecs ? { texte: `Pointage impossible pour ${echecs} entrée(s) : vérifie la connexion.` }
       : { texte: `${ids.length > 1 ? ids.length + ' entrées ' : 'Entrée '}${val ? 'pointée' : 'dépointée'}${ids.length > 1 ? 's' : ''}`, annuler: () => pointer(ids, !val) })
   }
 

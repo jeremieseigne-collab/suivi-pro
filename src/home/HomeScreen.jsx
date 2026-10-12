@@ -57,7 +57,7 @@ export default function HomeScreen({ alerts }) {
         <h1 className="titre-page">{salut}</h1>
       </header>
 
-      {!magasin && <div className="encart neutre" style={{ marginBottom: 14 }}>Choisissez votre magasin dans le menu (« Plus » sur téléphone) : tous les outils l'utiliseront directement.</div>}
+      {!magasin && <div className="encart neutre" style={{ marginBottom: 14 }}>Choisis ton magasin dans le menu (« Plus » sur téléphone) : tous les outils l'utiliseront directement.</div>}
 
       <div className="raccourcis">
         <button className="btn btn-prim" onClick={() => ouvrirAvec('cahier', 'nouveau')}><Icone nom="ajout" taille={20} />Saisir une entrée</button>

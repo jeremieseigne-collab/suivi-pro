@@ -31,7 +31,7 @@ function EcranConnexion() {
     setEnCours(true)
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: motDePasse })
     setEnCours(false)
-    if (error) setErreur(error.message === 'Invalid login credentials' ? 'Adresse ou mot de passe incorrect.' : 'Connexion impossible pour le moment. Vérifiez le réseau et réessayez.')
+    if (error) setErreur(error.message === 'Invalid login credentials' ? 'Adresse ou mot de passe incorrect.' : 'Connexion impossible pour le moment. Vérifie le réseau et réessaie.')
   }
 
   return (
@@ -42,7 +42,7 @@ function EcranConnexion() {
           Suivi Pro
         </div>
         <p style={{ margin: '0 0 22px', fontSize: 14, textAlign: 'center', color: 'var(--doux)' }}>
-          Connectez cet appareil avec le compte du magasin. Il restera connecté.
+          Connecte cet appareil avec le compte du magasin. Il restera connecté.
         </p>
         <label className="etiquette" htmlFor="connexion-email">Adresse du magasin</label>
         <input id="connexion-email" className="champ" type="email" autoComplete="username" required value={email} onChange={e => setEmail(e.target.value)} style={{ fontSize: 16 }} />

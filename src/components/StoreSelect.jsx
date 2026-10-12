@@ -29,7 +29,7 @@ export default function StoreSelect({ onSelect, onHome, description = '', theme 
       <div style={{ textAlign: 'center', marginBottom: 36 }}>
         <div style={{ fontSize: 34 }}>{t.icon}</div>
         <h1 style={{ fontSize: 'clamp(22px, 6vw, 30px)', fontWeight: 800, color: 'var(--text)', letterSpacing: -0.5, marginTop: 6 }}>
-          Dans quel magasin êtes-vous ?
+          Dans quel magasin es-tu ?
         </h1>
         {description && (
           <p style={{ fontSize: 15, color: 'var(--text-3)', marginTop: 8 }}>{description}</p>

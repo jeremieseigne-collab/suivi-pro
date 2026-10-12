@@ -21,14 +21,14 @@ Après chaque modification, un message propose **« Annuler »** pendant quelque
 Sur l'**Accueil** :
 - trois raccourcis : **Saisir une entrée**, **Commande client**, **Dossier SAV** ;
 - les compteurs (réassorts, clients à prévenir, défectueux, SAV) — seuls ceux qui ne sont pas à zéro s'affichent ;
-- « **En retard** » : ce qui attend depuis trop longtemps (réassort en route depuis 10 jours, dossier SAV ouvert depuis 7 jours) ;
+- « **En retard** » : ce qui attend depuis trop longtemps (réassort en route depuis 10 jours, dossier SAV ouvert depuis 15 jours) ;
 - « **À venir** » : les prochains rendez-vous ; « Voir l'agenda » ouvre l'agenda complet, où l'on ajoute un événement.
 
 ## Détail — Accueil
 
 - **Raccourcis** : « Saisir une entrée » ouvre directement la saisie du Cahier ; « Commande client » et « Dossier SAV » ouvrent directement un nouveau formulaire.
 - **Compteurs** : touchez un compteur pour ouvrir l'écran correspondant. Un compteur à zéro n'est pas affiché.
-- **En retard** : réassorts en route depuis 10 jours ou plus, dossiers SAV (retour client, réparation) ouverts depuis 7 jours ou plus et pas encore clôturés.
+- **En retard** : réassorts en route depuis 10 jours ou plus, dossiers SAV (retour client, réparation) ouverts depuis 15 jours ou plus et pas encore clôturés.
 - **À venir** : les rendez-vous qui restent aujourd'hui, puis ceux des jours suivants (4 au plus), avec la couleur du magasin. Touchez un rendez-vous ou « Voir l'agenda » pour ouvrir l'agenda complet (ajouter, modifier, voir la semaine ou le mois).
 
 *(Direction uniquement : « En retard » indique aussi les entrées à pointer.)*

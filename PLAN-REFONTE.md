@@ -18,6 +18,7 @@
 | **Commandes clients** | Clients | Équipes |
 | **SAV & défectueux** | Clients | Équipes |
 | **Répertoire** | Plus | Tous |
+| **Agenda** (page complète ; « À venir » sur l'accueil) | Plus | Tous |
 | *Équipe* — **Planning** | Plus | Vous / gérants |
 | *Équipe* — **Éléments de paie** | Plus | Équipes (1×/mois) |
 | *Direction* — **Achats & assortiment** | Plus | Vous |
@@ -135,14 +136,14 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Saisie d'une entrée | Champs **Catégorie** et **Statut** à la création | ✅ **gardés** (11/10) : pré-remplis quand l'outil peut les déduire (catégorie depuis la grille), **toujours visibles et modifiables d'un toucher** ; jamais de valeur choisie sans que la vendeuse la voie |
 | Saisie d'une entrée | **Copier / Coller** une grille de pointures | ⚠️ absent de la maquette — **gardé**, à dessiner |
 | Agenda | Couleurs par magasin (Albi bleu, Rouffiac vert, 2 Zèbres orange) | ⚠️ maquette avec d'autres couleurs — **gardées** |
-| Accueil — en-tête | « Bonjour 👋 » / « Bonsoir 👋 » → **« Bonjour » / « Bonsoir » sans emoji** ; la date et le magasin passent au-dessus, en petit | ⏳ **à valider** |
-| Accueil — magasin non choisi | Bandeau « 🏪 Choisis ton magasin dans le menu… » : **gardé**, sans emoji et au vouvoiement (« Choisissez votre magasin dans le menu… ») | ⏳ **à valider** |
-| Accueil — raccourcis | **Ajout** : « Saisir une entrée » (ouvre la saisie du Cahier), « Commande client » (ouvre une nouvelle commande), « Dossier SAV » (ouvre un nouveau dossier) — sur téléphone, le premier sur toute la largeur, les deux autres côte à côte | ⏳ **à valider** |
-| Accueil — compteurs | Emojis ⚠️ 🚚 🛍️ 🛠️ 🔧 **retirés** ; chiffre **en noir** (il était de la couleur du compteur) ; **trait de couleur** gardé avec les couleurs actuelles ; compteur à zéro masqué ; « dont X en retard » (orange) et « X à commander » sous Clients à prévenir **gardés** ; effet de soulèvement au survol retiré ; un compteur ouvre toujours son écran | ⏳ **à valider** |
-| Accueil — « En retard » | **Ajout** : réassorts « En route » depuis **10 jours ou plus** (même seuil que l'écran Réassorts) ; dossiers SAV (retour client, réparation) non clôturés **ouverts depuis 7 jours ou plus** ; pour la Direction seulement, **entrées à pointer** (saison affichée, magasin de l'appareil ; ouvre le Cahier sur « À pointer »). « Rien en retard » quand il n'y a rien. ⚠️ La maquette disait « mail envoyé il y a plus de 7 jours » : la date du mail n'est pas enregistrée, j'ai pris la date d'ouverture du dossier | ⏳ **à valider** (seuils 10 et 7 jours) |
-| Accueil — « Livraisons attendues cette semaine » | Bloc de la maquette **non construit** : l'outil n'enregistre pas de date de livraison prévue | ⏳ **à valider** (abandon, ou à revoir plus tard) |
-| Accueil — « À venir » | Barre de couleur du magasin pour les 3 calendriers des magasins ; événements saisis dans l'outil (communs aux 3 magasins) en **violet** (dans l'agenda complet ils restent bleus « Mes événements », comme aujourd'hui) ; un rendez-vous du jour reste affiché **jusqu'à une heure après son heure de début** (l'heure de fin n'est pas connue) ; « Aucun événement à venir » s'il n'y a rien | ⏳ **à valider** |
-| Accueil — agenda complet | ↔ Déplacé sur une page **« Agenda »** (lien « Voir l'agenda ») : 4 vues, ajout, modification, calendriers des magasins, inchangés pour l'instant (écran refait plus tard). **Pas d'entrée « Agenda » dans le menu** : à décider | ⏳ **à valider** |
+| Accueil — en-tête | « Bonjour 👋 » / « Bonsoir 👋 » → **« Bonjour » / « Bonsoir » sans emoji** ; la date et le magasin passent au-dessus, en petit | ✅ accordé (13/10) |
+| Accueil — magasin non choisi | Bandeau « 🏪 Choisis ton magasin dans le menu… » : **gardé**, sans emoji, **au tutoiement** comme le reste de l'outil (« Choisis ton magasin dans le menu (« Plus » sur téléphone)… ») | ✅ accordé (13/10) |
+| Accueil — raccourcis | **Ajout** : « Saisir une entrée » (ouvre la saisie du Cahier), « Commande client » (ouvre une nouvelle commande), « Dossier SAV » (ouvre un nouveau dossier) — sur téléphone, le premier sur toute la largeur, les deux autres côte à côte | ✅ accordé (13/10) |
+| Accueil — compteurs | Emojis ⚠️ 🚚 🛍️ 🛠️ 🔧 **retirés** ; chiffre **en noir** (il était de la couleur du compteur) ; **trait de couleur** gardé avec les couleurs actuelles ; compteur à zéro masqué ; « dont X en retard » (orange) et « X à commander » sous Clients à prévenir **gardés** ; effet de soulèvement au survol retiré ; un compteur ouvre toujours son écran | ✅ accordé (13/10) |
+| Accueil — « En retard » | **Ajout** : réassorts « En route » depuis **10 jours ou plus** (même seuil que l'écran Réassorts) ; dossiers SAV (retour client, réparation) non clôturés **ouverts depuis 15 jours ou plus** ; pour la Direction seulement, **entrées à pointer** (saison affichée, magasin de l'appareil ; ouvre le Cahier sur « À pointer »). « Rien en retard » quand il n'y a rien. Le retard SAV se compte depuis l'ouverture du dossier (la date du mail n'est pas enregistrée — voir « Idées pour plus tard ») | ✅ accordé (13/10, seuils 10 et 15 jours) |
+| Accueil — « Livraisons attendues cette semaine » | Bloc de la maquette **non construit** : l'outil n'enregistre pas de date de livraison prévue | ✅ abandonné pour l'instant (13/10) — voir « Idées pour plus tard » |
+| Accueil — « À venir » | Barre de couleur du magasin pour les 3 calendriers des magasins ; événements saisis dans l'outil (communs aux 3 magasins) en **violet** (dans l'agenda complet ils restent bleus « Mes événements », comme aujourd'hui) ; un rendez-vous du jour reste affiché **jusqu'à une heure après son heure de début** (l'heure de fin n'est pas connue) ; « Aucun événement à venir » s'il n'y a rien | ✅ accordé (13/10) |
+| Accueil — agenda complet | ↔ Déplacé sur une page **« Agenda »** (lien « Voir l'agenda », ou toucher un rendez-vous) : 4 vues, ajout, modification, calendriers des magasins, inchangés pour l'instant (écran refait plus tard). **« Agenda » ajouté au menu** (premier groupe, sous Accueil) et dans « Plus » sur téléphone | ✅ accordé (13/10) |
 
 ## 2 ter. Codes couleur de l'outil actuel (conservés)
 
@@ -198,8 +199,18 @@ Au téléphone, les deux directions sont identiques. Elles diffèrent sur ordina
 - **Boutons** : arrondis, 44 px minimum ; bleu = action principale (une par écran), gris = secondaire, lien = discret, rouge pâle = destructif.
 - **Listes au lieu des tableaux** : titre en gras, détail en gris dessous, état à droite (point + mot).
 - **Formulaires** : étiquette au-dessus, erreur expliquée dessous, champs connus pré-remplis.
+- **Ton (13/10)** : l'outil **tutoie** les équipes, partout et de la même façon (« Touche une pointure », « Choisis ton magasin », « Vérifie la connexion et réessaie », « Tu voulais dire… ? »). Phrases courtes, sans jargon. **Exception** : les mails envoyés hors de l'équipe (marques, SAV des fournisseurs, comptable) restent au vouvoiement.
 - **Messages** : confirmation en bas avec « Annuler », encarts colorés pour les avertissements, jamais de chargement infini.
 - **Très peu d'animations** ; icônes au trait avec texte.
+
+---
+
+## Idées pour plus tard (non construites)
+
+| Idée | Pour quoi faire | Ce qu'il faudrait ajouter à la base |
+|---|---|---|
+| **Date du mail SAV** | Compter le retard d'un dossier SAV à partir de l'**envoi du mail à la marque** (et non de l'ouverture du dossier) ; afficher « mail envoyé il y a X jours » | Une colonne `sav.mail_at` (date et heure), remplie quand le dossier passe à « Mail marque envoyé » ; les dossiers existants resteraient sans date (retard compté depuis l'ouverture). Modification **additive**, sans perte de données — à faire avec votre accord écrit |
+| **Livraisons attendues cette semaine** (accueil) | Voir les cartons attendus dans les jours qui viennent, avec le nombre de paires restant à recevoir | Une **date de livraison prévue** par marque × magasin × saison : colonne `parametres.livraison_prevue` (date), saisie dans Achats (ou importée avec le fichier des achats). Le reste à recevoir existe déjà (attendu − reçu). Pour aller plus loin : une date par modèle (`parametres.livraisons_modeles`, JSONB `{ modèle: date }`). Modification **additive** — à faire avec votre accord écrit |
 
 ---
 

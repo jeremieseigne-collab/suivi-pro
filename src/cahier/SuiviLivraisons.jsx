@@ -119,7 +119,7 @@ export default function SuiviLivraisons({ magasinAppareil }) {
       </div>
       <div className="chips" style={{ margin: '12px 0 0' }}>{chip('all', 'Toutes')}{chip('pending', 'En cours')}{chip('done', 'Complètes')}{chip('zero', 'Non reçues')}</div>
 
-      {!tous.length && <div className="vide">Aucune donnée — renseignez la <strong>quantité commandée</strong> dans l'onglet <strong>Achats</strong> pour chaque fournisseur.</div>}
+      {!tous.length && <div className="vide">Aucune donnée — renseigne la <strong>quantité commandée</strong> dans l'onglet <strong>Achats</strong> pour chaque fournisseur.</div>}
       {tous.length > 0 && !visibles.length && <div className="vide">Aucun résultat pour ce filtre.</div>}
 
       {Object.keys(groupes).sort().map(mag => (

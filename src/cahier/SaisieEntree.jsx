@@ -150,10 +150,10 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
   const derniersDuJour = modif ? [] : (entrees || []).filter(e => e.magasin === f.magasin && e.date === aujourdhuiFr()).sort((a, b) => (b.id || 0) - (a.id || 0))
 
   async function enregistrer() {
-    if (!f.magasin) { setErreur('Choisissez le magasin.'); return }
-    if (!f.marque)  { setErreur('Choisissez la marque.'); return }
-    if (total === 0) { setErreur('Aucune quantité saisie : touchez les pointures reçues.'); return }
-    if (horsGrille.length) { setErreur(`Pointure(s) ${horsGrille.map(([s]) => s).join(', ')} absente(s) de la grille ${SIZE_TYPES[f.typeKey]?.label} : revenez à la grille d'origine ou retirez-les.`); return }
+    if (!f.magasin) { setErreur('Choisis le magasin.'); return }
+    if (!f.marque)  { setErreur('Choisis la marque.'); return }
+    if (total === 0) { setErreur('Aucune quantité saisie : touche les pointures reçues.'); return }
+    if (horsGrille.length) { setErreur(`Pointure(s) ${horsGrille.map(([s]) => s).join(', ')} absente(s) de la grille ${SIZE_TYPES[f.typeKey]?.label} : reviens à la grille d'origine ou retire-les.`); return }
     if (identique && !confirmDoublon) { setConfirmDoublon(true); return }   // 2ᵉ toucher pour confirmer une entrée identique
     setEnCours(true); setErreur('')
     try {
@@ -179,7 +179,7 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
         setF(x => ({ ...x, modele: '', categorie: '' })); setTailles({}); setCatAuto(false); setConfirmDoublon(false); setPanneau('modele')
       }
     } catch (err) {
-      setErreur('Enregistrement impossible : ' + (err.message || 'vérifiez la connexion et réessayez.'))
+      setErreur('Enregistrement impossible : ' + (err.message || 'vérifie la connexion et réessaie.'))
     } finally {
       setEnCours(false)
     }
@@ -217,7 +217,7 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
       choisirMarque(nomNouveau)
       onToast?.({ texte: `Marque « ${nomNouveau} » créée` })
     } catch (err) {
-      setErreur('Création de la marque impossible : ' + (err.message || 'vérifiez la connexion et réessayez.'))
+      setErreur('Création de la marque impossible : ' + (err.message || 'vérifie la connexion et réessaie.'))
     } finally {
       setCreationMarque(false)
     }
@@ -272,7 +272,7 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
                   </button>
                 )}
                 {semblables.length > 0 && <>
-                  <div className="etiquette" style={{ padding: '10px 14px 4px', margin: 0 }}>Vouliez-vous dire… ?</div>
+                  <div className="etiquette" style={{ padding: '10px 14px 4px', margin: 0 }}>Tu voulais dire… ?</div>
                   {semblables.map(m => (
                     <button key={'s-' + m} className="ligne" style={{ minHeight: 48 }} onClick={() => choisirMarque(m)}>
                       <span className="txt"><span className="t1">{m}</span><div className="t2">Marque existante au nom proche</div></span>
@@ -318,7 +318,7 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
                         <Icone nom="ajout" taille={18} /><span className="txt"><span className="t1" style={{ color: 'inherit' }}>Utiliser « {rechModele.trim()} »</span><div className="t2">Modèle qui n'est pas dans la liste de la saison</div></span>
                       </button>
                     )}
-                    {!modelesVisibles.length && !rechModele.trim() && <div className="vide" style={{ padding: 16 }}>Aucun modèle enregistré pour cette marque : tapez le modèle reçu.</div>}
+                    {!modelesVisibles.length && !rechModele.trim() && <div className="vide" style={{ padding: 16 }}>Aucun modèle enregistré pour cette marque : tape le modèle reçu.</div>}
                   </div>
                 </div>
               ) : (
@@ -355,7 +355,7 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
           )}
 
           {/* Catégorie et statut : pré-remplis si possible, toujours visibles et modifiables */}
-          <span className="etiquette" style={{ marginTop: 14 }}>Catégorie {catAuto && f.categorie ? <span className="aide">— pré-remplie, touchez pour changer</span> : !f.categorie ? <span className="aide att">— à choisir</span> : null}</span>
+          <span className="etiquette" style={{ marginTop: 14 }}>Catégorie {catAuto && f.categorie ? <span className="aide">— pré-remplie, touche pour changer</span> : !f.categorie ? <span className="aide att">— à choisir</span> : null}</span>
           <div className="chips" style={{ flexWrap: 'wrap' }}>
             {CATEGORIES.map(c => <button key={c} className="chip" aria-pressed={f.categorie === c} onClick={() => choisirCategorie(c)}>{c}</button>)}
           </div>
@@ -371,7 +371,7 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
 
           {/* Pointures */}
           <div className="entete-pointures">
-            <span className="etiquette" style={{ margin: 0 }}>Touchez une pointure pour {retirer ? 'retirer' : 'ajouter'} une paire</span>
+            <span className="etiquette" style={{ margin: 0 }}>Touche une pointure pour {retirer ? 'retirer' : 'ajouter'} une paire</span>
             <div className="segment" role="group" aria-label="Ajouter ou retirer">
               <button aria-pressed={!retirer} onClick={() => setRetirer(false)} aria-label="Ajouter">+</button>
               <button aria-pressed={retirer} onClick={() => setRetirer(true)} aria-label="Retirer">−</button>
@@ -417,17 +417,17 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
           {identique && (
             <div className="encart err" style={{ flexBasis: '100%', flexDirection: 'column', gap: 2 }}>
               <b>⚠️ Entrée identique déjà enregistrée ce jour</b>
-              <span>{identique.marque} · {identique.modele} · N° {identique.numero || '—'} · mêmes pointures ({listeTailles(identique.sizes || {})}). Doublon ? Vérifiez avant d'enregistrer.</span>
+              <span>{identique.marque} · {identique.modele} · N° {identique.numero || '—'} · mêmes pointures ({listeTailles(identique.sizes || {})}). Doublon ? Vérifie avant d'enregistrer.</span>
             </div>
           )}
           {!identique && memes.length > 0 && !modif && (
             <div className="encart neutre" style={{ flexBasis: '100%' }}>
-              Déjà reçu ce jour pour ce modèle et ce N° : {pluriel(memes[0].total || 0, 'paire')} ({listeTailles(memes[0].sizes || {})}). Autre carton ? Vous pouvez continuer.
+              Déjà reçu ce jour pour ce modèle et ce N° : {pluriel(memes[0].total || 0, 'paire')} ({listeTailles(memes[0].sizes || {})}). Autre carton ? Tu peux continuer.
             </div>
           )}
           <div className="total">
             <b>{f.retour ? 'Retour : ' : ''}{pluriel(total, 'paire')}</b>
-            {pht ? fmtEur(pht) + (prixModele ? '' : ' (prix d\'origine)') : f.modele ? 'Prix du modèle non renseigné (Paramètres → Marques)' : 'Choisissez un modèle'}
+            {pht ? fmtEur(pht) + (prixModele ? '' : ' (prix d\'origine)') : f.modele ? 'Prix du modèle non renseigné (Paramètres → Marques)' : 'Choisis un modèle'}
           </div>
           <button className="btn btn-prim" onClick={enregistrer} disabled={enCours} style={identique ? { background: 'var(--err)' } : undefined}>
             {enCours ? 'Enregistrement…' : identique ? (confirmDoublon ? 'Confirmer : enregistrer quand même' : 'Enregistrer quand même…') : 'Enregistrer'}
@@ -442,7 +442,7 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
       {confirmMarque && (
         <Confirmation titre="Créer cette marque ?"
           texte={<>La marque sera enregistrée exactement ainsi :<span className="nom-exact">{nomNouveau}</span>
-            {procheDe.length > 0 ? <>Attention, des marques proches existent déjà : <b>{procheDe.join(', ')}</b>. Si c'est la même, choisissez-la plutôt.<br /></> : null}
+            {procheDe.length > 0 ? <>Attention, des marques proches existent déjà : <b>{procheDe.join(', ')}</b>. Si c'est la même, choisis-la plutôt.<br /></> : null}
             Elle apparaîtra dans la liste des marques de tous les magasins.</>}
           confirmer="Créer la marque" annuler="Revenir" onAnnuler={() => setConfirmMarque(false)} onConfirmer={creerMarque} />
       )}

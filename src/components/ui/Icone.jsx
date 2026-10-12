@@ -10,6 +10,7 @@ const TRACES = {
   commande:   'M6 2h12l2 5H4z M4 7h16v14H4z M9 11a3 3 0 0 0 6 0',
   repertoire: 'M5 3h13a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5z M12 7a3 3 0 1 1 0 6 3 3 0 0 1 0-6z M7.5 17c.8-2 2.4-3 4.5-3s3.7 1 4.5 3 M3 7h3 M3 12h3 M3 17h3',
   planning:   'M3 4h18v17H3z M3 9h18 M8 2v4 M16 2v4',
+  agenda:     'M3 4h18v17H3z M3 9h18 M8 2v4 M16 2v4 M7 13h10 M7 17h6',
   paie:       'M6 2h9l5 5v15H6z M14 2v6h6 M9 13h8 M9 17h5',
   achats:     'M3 3h2l2.5 12h11L21 7H6.2 M9 18.6a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8z M18 18.6a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8z',
   reglement:  'M2 5h20v14H2z M2 10h20 M6 15h4',

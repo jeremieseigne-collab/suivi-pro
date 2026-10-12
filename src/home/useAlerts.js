@@ -4,7 +4,7 @@ import { isActif, retard, joursDepuis } from '../reassort/constants'
 import { magasinCommandes } from '../commandes/constants'
 
 // Dossier SAV (retour client ou réparation) non clôturé au-delà de ce délai → tâche « En retard » sur l'accueil
-export const SAV_ATTENTE_JOURS = 7
+export const SAV_ATTENTE_JOURS = 15
 
 // Compteurs « à surveiller » et tâches en retard (filtrés sur le magasin courant s'il y en a un)
 export function useAlerts(magasin) {
@@ -17,7 +17,7 @@ export function useAlerts(magasin) {
     const nomCmd = magasinCommandes(magasin?.nom)
     const cmdMine = c => !magasin || c.magasin === nomCmd
     const actifs = reassorts.filter(r => isActif(r) && mine(r))
-    // Tâches en retard : réassorts « En route » depuis 10 jours ou plus ; dossiers SAV ouverts depuis 7 jours ou plus
+    // Tâches en retard : réassorts « En route » depuis 10 jours ou plus ; dossiers SAV ouverts depuis 15 jours ou plus
     const retards = actifs.filter(r => retard(r))
       .map(r => ({ id: r.id, marque: nomMarque[r.fournisseurId] || '', modele: r.modele || '', jours: joursDepuis(r.etapes?.['En route']), niveau: retard(r) }))
       .sort((a, b) => b.jours - a.jours)
