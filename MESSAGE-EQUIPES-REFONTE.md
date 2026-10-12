@@ -37,6 +37,7 @@ Sur l'**Accueil** :
 
 - Choisissez le magasin en haut : commercial, SAV, n° client et espace BtoB sont propres à chaque magasin ; comptabilité, adresse et notes sont communes.
 - Touchez le téléphone ou le mail d'une marque pour appeler ou écrire en un toucher.
+- **Nouveau** : un champ « Mail commandes » (sous Commercial), pour les marques où les réassorts ne vont pas au même interlocuteur que le SAV. S'il est vide, les mails de réassort partent au mail SAV, comme aujourd'hui.
 
 ## Détail — Top modèles & réassorts
 

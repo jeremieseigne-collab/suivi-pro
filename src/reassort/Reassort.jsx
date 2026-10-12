@@ -220,7 +220,8 @@ export default function Reassort() {
     mail: (t, r) => {
       const f = t.fournisseurObj, reste = resteParPointure(r)
       window.open(buildReassortMailUrl({ modele: t.modele, numero: t.numero, sizes: Object.keys(reste).length ? reste : r.sizes, magasin: t.magasinNom, salarie: r.par, societe: getSociete(t.magasinNom),
-        email: coordMarque(f, t.magasinId, 'email'), numeroClient: coordMarque(f, t.magasinId, 'numeroClient') }), '_blank')
+        // Adresse : mail commandes du magasin, sinon mail SAV du magasin, sinon adresse commune de la marque (13/10)
+        email: coordMarque(f, t.magasinId, 'emailCommandes') || coordMarque(f, t.magasinId, 'email'), numeroClient: coordMarque(f, t.magasinId, 'numeroClient') }), '_blank')
       // Règle du 13/10 (accord écrit) : le mail fait passer « À réassortir » à « Demandé » ; « Commandé » quand la marque confirme (étape suivante).
       // Renvoyer le mail d'un réassort « Demandé » ne change ni l'étape ni sa date (le retard continue de courir jusqu'à la confirmation).
       if (r.statut === 'À réassortir') changerEtape(r, 'Demandé', `${r.modele} : « Demandé » — en attente de la confirmation de la marque`)

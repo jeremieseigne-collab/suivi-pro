@@ -13,8 +13,10 @@ import '../savdef/savdef.css'
 import './repertoire.css'
 
 // Coordonnées propres à chaque magasin (le reste — comptabilité, adresse, notes — est commun au fournisseur), comme aujourd'hui
-const STORE_KEYS = ['contact', 'telephone', 'contactSav', 'telephoneFixe', 'email', 'numeroClient', 'btob']
+// « Mail commandes » (13/10) : propre au magasin, sans valeur commune ; utilisé par les mails de réassort (repli : mail SAV, puis adresse commune)
+const STORE_KEYS = ['contact', 'telephone', 'emailCommandes', 'contactSav', 'telephoneFixe', 'email', 'numeroClient', 'btob']
 const TELS = ['telephone', 'telephoneFixe', 'telCompta']
+const MAILS = ['email', 'emailCommandes', 'emailCompta']
 const gmail = e => e ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(e)}` : undefined
 const lien = u => u ? (/^https?:\/\//i.test(u) ? u : 'https://' + u) : undefined
 const telHref = t => t ? `tel:${t.replace(/[^\d+]/g, '')}` : undefined
@@ -22,7 +24,7 @@ const telHref = t => t ? `tel:${t.replace(/[^\d+]/g, '')}` : undefined
 const valeur = (f, magId, key) => STORE_KEYS.includes(key) ? (() => { const cm = f.coordsMagasin && f.coordsMagasin[magId]; return (cm && cm[key] != null) ? cm[key] : (f[key] || '') })() : (f[key] || '')
 
 const CHAMPS = [
-  { titre: 'Commercial', champs: [['contact', 'Nom'], ['telephone', 'Téléphone', 'tel']] },
+  { titre: 'Commercial', champs: [['contact', 'Nom'], ['telephone', 'Téléphone', 'tel'], ['emailCommandes', 'Mail commandes', 'mail']] },
   { titre: 'SAV', champs: [['contactSav', 'Contact'], ['telephoneFixe', 'Téléphone', 'tel'], ['email', 'Mail', 'mail']] },
   { titre: 'Compte (ce magasin)', champs: [['numeroClient', 'N° client'], ['btob', 'Espace BtoB', 'lien']] },
 ]
@@ -51,7 +53,9 @@ function Coordonnees({ f, magId, modeBouton, onToast, ouvertCommun = false }) {
   const v = k => brouillon[k] ?? actuel[k]
   const changer = (k, x) => setBrouillon(b => ({ ...b, [k]: TELS.includes(k) ? fmtTel(x) : x }))
 
-  async function ecrire(cles, valeurs = brouillon) {
+  async function ecrire(cles, brut = brouillon) {
+    // Adresses mail enregistrées sans espaces en trop
+    const valeurs = Object.fromEntries(Object.entries(brut).map(([k, x]) => [k, MAILS.includes(k) && typeof x === 'string' ? x.trim() : x]))
     const changes = cles.filter(k => valeurs[k] !== undefined && valeurs[k] !== actuel[k])
     if (!changes.length) return 0
     const avant = { coordsMagasin: f.coordsMagasin || null, ...Object.fromEntries(changes.filter(k => !STORE_KEYS.includes(k)).map(k => [k, f[k] ?? null])) }

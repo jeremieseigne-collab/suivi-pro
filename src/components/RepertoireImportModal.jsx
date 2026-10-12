@@ -6,7 +6,7 @@ import { fmtTel } from './shared'
 const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim()
 
 // Champs par magasin (rangés dans coords_magasin[magId]) et champs communs (sur le fournisseur)
-const STORE_KEYS  = ['contact', 'telephone', 'contactSav', 'telephoneFixe', 'email', 'numeroClient', 'btob']
+const STORE_KEYS  = ['contact', 'telephone', 'emailCommandes', 'contactSav', 'telephoneFixe', 'email', 'numeroClient', 'btob']
 const COMMON_KEYS = ['contactCompta', 'telCompta', 'emailCompta', 'adresse', 'notes']
 const TEL_KEYS    = new Set(['telephone', 'telephoneFixe', 'telCompta'])
 
@@ -16,6 +16,7 @@ const ALIASES = {
   _marque:       ['marque', 'fournisseur', 'nom', 'enseigne', 'marque fournisseur'],
   contact:       ['contact', 'commercial', 'contact commercial', 'nom commercial', 'representant'],
   telephone:     ['telephone', 'tel', 'portable', 'mobile', 'gsm', 'tel commercial', 'telephone commercial', 'tel portable'],
+  emailCommandes: ['mail commandes', 'email commandes', 'mail commande', 'email commande', 'mail commercial', 'email commercial'],
   contactSav:    ['contact sav', 'sav', 'nom sav', 'contact apres vente'],
   telephoneFixe: ['telephone fixe', 'fixe', 'tel fixe', 'tel sav', 'telephone sav', 'ligne fixe'],
   email:         ['email', 'mail', 'e mail', 'courriel', 'email sav', 'mail sav'],
@@ -31,7 +32,7 @@ const FIELD_BY_NORM = {}
 for (const [field, aliases] of Object.entries(ALIASES)) for (const a of aliases) FIELD_BY_NORM[a] = field
 
 const FIELD_LABEL = {
-  _magasin: 'Magasin', _marque: 'Marque', contact: 'Commercial', telephone: 'Tél. commercial',
+  _magasin: 'Magasin', _marque: 'Marque', contact: 'Commercial', telephone: 'Tél. commercial', emailCommandes: 'Mail commandes',
   contactSav: 'Contact SAV', telephoneFixe: 'Tél. SAV', email: 'Email SAV', numeroClient: 'N° client',
   btob: 'BtoB', contactCompta: 'Contact compta', telCompta: 'Tél. compta', emailCompta: 'Email compta',
   adresse: 'Adresse', notes: 'Notes',
@@ -153,7 +154,7 @@ export default function RepertoireImportModal({ onClose, onDone }) {
           ) : (
             <>
               <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 0 }}>
-                Le fichier doit avoir une 1ʳᵉ ligne d'en-têtes (séparateur <code>;</code> ou <code>,</code>). Colonnes reconnues : <strong>Magasin, Marque, Contact, Téléphone, Contact SAV, Téléphone fixe, Email, N° client, BtoB, Contact compta, Tél compta, Email compta, Adresse, Notes</strong>. Les contacts commercial/SAV/compte vont sur le <strong>magasin de la ligne</strong> ; comptabilité/adresse/notes sont communes au fournisseur.
+                Le fichier doit avoir une 1ʳᵉ ligne d'en-têtes (séparateur <code>;</code> ou <code>,</code>). Colonnes reconnues : <strong>Magasin, Marque, Contact, Téléphone, Mail commandes, Contact SAV, Téléphone fixe, Email, N° client, BtoB, Contact compta, Tél compta, Email compta, Adresse, Notes</strong>. Les contacts commercial/SAV/compte vont sur le <strong>magasin de la ligne</strong> ; comptabilité/adresse/notes sont communes au fournisseur.
               </p>
 
               <input type="file" accept=".csv,text/csv,text/plain" onChange={onFile} style={{ fontSize: 13 }} />
