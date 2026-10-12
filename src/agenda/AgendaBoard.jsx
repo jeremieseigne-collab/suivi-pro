@@ -6,9 +6,6 @@ import { isoDate, parseLocal, mondayOf, fmtDayShort, fmtDayLabel, fmtShort } fro
 import { useMediaQuery, PHONE, TABLET } from '../lib/useMediaQuery'
 import { GOOGLE_CALENDARS, GOOGLE_API_KEY, fetchGoogleEvents, rangeFor } from './googleCalendars'
 import Icone from '../components/ui/Icone'
-import { useVariantes } from '../shell/essai'
-import PanneauEssai from '../shell/PanneauEssai'
-import { POINTS_AGENDA } from './points'
 import './agenda.css'
 
 // Agenda partagé : événements saisis dans l'outil (table evenements, modifiables par tous les comptes connectés)
@@ -21,8 +18,7 @@ function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1) }
 const plus1 = iso => { const d = parseLocal(iso); d.setDate(d.getDate() + 1); return isoDate(d) }
 
 export default function AgendaBoard() {
-  const v = useVariantes(POINTS_AGENDA)
-  const couleurOutil = v.agenda_violet ? VIOLET : 'var(--action)'
+  const couleurOutil = VIOLET   // décision G1
   const accentOf = e => e.source === 'google' ? e.color : couleurOutil
   const [mode,         setMode]         = useState('mois')
   const [cursor,       setCursor]       = useState(() => isoDate(new Date()))
@@ -35,32 +31,32 @@ export default function AgendaBoard() {
   const cur = parseLocal(cursor)
   const phone  = useMediaQuery(PHONE)
   const tablet = useMediaQuery(TABLET)
-  const nbJoursSemaine = v.agenda_dimanche ? 7 : 6
+  const nbJoursSemaine = 7   // décision G2 : lundi → dimanche
 
   const data = useLiveQuery(() => db.evenements.toArray(), [])
 
   useEffect(() => {
     let active = true
     const { timeMin, timeMax } = rangeFor(mode, parseLocal(cursor), mondayOf)
-    if (mode === 'semaine' && nbJoursSemaine === 7) timeMax.setDate(timeMax.getDate() + 1)   // G2 : charger aussi le dimanche
+    if (mode === 'semaine') timeMax.setDate(timeMax.getDate() + 1)   // G2 : charger aussi le dimanche
     fetchGoogleEvents(timeMin, timeMax).then(evs => { if (active) setGoogleEvents(evs) })
     return () => { active = false }
-  }, [mode, cursor, nbJoursSemaine])
+  }, [mode, cursor])
 
   const byDay = useMemo(() => {
     const m = {}
     const appEvents = (data ?? []).map(x => ({ ...x, source: 'app' }))
     for (const e of [...appEvents, ...googleEvents]) {
       (m[e.date] ||= []).push(e)
-      // G3 : un événement des calendriers sur plusieurs jours apparaît aussi les jours suivants (62 jours au plus)
-      if (v.agenda_plusieurs && e.source === 'google' && e.dateFin && e.dateFin > e.date) {
+      // Décision G3 : un événement des calendriers sur plusieurs jours apparaît aussi les jours suivants (62 jours au plus)
+      if (e.source === 'google' && e.dateFin && e.dateFin > e.date) {
         let d = plus1(e.date), n = 0
         while (d <= e.dateFin && n++ < 62) { (m[d] ||= []).push({ ...e, suite: true }); d = plus1(d) }
       }
     }
     for (const k in m) m[k].sort((a, b) => (a.heure || '').localeCompare(b.heure || ''))
     return m
-  }, [data, googleEvents, v.agenda_plusieurs])
+  }, [data, googleEvents])
 
   function onEvent(e) { if (e.source === 'google') setDetail(e); else setEditEvent(e) }
   function openNew(date) { setFormDate(date); setShowForm(true) }
@@ -92,7 +88,7 @@ export default function AgendaBoard() {
         <div className="segment" role="group" aria-label="Vue">
           {MODES.map(([m, lbl]) => <button key={m} aria-pressed={mode === m} onClick={() => setMode(m)}>{lbl}</button>)}
         </div>
-        {v.agenda_bouton && <button className="btn btn-prim" onClick={() => openNew(mode === 'jour' ? cursor : today)}><Icone nom="ajout" taille={18} />Nouvel événement</button>}
+        <button className="btn btn-prim" onClick={() => openNew(mode === 'jour' ? cursor : today)}><Icone nom="ajout" taille={18} />Nouvel événement</button>
       </div>
 
       <div className="agenda-nav">
@@ -116,7 +112,6 @@ export default function AgendaBoard() {
           {mode === 'annee'   && <YearView   cur={cur} onMonth={openMonth} small={phone} {...props} />}
         </>
       )}
-      <PanneauEssai points={POINTS_AGENDA} />
     </div>
   )
 }
@@ -150,7 +145,7 @@ function DayView({ cursor, byDay, today, onAdd, onEvent, accentOf }) {
   )
 }
 
-// ─── Vue SEMAINE (Lun → Sam, ou Lun → Dim avec G2) ───
+// ─── Vue SEMAINE (lundi → dimanche) ───
 function WeekView({ cur, nbJours, byDay, today, onAdd, onEvent, accentOf, stacked }) {
   const mon = mondayOf(cur)
   const days = Array.from({ length: nbJours }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); return d })

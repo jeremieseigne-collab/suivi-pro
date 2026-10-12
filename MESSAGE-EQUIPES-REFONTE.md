@@ -87,6 +87,11 @@ Sur l'**Accueil** :
 - **Nouveau** : la société est pré-remplie d'après votre magasin (vous pouvez la changer).
 - **Nouveau** : sur « Vérifie ta saisie », le total d'heures de chaque rubrique s'affiche, et un avertissement signale une date qui n'est pas dans le mois (vous pouvez quand même confirmer si c'est voulu).
 
+## Détail — Agenda
+
+- L'agenda complet s'ouvre depuis « Voir l'agenda » sur l'accueil (ou le menu) : vues Jour, Semaine, Mois, Année, comme avant.
+- **Nouveau** : la semaine va du lundi au dimanche ; les événements que vous saisissez dans l'outil sont en violet ; un événement de plusieurs jours (calendriers des magasins) apparaît chaque jour, avec « jusqu'au … » ; bouton « Nouvel événement » toujours en haut.
+
 ## Détail — Cahier des entrées
 
 **Créer une marque depuis la saisie**
