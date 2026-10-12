@@ -1,5 +1,3 @@
-import { useVariantes } from './shell/essai'
-import { POINTS_ACHATS } from './achats/points'
 import { lazy, Suspense } from 'react'
 import HomeScreen       from './home/HomeScreen'
 import { LoadingState } from './components/shared'
@@ -38,7 +36,6 @@ function Root() {
   const home = () => aller('home')
   const { magasin, setMagasin } = useMagasin()
   const alerts  = useAlerts(magasin)
-  const nomReglages = useVariantes(POINTS_ACHATS).reglages_nom   // A2 (essai)
 
   let content
   if (vue === 'cahier')          content = <Cahier />
@@ -47,7 +44,7 @@ function Root() {
   else if (vue === 'achats')     content = <PageShell title="Achats"><Achats /></PageShell>
   else if (vue === 'repertoire') content = <Repertoire />
   else if (vue === 'reglement')  content = <PageShell title="Plan de règlement"><PlanReglement /></PageShell>
-  else if (vue === 'parametres') content = <PageShell title={nomReglages ? 'Réglages' : 'Paramètres'}><Parametres /></PageShell>
+  else if (vue === 'parametres') content = <PageShell title="Réglages"><Parametres /></PageShell>
   else if (vue === 'factures')   content = <PageShell title="Factures" withSeason={false}><Factures /></PageShell>
   else if (vue === 'planning')   content = <Planning />
   else if (vue === 'sav' || vue === 'defectueux') content = <SavDefectueux vue={vue} />

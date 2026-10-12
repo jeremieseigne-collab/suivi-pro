@@ -6,10 +6,7 @@ import { LoadingState } from '../components/shared'
 import { useSeason } from '../context/SeasonContext'
 import { SOCIETES } from '../data/societes'
 import Icone from '../components/ui/Icone'
-import { useVariantes } from '../shell/essai'
-import PanneauEssai from '../shell/PanneauEssai'
-import { POINTS_PLAN } from './points'
-import { calculerPlan, filtrer, parMois, totaux, groupesDuMois, fmtDate, monthKey, monthLabel, eur, dateKey, isoStr, seasonDeadline, MODE_COLORS } from './calcul'
+import { calculerPlan, chequesEnAttente, filtrer, parMois, totaux, groupesDuMois, fmtDate, monthKey, monthLabel, eur, dateKey, isoStr, seasonDeadline, MODE_COLORS } from './calcul'
 import './plan.css'
 
 // Pastille du mode : mêmes couleurs que l'outil actuel
@@ -24,7 +21,6 @@ function CasePaye({ checked, indeterminate, onChange, titre }) {
 }
 
 export default function Plan() {
-  const v = useVariantes(POINTS_PLAN)
   const telephone = useMediaQuery(PHONE)
   const { season, seasons } = useSeason()
   const [magasinFilter,  setMagasinFilter]  = useState('')
@@ -32,7 +28,7 @@ export default function Plan() {
   const [societeFilter,  setSocieteFilter]  = useState('')
   const [marqueFilter,   setMarqueFilter]   = useState('')
   const [expanded,       setExpanded]       = useState(() => new Set())
-  const [moisOuverts,    setMoisOuverts]    = useState(() => new Set())   // mois passés dépliés à la main (R3)
+  const [moisOuverts,    setMoisOuverts]    = useState(() => new Set())   // mois passés tout payés, dépliés à la main
   const [reportDismiss,  setReportDismiss]  = useState(false)
   const [erreur,         setErreur]         = useState('')
 
@@ -47,7 +43,8 @@ export default function Plan() {
       db.defectueux.toArray(),
       db.reglementPaye.toArray(),
     ])
-    return calculerPlan({ params, entrees, magasins, fournisseurs, modesReglement, defectueux, pointages }, season)
+    const sources = { params, entrees, magasins, fournisseurs, modesReglement, defectueux, pointages }
+    return { ...calculerPlan(sources, season), attente: chequesEnAttente(sources) }
   }, [season])
 
   const allEcheances = data?.echeances ?? []
@@ -57,6 +54,9 @@ export default function Plan() {
   const filtered = useMemo(() => filtrer(allEcheances, { societeFilter, magasinFilter, marqueFilter, modeFilter }), [allEcheances, magasinFilter, modeFilter, societeFilter, marqueFilter])
   const withDate    = filtered.filter(e => e.date)
   const withoutDate = filtered.filter(e => !e.date)
+  // Marques en chèques sans aucune réception : à part, hors des échéances et des totaux (mêmes filtres)
+  const attente = useMemo(() => filtrer(data?.attente ?? [], { societeFilter, magasinFilter, marqueFilter, modeFilter }), [data, magasinFilter, modeFilter, societeFilter, marqueFilter])
+  const totalAttente = attente.reduce((s, e) => s + e.montant, 0)
   const byMonth = useMemo(() => parMois(withDate), [withDate])
   const { totalGeneral, totalReste } = totaux(filtered)
   const monthKeys = Object.keys(byMonth).sort()
@@ -101,11 +101,11 @@ export default function Plan() {
 
   const toggle = (set, k) => set(prev => { const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n })
 
-  // R2 : ouvrir sur le mois en cours (ou le premier mois à venir)
+  // Ouverture sur le mois en cours (ou le premier mois à venir)
   const refsMois = useRef({})
   const dejaPlace = useRef('')
   useEffect(() => {
-    if (!v.plan_mois_en_cours || data === undefined || !monthKeys.length) return
+    if (data === undefined || !monthKeys.length) return
     const cle = `${season}`
     if (dejaPlace.current === cle) return
     dejaPlace.current = cle
@@ -113,21 +113,24 @@ export default function Plan() {
     if (cible && cible !== monthKeys[0]) refsMois.current[cible]?.scrollIntoView({ block: 'start' })
   })
 
+  // Case « Payé » : pour un avoir, on parle de « déduit » (décision du 12/10 ; même pointage, même calcul)
+  const titreCase = e => e.mode === 'AVOIR' ? (e.paye ? 'Déduit — décocher' : 'Marquer comme déduit') : (e.paye ? 'Payé — décocher' : 'Marquer comme payé')
+
   // Une ligne d'échéance (seule ou dans le détail d'un groupe)
   function ligneEcheance(e, rowKey, detail = false) {
     if (telephone) return (
       <div key={rowKey} className={`plan-ligne ${e.paye ? 'payee' : ''} ${detail ? 'detail' : ''}`}>
-        <CasePaye checked={!!e.paye} onChange={() => togglePaye(e)} titre={e.paye ? 'Payé — décocher' : 'Marquer comme payé'} />
+        <CasePaye checked={!!e.paye} onChange={() => togglePaye(e)} titre={titreCase(e)} />
         <div className="txt">
           <div className="t1">{e.fournisseur} <span className="montant">{eur(e.montant)}</span></div>
-          <div className="t2">{fmtDate(e.date)} · {e.magasin} · <ModeBadge mode={e.mode} /> · {e.info}</div>
+          <div className="t2">{fmtDate(e.date)} · {e.magasin} · <ModeBadge mode={e.mode} /> · {e.info}{e.mode === 'AVOIR' && e.paye && <> · <span className="mot-deduit">déduit</span></>}</div>
           <div className="t3">{e.source}</div>
         </div>
       </div>
     )
     return (
       <tr key={rowKey} className={e.paye ? 'payee' : ''}>
-        <td className="c-paye"><CasePaye checked={!!e.paye} onChange={() => togglePaye(e)} titre={e.paye ? 'Payé — décocher' : 'Marquer comme payé'} /></td>
+        <td className="c-paye"><CasePaye checked={!!e.paye} onChange={() => togglePaye(e)} titre={titreCase(e)} />{e.mode === 'AVOIR' && e.paye && <span className="mot-deduit">déduit</span>}</td>
         <td className={`c-date ${detail ? 'detail' : ''}`}>{fmtDate(e.date)}</td>
         <td className="c-mag">{e.magasin}</td>
         <td>{detail ? <span className="doux">{e.fournisseur}</span> : <strong>{e.fournisseur}</strong>}</td>
@@ -154,12 +157,13 @@ export default function Plan() {
         const mags = [...new Set(g.items.map(x => x.magasin))]
         const mods = [...new Set(g.items.map(x => x.mode))]
         const nbPaye = g.items.filter(x => x.paye).length
+        const motPaye = g.items.every(x => x.mode === 'AVOIR') ? 'déduit' : 'payé'   // pour des avoirs : « déduit »
         out.push(telephone ? (
           <div key={gkey} className={`plan-ligne groupe ${allPaid ? 'payee' : ''}`} onClick={() => toggle(setExpanded, gkey)} role="button" aria-expanded={isOpen}>
             <CasePaye checked={allPaid} indeterminate={somePaid && !allPaid} onChange={() => setPaye(g.items, !allPaid)} titre="Tout cocher / décocher" />
             <div className="txt">
               <div className="t1">{g.fournisseur} <span className="montant">{eur(g.total)}</span></div>
-              <div className="t2">{isOpen ? '▾' : '▸'} {fmtDate(g.date)} · {mags.length === 1 ? mags[0] : `${mags.length} magasins`} · {mods.length === 1 ? <ModeBadge mode={mods[0]} /> : 'plusieurs'} · {g.items.length} échéances · {nbPaye}/{g.items.length} payé</div>
+              <div className="t2">{isOpen ? '▾' : '▸'} {fmtDate(g.date)} · {mags.length === 1 ? mags[0] : `${mags.length} magasins`} · {mods.length === 1 ? <ModeBadge mode={mods[0]} /> : 'plusieurs'} · {g.items.length} échéances · {nbPaye}/{g.items.length} {motPaye}</div>
             </div>
           </div>
         ) : (
@@ -170,7 +174,7 @@ export default function Plan() {
             <td><strong>{g.fournisseur}</strong></td>
             <td>{mods.length === 1 ? <ModeBadge mode={mods[0]} /> : <span className="doux">plusieurs</span>}</td>
             <td className="doux">{g.items.length} échéances</td>
-            <td className="discret">{nbPaye}/{g.items.length} payé</td>
+            <td className="discret">{nbPaye}/{g.items.length} {motPaye}</td>
             <td className="c-montant fort">{eur(g.total)}</td>
           </tr>
         ))
@@ -224,7 +228,7 @@ export default function Plan() {
         <div className="carte"><b className={totalReste > 0.5 ? 'rouge' : 'vert'}>{totalReste.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}</b><span>Reste à payer</span></div>
         <div className="carte"><b>{monthKeys.length}</b><span>Mois d'échéances</span></div>
         <div className="carte"><b>{withDate.length}</b><span>Échéances planifiées</span></div>
-        {withoutDate.length > 0 && <div className="carte"><b className="orange">{withoutDate.length}</b><span>En attente 1ère réception</span></div>}
+        {(withoutDate.length + attente.length) > 0 && <div className="carte"><b className="orange">{withoutDate.length + attente.length}</b><span>En attente 1ère réception</span></div>}
       </div>
 
       {/* Filtres + légende */}
@@ -249,8 +253,8 @@ export default function Plan() {
       <div className="plan-legende">{Object.keys(MODE_COLORS).map(m => <ModeBadge key={m} mode={m} />)}</div>
       {erreur && <div className="encart err" style={{ marginBottom: 12 }}>{erreur}</div>}
 
-      {/* R1 : En retard, non payé */}
-      {v.plan_retard && enRetard.length > 0 && (
+      {/* En retard, non payé */}
+      {enRetard.length > 0 && (
         <section className="carte plan-retard" aria-label="En retard, non payé">
           <div className="plan-retard-titre"><span>En retard, non payé · {enRetard.length} échéance{enRetard.length > 1 ? 's' : ''}</span><b>{eur(totalRetard)}</b></div>
           {telephone
@@ -259,7 +263,7 @@ export default function Plan() {
         </section>
       )}
 
-      {monthKeys.length === 0 && withoutDate.length === 0 && (
+      {monthKeys.length === 0 && withoutDate.length === 0 && attente.length === 0 && (
         <div className="vide">Aucune échéance — configure les modes de règlement dans <strong>Paramètres → Modes</strong> et saisis des entrées.</div>
       )}
 
@@ -272,10 +276,10 @@ export default function Plan() {
         const isPast    = monthDate < new Date(today.getFullYear(), today.getMonth(), 1)
         const isCurrent = key === curKey
         const nonPayees = items.filter(e => !e.paye).length
-        const replie    = v.plan_passes_replies && isPast && nonPayees === 0 && !moisOuverts.has(key)
+        const replie    = isPast && nonPayees === 0 && !moisOuverts.has(key)
         return (
           <section key={key} ref={el => { refsMois.current[key] = el }} className={`carte plan-mois ${isCurrent ? 'en-cours' : isPast ? 'passe' : 'a-venir'}`}>
-            <button className="plan-mois-titre" onClick={() => v.plan_passes_replies && isPast && nonPayees === 0 && toggle(setMoisOuverts, key)} aria-expanded={!replie}>
+            <button className="plan-mois-titre" onClick={() => isPast && nonPayees === 0 && toggle(setMoisOuverts, key)} aria-expanded={!replie}>
               <span className="nom">{monthLabel(key)}</span>
               {isPast    && <span className="etat passe">Passé</span>}
               {isCurrent && <span className="etat en-cours">En cours</span>}
@@ -289,7 +293,28 @@ export default function Plan() {
         )
       })}
 
-      {/* CHEQUE en attente (identique) */}
+      {/* Marques en chèques sans réception : montant commandé, sans date, hors des totaux */}
+      {attente.length > 0 && (
+        <section className="carte plan-mois attente" aria-label="En attente de 1ère réception">
+          <div className="plan-mois-titre"><span className="nom">En attente de 1ère réception · {attente.length} marque{attente.length > 1 ? 's' : ''} en chèques</span><b>{eur(totalAttente)}</b></div>
+          <div className="aide" style={{ padding: '8px 16px 0' }}>Rien n'est encore reçu : les chèques seront datés à partir de la 1ère réception. Montants commandés, non comptés dans les totaux ci-dessus.</div>
+          {telephone ? attente.map((e, i) => (
+            <div key={i} className="plan-ligne"><div className="txt">
+              <div className="t1">{e.fournisseur} <span className="montant">{eur(e.montant)}</span></div>
+              <div className="t2">{e.magasin} · <ModeBadge mode={e.mode} /> · {e.info}</div>
+            </div></div>
+          )) : (
+            <table className="plan-table">
+              <thead><tr><th>Magasin</th><th>Fournisseur</th><th>Mode</th><th>Détail</th><th className="c-montant">Montant commandé</th></tr></thead>
+              <tbody>{attente.map((e, i) => (
+                <tr key={i}><td className="c-mag">{e.magasin}</td><td><strong>{e.fournisseur}</strong></td><td><ModeBadge mode={e.mode} /></td><td className="doux">{e.info}</td><td className="c-montant">{eur(e.montant)}</td></tr>
+              ))}</tbody>
+            </table>
+          )}
+        </section>
+      )}
+
+      {/* CHEQUE en attente (bloc de l'outil actuel, gardé) */}
       {withoutDate.length > 0 && (
         <section className="carte plan-mois attente">
           <div className="plan-mois-titre"><span className="nom">En attente de 1ère réception ({withoutDate.length} échéances CHEQUE)</span></div>
@@ -305,7 +330,6 @@ export default function Plan() {
         </section>
       )}
 
-      <PanneauEssai points={POINTS_PLAN} />
     </div>
   )
 }

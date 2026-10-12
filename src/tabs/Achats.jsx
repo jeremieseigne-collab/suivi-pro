@@ -3,8 +3,6 @@ import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { LoadingState } from '../components/shared'
 import Icone from '../components/ui/Icone'
-import PanneauEssai from '../shell/PanneauEssai'
-import { POINTS_ACHATS } from '../achats/points'
 import AchatEditModal from '../components/AchatEditModal'
 import AchatAddModal  from '../components/AchatAddModal'
 import AchatImportModal from '../components/AchatImportModal'
@@ -385,7 +383,6 @@ export default function Achats() {
           </table>
         </div>
       </div>
-      <PanneauEssai points={POINTS_ACHATS} />
     </div>
   )
 }

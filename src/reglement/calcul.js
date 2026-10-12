@@ -1,5 +1,6 @@
-// Calcul du Plan de règlement — DÉPLACÉ TEL QUEL depuis src/tabs/PlanReglement.jsx (outil actuel), sans aucune modification
-// des règles : mêmes échéances, mêmes montants, mêmes dates, mêmes clés de pointage. Seul l'affichage est refait (Plan.jsx).
+// Calcul du Plan de règlement — DÉPLACÉ TEL QUEL depuis src/tabs/PlanReglement.jsx (outil actuel) : mêmes échéances, mêmes montants,
+// mêmes dates, mêmes clés de pointage. Seuls ajouts (décisions du 12/10) : numérotation des chèques personnalisés limitée aux chèques
+// datés, et la liste à part « En attente de 1ère réception » (chequesEnAttente), hors des échéances et des totaux.
 import { getSociete } from '../data/societes'
 import { DEFAULT_NB_CHEQUE, DEFAULT_DELAIS } from '../data/reglement'
 
@@ -49,13 +50,18 @@ function echeancesCheque(fournisseur, magasin, reelTotal, firstDate, nb, keyBase
 
 // CHEQUE personnalisé : liste de chèques { date, montant } saisie par saison (Paramètres → Modes de règlement)
 function echeancesChequeCustom(fournisseur, magasin, cheques, keyBase) {
+  // Décision du 12/10 : seuls les chèques datés (et avec un montant) sont numérotés (« Chèque 1/2 » pour 2 chèques réels).
+  // Montants, dates et clés de pointage (rang d'origine) inchangés.
+  const valides = cheques.filter(c => parseDate(c.date) && Number(c.montant)).length
+  let rang = 0
   return cheques.map((c, i) => {
     const date = parseDate(c.date)
     const montant = Number(c.montant)
     if (!date || !montant) return null
+    rang++
     return {
       date, montant,
-      info: `Chèque ${i + 1}/${cheques.length}`,
+      info: `Chèque ${rang}/${valides}`,
       fournisseur, magasin, mode: 'CHEQUE',
       societe: getSociete(magasin),
       source: 'Plan chèque personnalisé',
@@ -264,4 +270,52 @@ export function groupesDuMois(items) {
     const lignes = Object.values(groups).sort((a, b) => a.date - b.date || a.fournisseur.localeCompare(b.fournisseur))
     return { soc, total: grp.total, lignes }
   })
+}
+
+// ─── En attente de 1ère réception (décision du 12/10) ───
+// Marques (ou groupes) en CHEQUE, sans plan chèque personnalisé, avec un réel achat mais aucune réception (hors retours) :
+// le calcul ci-dessus ne produit alors aucune échéance. On les liste à part, sans date, hors des échéances et des totaux.
+// Mêmes règles que calculerPlan pour le groupe, la marque pilote, la règle et la 1ère réception.
+export function chequesEnAttente({ params, entrees, magasins, fournisseurs, modesReglement }) {
+  const magasinMap      = Object.fromEntries(magasins.map(m => [m.id, m.nom]))
+  const fournisseurById = Object.fromEntries(fournisseurs.map(f => [f.id, f]))
+  const regleByKey      = Object.fromEntries(modesReglement.map(m => [`${m.fournisseurId}_${m.magasinId}`, { mode: m.modeReglement || '', cond: m.condition || {} }]))
+  const groupKeyOf = fId => { const f = fournisseurById[fId]; return f ? (((f.groupe || '').trim()) || f.nom) : null }
+  const canonicalId = {}
+  fournisseurs.forEach(f => {
+    const k = ((f.groupe || '').trim()) || f.nom
+    if (canonicalId[k] == null || f.id < canonicalId[k]) canonicalId[k] = f.id
+  })
+  const recu = new Set()
+  entrees.forEach(e => {
+    if (e.statut === 'Retour') return
+    const gk = groupKeyOf(e.fournisseurId)
+    if (!gk || !magasinMap[e.magasinId] || !parseDate(e.date)) return
+    recu.add(`${gk}|${e.magasinId}`)
+  })
+  const reelByGM = {}, chequesByGM = {}
+  params.forEach(p => {
+    const gk = groupKeyOf(p.fournisseurId)
+    if (!gk) return
+    const kk = `${gk}|${p.magasinId}`
+    if (p.reelN) reelByGM[kk] = (reelByGM[kk] || 0) + p.reelN
+    if (Array.isArray(p.cheques) && p.cheques.length && p.fournisseurId === canonicalId[gk]) chequesByGM[kk] = p.cheques
+  })
+  const out = [], seen = new Set()
+  fournisseurs.forEach(f => {
+    const gk = ((f.groupe || '').trim()) || f.nom
+    magasins.forEach(m => {
+      const kk = `${gk}|${m.id}`
+      if (seen.has(kk)) return
+      seen.add(kk)
+      const regle = regleByKey[`${canonicalId[gk]}_${m.id}`]
+      if (!regle || regle.mode !== 'CHEQUE') return
+      if (Array.isArray(chequesByGM[kk]) && chequesByGM[kk].length) return
+      if (!reelByGM[kk] || recu.has(kk)) return
+      const nb = parseInt(regle.cond.nb) || DEFAULT_NB_CHEQUE
+      out.push({ fournisseur: gk, magasin: m.nom, societe: getSociete(m.nom), mode: 'CHEQUE', montant: reelByGM[kk], nb,
+        info: `Aucune réception — ${nb} chèque${nb > 1 ? 's' : ''} prévu${nb > 1 ? 's' : ''} à partir de la 1ère réception` })
+    })
+  })
+  return out.sort((a, b) => a.fournisseur.localeCompare(b.fournisseur) || a.magasin.localeCompare(b.magasin))
 }

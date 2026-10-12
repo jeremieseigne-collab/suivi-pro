@@ -17,7 +17,10 @@
 .plan-mois-titre .etat.en-cours { color: var(--action-texte); background: var(--action-teinte); }
 .plan-mois.en-cours { box-shadow: 0 0 0 2px var(--action-teinte); }
 .plan-mois.passe .plan-mois-titre { background: color-mix(in srgb, var(--err) 5%, transparent); }
-.plan-mois.attente { opacity: .75; }
+.plan-mois.attente .plan-mois-titre { background: var(--att-teinte); }
+.plan-mois.attente .plan-mois-titre .nom { text-transform: none; }
+.mot-deduit { display: block; font-size: 11px; font-weight: 600; color: var(--ok); }
+.plan-ligne .mot-deduit { display: inline; }
 .plan-mois-titre[aria-expanded="false"] { cursor: pointer; border-bottom: 0; }
 .plan-retard { box-shadow: 0 0 0 2px var(--err-teinte); }
 .plan-retard-titre { display: flex; align-items: center; gap: 10px; padding: 12px 16px; font-weight: 700; color: var(--err); border-bottom: 1px solid var(--trait); }

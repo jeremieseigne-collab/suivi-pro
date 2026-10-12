@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams } from '../hooks/useParams'
 import { db } from '../db'
-import { useVariantes } from '../shell/essai'
-import { POINTS_ACHATS } from '../achats/points'
+import ModeLecture from '../achats/ModeLecture'
 
 const STRATEGIES      = ['🆕 NOUVEAU', '🚀 BOOSTER', '🛡️ MAINTENIR', '📉 RÉDUIRE', '🛑 ARRÊTER']
 const STATUTS         = ['', '✅', '⏳', '❌']
-const MODES_REGLEMENT = ['', 'PRELEVEMENT', 'CHEQUE', 'GARANT', 'VIREMENT', 'GMS', 'LCR']
 const UNIVERS         = ['Femme', 'Homme', 'Enfant', 'Accessoire']
 const emptyUnivers = u => Object.fromEntries(UNIVERS.map(k => [k, { prix: u?.[k]?.prix ?? '', qte: u?.[k]?.qte ?? '' }]))
 const eur0 = n => (Number(n) || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
@@ -21,7 +19,6 @@ const STRAT_COLORS = {
 
 export default function AchatEditModal({ row, onClose, onSaved }) {
   const { params } = useParams()
-  const modeLecture = useVariantes(POINTS_ACHATS).achats_mode_lecture
 
   const [form, setForm] = useState({
     statut:      row.statut      || '',
@@ -106,17 +103,7 @@ export default function AchatEditModal({ row, onClose, onSaved }) {
         strategie:     form.strategie,
       })
 
-      // Mode de règlement = global (sans season)
-      const existingMode = await db.modesReglement
-        .filter(m => m.fournisseurId === fournisseurRow.id && m.magasinId === magasinRow.id)
-        .first()
-      if (modeLecture) {
-        // A1 : le mode se règle dans Paramètres → Modes de règlement (rien n'est écrit ici)
-      } else if (existingMode) {
-        await db.modesReglement.update(existingMode.id, { modeReglement: form.moderegl })
-      } else if (form.moderegl) {
-        await db.modesReglement.add({ fournisseurId: fournisseurRow.id, magasinId: magasinRow.id, modeReglement: form.moderegl })
-      }
+      // Mode de règlement : en lecture seule ici (décision A1), il se règle dans Réglages → Modes de règlement
 
       setSaved(true)
       setTimeout(() => { onSaved?.(); onClose?.() }, 1500)
@@ -249,16 +236,7 @@ export default function AchatEditModal({ row, onClose, onSaved }) {
             <div className="form-grid">
               <div className="form-field">
                 <label>Mode de règlement</label>
-                {modeLecture ? (
-                  <div style={{ padding: '8px 0', fontSize: 14 }}>
-                    <strong>{form.moderegl || 'non renseigné'}</strong>
-                    <div style={{ fontSize: 12, color: 'var(--doux)', marginTop: 4 }}>Se règle dans Paramètres → Modes de règlement (délais, nombre de chèques, fournisseur réel).</div>
-                  </div>
-                ) : (
-                <select value={form.moderegl} onChange={e => set('moderegl', e.target.value)}>
-                  {MODES_REGLEMENT.map(m => <option key={m} value={m}>{m || '— Choisir —'}</option>)}
-                </select>
-                )}
+                <ModeLecture fournisseur={form.fournisseur} magasin={form.magasin} />
               </div>
               <div className="form-field" style={{ flex: 2 }}>
                 <label>Stratégie</label>

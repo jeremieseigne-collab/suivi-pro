@@ -12,7 +12,7 @@
 | Sécurité B6 étape 1 + plafond mails (`SECURITE.md`) | ✅ **EN LIGNE depuis le dimanche 11/10/2026** : code à 14h20, filtrage activé à 14h28 (fenêtre d'exposition ~6 min). Vérifié : anonyme = 0 ligne / écriture refusée ; comptes connectés OK ; mail sans connexion refusé ; vrai mail reçu et noté au journal |
 | **Sécurité B6 étape 2** — paie réservée aux comptes Direction, PIN supprimé | ✅ **faite et testée sur la base de test** (11/10, branche `securite-etape2`, `supabase-securite-etape2.sql`) ; ⏳ production : **nouvel accord écrit, après quelques jours de fonctionnement sans souci de l'étape 1 dans les 3 magasins** |
 | 2. Plan, charte, maquettes (`PLAN-REFONTE.md`, `maquettes/`) | ⏳ à valider |
-| 3. Construction écran par écran | ✅ socle commun validé (12/10) · ✅ **Cahier des entrées validé** (13/10) · ✅ **Accueil validé** (13/10) · ✅ **SAV & défectueux validé** (13/10) · ✅ **Commandes clients validé** (13/10) · ✅ **Réassorts validé** (13/10, « Demandé » gardé) · ✅ **Répertoire validé** (13/10) · ⏳ correctif des mails SAV / défectueux prêt (branche `correctif-mails-sav`), mise en ligne sur votre signal · ✅ **Planning et Éléments de paie validés** (A, C, E avec ; B, D sans ; P1-P3 avec) · ⏳ **écran Direction construit** (Achats, Plan de règlement, Paramètres), en attente de votre validation (points R1-R3, A1, A2) — calculs du Plan comparés ligne par ligne : identiques |
+| 3. Construction écran par écran | ✅ socle commun validé (12/10) · ✅ **Cahier des entrées validé** (13/10) · ✅ **Accueil validé** (13/10) · ✅ **SAV & défectueux validé** (13/10) · ✅ **Commandes clients validé** (13/10) · ✅ **Réassorts validé** (13/10, « Demandé » gardé) · ✅ **Répertoire validé** (13/10) · ⏳ correctif des mails SAV / défectueux prêt (branche `correctif-mails-sav`), mise en ligne sur votre signal · ✅ **Planning et Éléments de paie validés** (A, C, E avec ; B, D sans ; P1-P3 avec) · ✅ **Direction validé** (12/10 : R1-R3, A1, A2 avec ; ajustements « déduit », chèques datés, bloc « En attente », mention du groupe) — calculs du Plan comparés ligne par ligne : identiques · ✅ correctif mails SAV / défectueux **en ligne** (8829c91, 12/10, vérifié octet pour octet) |
 | 4. Préparation de la mise en ligne | à venir |
 
 ## Décisions prises
@@ -78,6 +78,7 @@
 
 ## Points à retenir
 
+- Sauvegarde production du 12/10 à 17h30, après le correctif des mails : `~/Sauvegardes/suivi-pro/prod-2026-10-12_17h30-apres-correctif-mails-sav/`.
 - Sauvegardes de la production : `~/Sauvegardes/suivi-pro/` (notice `LISEZMOI.txt` ; restauration testée — **ne pas oublier l'étape des autorisations**).
 - Écarts de structure base de test / production : colonne inutilisée `commandes.type` (test seulement) ; `sav.id` numéroté différemment. Sans effet sur l'outil.
 - Planning et paie : essais sur la base de test, compte magasin et compte Direction, téléphone et ordinateur (après les choix : Planning 26/26, Paie 39/39), données d'essai effacées ; aucun mail parti (envois interceptés). **Défaut trouvé dans l'étape 2** (liste de la paie pas relue après le dépôt d'une fiche par un compte magasin) : corrigé dans la refonte **et dans `securite-etape2`**. Correctif du planning : « annuler » visait la semaine affichée.

@@ -5,6 +5,7 @@ import { LoadingState, fmtTel } from '../components/shared'
 import RepertoireImportModal from '../components/RepertoireImportModal'
 import Icone from '../components/ui/Icone'
 import { useMagasin } from '../context/MagasinContext'
+import { useCompte } from '../context/CompteContext'
 import { PageShell } from '../shell/EnTete'
 import { Toast } from '../cahier/Reperes'
 import { ChoixMarque } from '../savdef/Champs'
@@ -95,7 +96,7 @@ function Coordonnees({ f, magId, modeBouton, onToast, ouvertCommun = false }) {
   )
 }
 
-function FicheMarque({ f, magId, magNom, onToast, onFermer }) {
+function FicheMarque({ f, magId, magNom, groupe, onToast, onFermer }) {
   return (
     <>
       <div className="feuille-fond" onClick={onFermer} />
@@ -103,6 +104,7 @@ function FicheMarque({ f, magId, magNom, onToast, onFermer }) {
         <div className="feuille-entete"><h2>{f.nom}</h2><button className="icone-btn" onClick={onFermer} aria-label="Fermer"><Icone nom="fermer" /></button></div>
         <div className="feuille-corps">
           <div className="aide" style={{ marginBottom: 6 }}>Commercial, SAV et compte : propres à <b>{magNom}</b>.</div>
+          {groupe && <div className="encart neutre" style={{ marginBottom: 10 }}>Réglé avec le groupe « {groupe.nom} » (marque pilote : {groupe.pilote}) — le mode de règlement est celui de la marque pilote.</div>}
           <Coordonnees key={f.id + '-' + magId} f={f} magId={magId} modeBouton onToast={onToast} />   {/* « Modifier » puis « Enregistrer » (décision du 13/10) */}
         </div>
       </div>
@@ -139,7 +141,15 @@ function NouvelleMarque({ fournisseurs, gardeFou, onCree, onFermer }) {
   )
 }
 
+// Marque rattachée à un groupe sans en être la pilote (plus petit n°) : réglée avec le groupe (même règle que le Plan de règlement)
+function groupeDe(f, fournisseurs) {
+  const gk = ((f.groupe || '').trim()) || f.nom
+  const pilote = fournisseurs.filter(x => (((x.groupe || '').trim()) || x.nom) === gk).sort((a, b) => a.id - b.id)[0]
+  return pilote && pilote.id !== f.id ? { nom: gk, pilote: pilote.nom } : null
+}
+
 export default function Repertoire() {
+  const { estDirection } = useCompte()
   const fournisseurs = useLiveQuery(() => db.fournisseurs.orderBy('nom').toArray(), [])
   const magasins = useLiveQuery(() => db.magasins.orderBy('nom').toArray(), [])
   const { magasin: magasinCourant } = useMagasin()
@@ -191,7 +201,7 @@ export default function Repertoire() {
       <div style={{ textAlign: 'center', marginTop: 24 }} className="seulement-petit"><button className="btn btn-ghost" onClick={() => setImporter(true)}>Importer des contacts (CSV)</button></div>
       <div style={{ height: 72 }} className="seulement-petit" aria-hidden="true" />
       <button className="btn btn-prim action-flottante" onClick={() => setNouvelle(true)}><Icone nom="ajout" taille={20} />Marque</button>
-      {fiche && <FicheMarque f={fiche} magId={mId} magNom={magNom} onToast={setToast} onFermer={() => setFicheId(null)} />}
+      {fiche && <FicheMarque f={fiche} magId={mId} magNom={magNom} groupe={estDirection ? groupeDe(fiche, fournisseurs) : null} onToast={setToast} onFermer={() => setFicheId(null)} />}
       {nouvelle && <NouvelleMarque fournisseurs={fournisseurs} gardeFou onFermer={() => setNouvelle(false)}
         onCree={(id, nom) => { setNouvelle(false); setToast({ texte: `Marque « ${nom} »` }); setFicheId(id) }} />}
       {importer && <RepertoireImportModal onClose={() => setImporter(false)} onDone={() => setImporter(false)} />}
