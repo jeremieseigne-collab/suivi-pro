@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { db } from '../db'
 
-const todayStr = () => new Date().toISOString().slice(0, 10)
+// Date du jour en heure française (avant : heure anglaise, la veille entre minuit et 2 h)
+const todayStr = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}` }
 
 export default function AgendaModal({ event, defaultDate, onClose, onSaved }) {
   const editing = !!event?.id
