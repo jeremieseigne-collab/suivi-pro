@@ -1,0 +1,20 @@
+/* Connexion et choix du magasin — charte de la refonte */
+.ecran-connexion { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 16px; background: var(--fond); box-sizing: border-box; color: var(--texte); }
+.carte-connexion { width: 100%; max-width: 380px; background: var(--carte); border-radius: 18px; padding: 28px 24px; box-shadow: var(--ombre-douce); box-sizing: border-box; }
+.marque-connexion { display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 700; font-size: 18px; margin-bottom: 8px; }
+.marque-connexion b { width: 30px; height: 30px; border-radius: 8px; background: var(--action); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; }
+.champ-mdp { position: relative; }
+.champ-mdp .champ { padding-right: 84px; }
+.champ-mdp .lien { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
+.ecran-connexion .panneau-variantes { width: 100%; max-width: 380px; margin-top: 16px; }
+/* Choix du magasin */
+.choix-magasin-page { min-height: calc(100vh - 120px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 16px; box-sizing: border-box; }
+.choix-magasin-page h1 { font-size: clamp(22px, 6vw, 28px); font-weight: 700; margin: 10px 0 0; text-align: center; color: var(--texte); }
+.choix-magasin-page .sous-titre { margin: 8px 0 0; color: var(--doux); font-size: 15px; text-align: center; }
+.choix-magasin-page .pictogramme { width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+.choix-magasin-page .liste-magasins { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 240px)); gap: 14px; justify-content: center; width: 100%; max-width: 780px; margin-top: 28px; }
+.choix-magasin-page .bouton-magasin { display: flex; align-items: center; gap: 14px; min-height: 72px; padding: 14px 18px; border-radius: var(--rayon); border: 2px solid transparent; background: var(--carte);
+  color: var(--texte); font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; text-align: left; box-shadow: var(--ombre-douce); transition: border-color .15s, transform .15s; }
+.choix-magasin-page .bouton-magasin:hover, .choix-magasin-page .bouton-magasin:focus-visible { border-color: var(--accent-outil, var(--action)); transform: translateY(-2px); outline: none; }
+.choix-magasin-page .bouton-magasin .pastille { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 20px; }
+@media (max-width: 640px) { .choix-magasin-page .liste-magasins { grid-template-columns: 1fr; } }

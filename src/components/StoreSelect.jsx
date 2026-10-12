@@ -1,63 +1,48 @@
-import { useState } from 'react'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
+import Icone from './ui/Icone'
+import { useVariantes } from '../shell/essai'
+import PanneauEssai from '../shell/PanneauEssai'
+import { POINTS_CONNEXION } from '../shell/pointsConnexion'
+import './connexion.css'
 
-// theme = { accent, border, shadow, gradient, icon }
+// Écran « Dans quel magasin es-tu ? » quand aucun magasin n'est choisi sur l'appareil (Cahier, Réassorts, SAV & défectueux, Commandes).
+// Même fonctionnement qu'avant : la liste vient des magasins enregistrés, toucher un magasin le choisit pour tout l'outil.
+// theme = { accent, gradient, icon } : couleur et emoji propres à chaque outil (gardés si S1 « sans »).
 const DEFAULT_THEME = {
-  accent:   'var(--accent)',
-  border:   '#93c5fd',
-  shadow:   'rgba(59,130,246,0.18)',
-  gradient: 'linear-gradient(135deg, var(--accent), #2563eb)',
+  accent:   'var(--action)',
+  gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
   icon:     '🏪',
 }
+// Icône au trait de l'outil, d'après son emoji (S1 « avec »)
+const ICONE_OUTIL = { '📥': 'entrees', '⭐': 'reassort', '🔧': 'sav', '🛍️': 'commande' }
 
-export default function StoreSelect({ onSelect, onHome, description = '', theme = {} }) {
-  const [hover, setHover] = useState(null)
+export default function StoreSelect({ onSelect, description = '', theme = {} }) {
+  const v = useVariantes(POINTS_CONNEXION)
   const magasins = useLiveQuery(() => db.magasins.orderBy('nom').toArray(), [])
   const t = { ...DEFAULT_THEME, ...theme }
+  const uniforme = v.magasin_uniforme
+  const icone = ICONE_OUTIL[t.icon] || 'magasin'
 
   return (
-    <div style={{
-      position: 'relative', minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', padding: '72px 16px 24px',
-      background: 'var(--bg-grad)',
-    }}>
-      <button onClick={onHome}
-        style={{ position: 'absolute', top: 20, left: 20, border: '1px solid var(--border)', background: 'var(--surface)', borderRadius: 9, width: 38, height: 38, cursor: 'pointer', fontSize: 17, color: 'var(--text-2)' }}
-        title="Retour">←</button>
+    <div className="choix-magasin-page" style={{ '--accent-outil': uniforme ? 'var(--action)' : t.accent }}>
+      {uniforme
+        ? <div className="pictogramme" style={{ background: 'var(--action-teinte)', color: 'var(--action-texte)' }}><Icone nom={icone} taille={28} /></div>
+        : <div className="pictogramme" style={{ background: t.gradient, fontSize: 28 }} aria-hidden="true">{t.icon}</div>}
+      <h1>Dans quel magasin es-tu ?</h1>
+      {description && <p className="sous-titre">{description}</p>}
 
-      <div style={{ textAlign: 'center', marginBottom: 36 }}>
-        <div style={{ fontSize: 34 }}>{t.icon}</div>
-        <h1 style={{ fontSize: 'clamp(22px, 6vw, 30px)', fontWeight: 800, color: 'var(--text)', letterSpacing: -0.5, marginTop: 6 }}>
-          Dans quel magasin es-tu ?
-        </h1>
-        {description && (
-          <p style={{ fontSize: 15, color: 'var(--text-3)', marginTop: 8 }}>{description}</p>
-        )}
-      </div>
-
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div className="liste-magasins">
         {(magasins || []).map(m => (
-          <button key={m.id}
-            onClick={() => onSelect(m)}
-            onMouseEnter={() => setHover(m.id)}
-            onMouseLeave={() => setHover(null)}
-            style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
-              background: 'var(--surface)', border: '2px solid',
-              borderColor: hover === m.id ? t.accent : 'var(--border)',
-              borderRadius: 18, padding: '28px 24px', cursor: 'pointer', width: 200, maxWidth: '100%',
-              boxShadow: hover === m.id ? `0 14px 34px ${t.shadow}` : '0 4px 16px var(--shadow)',
-              transform: hover === m.id ? 'translateY(-4px)' : 'none', transition: 'all 0.2s ease',
-            }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: 14, background: t.gradient,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28,
-            }}>{t.icon}</div>
-            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', textAlign: 'center' }}>{m.nom}</span>
+          <button key={m.id} className="bouton-magasin" onClick={() => onSelect(m)}>
+            {uniforme
+              ? <span className="pastille" style={{ background: 'var(--action-teinte)', color: 'var(--action-texte)' }}><Icone nom="magasin" taille={22} /></span>
+              : <span className="pastille" style={{ background: t.gradient }} aria-hidden="true">{t.icon}</span>}
+            <span>{m.nom}</span>
           </button>
         ))}
       </div>
+      <PanneauEssai points={POINTS_CONNEXION} />
     </div>
   )
 }

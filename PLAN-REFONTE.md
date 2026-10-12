@@ -201,6 +201,12 @@ L'onglet « Clients » du téléphone ouvre une page avec deux entrées : Comman
 | Achats — choix A1 | ✅ « avec » : mode de règlement **en lecture seule** dans la fiche d'achat (mode de la marque pilote, nombre de chèques ou délais), lien « Modifier dans Réglages → Modes de règlement » ; la fiche d'achat n'écrit plus le mode ; marque non pilote : « Réglé avec le groupe « … » (marque pilote : …) » | ✅ accordé |
 | Paramètres — onglets | Emojis retirés (Magasins, Salariés, Marques, Modes de règlement, Saisons, Appareils connectés) ; contenu identique ; suppression d'une saison : **nom à retaper** (gardé) | ✅ accordé |
 | Paramètres — choix A2 | ✅ « avec » : **« Réglages »** (menu et titre) ; plan chèque : avertissement avant l'enregistrement si une ligne n'a pas de date ou de montant (« ce chèque n'apparaîtra pas dans le Plan de règlement », « Corriger » / « Enregistrer sans ce chèque ») ; marque non pilote : « réglé avec le groupe « … » » ; Répertoire (comptes Direction) : même mention dans la fiche de la marque | ✅ accordé |
+| Connexion — écran | Même formulaire (adresse du magasin, mot de passe, « Se connecter »), même texte ; logo « S » de la charte ; message d'erreur dans un encadré rouge | ⏳ à valider |
+| Connexion — message d'erreur | Inchangé pour un mauvais mot de passe : « Adresse ou mot de passe incorrect. » — **le même pour une adresse inconnue**. **Correctif** : toute autre réponse « refusée » de Supabase (ex. adresse non confirmée) donnait « Connexion impossible pour le moment… », ce qui laissait deviner que l'adresse existe ; elle donne maintenant le même message. **Ajout** : « Trop d'essais. Attends quelques minutes puis réessaie. » quand Supabase bloque les essais répétés | ⏳ à valider |
+| Connexion — points C1, C2 | C1. bouton « Afficher / Masquer » le mot de passe ; C2. « Mot de passe oublié ? Demande-le à la direction. » sous le bouton — **chacun en « avec » / « sans »** | ⏸ à trancher |
+| Choix du magasin | Même écran « Dans quel magasin es-tu ? », mêmes magasins, même effet (le choix vaut pour tout l'outil sur l'appareil) ; cartes → boutons pleine largeur sur téléphone ; **bouton ← en haut à gauche retiré** (règle du socle : le menu reste visible) | ⏳ à valider |
+| Choix du magasin — point S1 | Couleur et emoji propres à chaque outil (bleu 📥 Cahier, vert ⭐ Réassorts, cyan 🔧 SAV, violet 🛍️ Commandes) gardés (sans) ou icône au trait et couleur de la charte (avec) | ⏸ à trancher |
+| Déconnexion | Fenêtre du navigateur → fenêtre de confirmation de la charte, **même texte** (« Se déconnecter de cet appareil ? Il faudra ressaisir l'adresse et le mot de passe du magasin pour revenir. »), « Annuler » / « Se déconnecter » ; même appel à Supabase | ⏳ à valider |
 
 ## 2 ter. Codes couleur de l'outil actuel (conservés)
 
@@ -345,6 +351,22 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 4. Mode d'une marque non pilote ignoré dans un groupe : **règle voulue** ; mention « réglé avec le groupe … » dans sa fiche (fiche d'achat, Réglages → Modes, Répertoire pour la Direction).
 
 **Comparaison refaite après ces ajustements (12/10)** : 56 comparaisons, 1 468 lignes — montants, dates, totaux, sous-totaux et cases cochées **identiques** ; seules différences, celles demandées : « déduit » sur les avoirs cochés, « Chèque 1/2 » au lieu de « 1/3 » quand une ligne du plan est sans date, et le nouveau bloc « En attente ». Une échéance cochée d'un côté est cochée de l'autre.
+
+## Règles métier — Connexion et choix du magasin (vérifiées dans le code de l'outil en ligne)
+
+| Règle | Outil en ligne / étape 2 | Refonte |
+|---|---|---|
+| Connexion | Adresse + mot de passe (Supabase, `signInWithPassword`) ; tant que l'appareil n'est pas connecté, seul l'écran de connexion s'affiche | **Inchangé** (fonction `Connexion`, `src/lib/supabase.js`, `CompteContext` non modifiés) |
+| Durée de session | Réglages par défaut de Supabase : session mémorisée sur l'appareil, renouvelée automatiquement (jeton d'accès d'une heure) | **Inchangé** |
+| Compte Direction | Rôle `direction` porté par le compte (la base vérifie les droits, l'écran s'adapte) | **Inchangé** |
+| Déconnexion | `supabase.auth.signOut()` : réglage par défaut de Supabase = **tous les appareils connectés avec ce compte** sont déconnectés (vérifié sur la base de test : le 2ᵉ appareil ne peut plus renouveler sa session), bien que le texte dise « de cet appareil » | **Inchangé** — ⚠️ à décider plus tard (voir ci-dessous) |
+| Choix du magasin | Mémorisé sur l'appareil (`magasin_courant`), demandé par le Cahier, les Réassorts, le SAV & défectueux et les Commandes quand il n'est pas choisi ; changeable dans le menu | **Inchangé** |
+
+**Ce qui est touché dans le code** : `src/components/Connexion.jsx` — seulement l'écran (`EcranConnexion` : présentation, bouton « Afficher », phrase « Mot de passe oublié ? », traduction du message d'erreur) ; la fonction qui vérifie la session (`Connexion`) n'est pas modifiée. `src/components/StoreSelect.jsx` (présentation). `src/shell/Coque.jsx` : la fenêtre de confirmation de « Se déconnecter » (même appel `supabase.auth.signOut()`).
+
+**Essais (base de test, 12/10)** : 31/31 — visiteur sans connexion (écran de connexion seul ; 0 ligne lisible dans 6 tables ; écriture et mail refusés) ; mauvais mot de passe et adresse inconnue (Supabase répond pareil, 400 `invalid_credentials` ; même message affiché ; toujours pas connecté) ; compte magasin (connexion, session gardée après rechargement, paie illisible, salariés non modifiables, pas d'écrans Direction, choix du magasin, déconnexion avec « Annuler » et « Se déconnecter ») ; compte Direction (connexion, écrans Direction).
+
+**Constat à décider plus tard (aucun changement)** : « Se déconnecter » sur un appareil coupe aussi les autres appareils du même compte (au plus tard dans l'heure), y compris dans l'outil en ligne aujourd'hui. Les 3 magasins ont chacun un compte partagé par leurs appareils : une vendeuse qui se déconnecte de sa tablette déconnecte aussi l'ordinateur de caisse. Pour ne déconnecter que l'appareil, il suffirait d'écrire `signOut({ scope: 'local' })` (vérifié sur la base de test : le 2ᵉ appareil reste connecté) ; la déconnexion de tous les appareils resterait possible pour la Direction (Réglages → Appareils connectés). Changement de comportement : seulement avec votre accord.
 
 ## Idées pour plus tard (non construites)
 

@@ -4,6 +4,7 @@ import { db } from '../db'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { useCompte } from '../context/CompteContext'
 import Icone from '../components/ui/Icone'
+import Confirmation from '../components/ui/Confirmation'
 import { aller, useApparence, APPARENCES } from './navigation'
 import './coque.css'
 
@@ -57,8 +58,18 @@ function Pastille({ badge }) {
   return <span className="pastille-compte" title={badge.titre} style={{ background: badge.couleur }}>{badge.n}</span>
 }
 
-function seDeconnecter() {
-  if (window.confirm('Se déconnecter de cet appareil ?\nIl faudra ressaisir l\'adresse et le mot de passe du magasin pour revenir.')) supabase.auth.signOut()
+// Déconnexion : même appel qu'avant (supabase.auth.signOut(), réglage par défaut de Supabase) ; seule la fenêtre de confirmation change
+function BoutonDeconnexion({ className, children }) {
+  const [confirmer, setConfirmer] = useState(false)
+  return (
+    <>
+      <button className={className} onClick={() => setConfirmer(true)}>{children}</button>
+      {confirmer && (
+        <Confirmation titre="Se déconnecter de cet appareil ?" texte="Il faudra ressaisir l’adresse et le mot de passe du magasin pour revenir."
+          confirmer="Se déconnecter" danger onAnnuler={() => setConfirmer(false)} onConfirmer={() => { setConfirmer(false); supabase.auth.signOut() }} />
+      )}
+    </>
+  )
 }
 
 function ChoixMagasin({ magasin, setMagasin, replie }) {
@@ -122,7 +133,7 @@ function BarreLaterale({ vue, alerts, magasin, setMagasin }) {
       <div className="bas-menu">
         {!replie && <ChoixApparence />}
         {!replie && <div className="compte" title={email}>{email}</div>}
-        <button className="nav" onClick={seDeconnecter} title="Se déconnecter de cet appareil"><Icone nom="sortie" taille={20} />{!replie && <span className="nav-txt">Se déconnecter</span>}</button>
+        <BoutonDeconnexion className="nav"><Icone nom="sortie" taille={20} />{!replie && <span className="nav-txt">Se déconnecter</span>}</BoutonDeconnexion>
         <button className="nav" onClick={basculer} title={replie ? 'Déplier le menu' : 'Replier le menu'}><Icone nom={replie ? 'deplier' : 'replier'} taille={20} />{!replie && <span className="nav-txt">Replier le menu</span>}</button>
       </div>
     </nav>
@@ -175,8 +186,8 @@ function BarreOnglets({ vue, alerts, magasin, setMagasin }) {
               <ChoixApparence />
               <div className="groupe-titre">Compte</div>
               <div className="liste" style={{ background: 'var(--carte-2)' }}>
-                <button className="ligne" onClick={seDeconnecter}><Icone nom="sortie" style={{ color: 'var(--doux)' }} />
-                  <span className="txt"><span className="t1">Se déconnecter</span><div className="t2">{email}</div></span></button>
+                <BoutonDeconnexion className="ligne"><Icone nom="sortie" style={{ color: 'var(--doux)' }} />
+                  <span className="txt"><span className="t1">Se déconnecter</span><div className="t2">{email}</div></span></BoutonDeconnexion>
               </div>
             </div>
           </div>
