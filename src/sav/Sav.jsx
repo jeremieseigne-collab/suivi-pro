@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { buildSavRetourMailUrl } from './mail'
+import { coordMarque } from '../reassort/mail'
 import { getSociete } from '../data/societes'
 import SavModal from './SavModal'
 import StoreSelect from '../components/StoreSelect'
@@ -268,8 +269,9 @@ export default function Sav({ onHome }) {
       ...s,
       magasinNom: magMap[s.magasinId] || '—',
       marqueNom: fourMap[s.fournisseurId] || '',
-      fournisseurEmail: fourObjMap[s.fournisseurId]?.email || '',
-      fournisseurNumeroClient: fourObjMap[s.fournisseurId]?.numeroClient || '',
+      // Adresse et n° client du magasin du dossier, sinon ceux de la marque
+      fournisseurEmail: coordMarque(fourObjMap[s.fournisseurId], s.magasinId, 'email'),
+      fournisseurNumeroClient: coordMarque(fourObjMap[s.fournisseurId], s.magasinId, 'numeroClient'),
     })), magasins }
   }, [])
 

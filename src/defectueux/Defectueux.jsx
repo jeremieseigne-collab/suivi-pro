@@ -8,6 +8,7 @@ import StoreSelect from '../components/StoreSelect'
 import { useMagasin } from '../context/MagasinContext'
 import { STATUTS, STATUT_COLOR } from './constants'
 import { buildDefectueuxMailUrl } from './mail'
+import { coordMarque } from '../reassort/mail'
 
 function fmtDate(iso) {
   if (!iso) return '—'
@@ -88,7 +89,7 @@ export default function Defectueux({ onHome }) {
   function sendMail(r) {
     const url = buildDefectueuxMailUrl({
       modele: r.modele, pointure: r.pointure, note: r.note, salarie: r.salarie,
-      societe: r.societe, email: r.fournisseurObj?.email, numeroClient: r.fournisseurObj?.numeroClient,
+      societe: r.societe, email: coordMarque(r.fournisseurObj, r.magasinId, 'email'), numeroClient: coordMarque(r.fournisseurObj, r.magasinId, 'numeroClient'),
     })
     window.open(url, '_blank')
     if (r.statut === 'À traiter') db.defectueux.update(r.id, { statut: 'Mail envoyé' }).catch(() => {})

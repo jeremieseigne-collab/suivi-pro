@@ -5,6 +5,7 @@ import { useSeason } from '../context/SeasonContext'
 import { getSociete } from '../data/societes'
 import { STATUTS } from './constants'
 import { buildDefectueuxMailUrl } from './mail'
+import { coordMarque, enregistrerEmailMagasin } from '../reassort/mail'
 
 const todayFr = () => { const d = new Date(); const p = n => String(n).padStart(2, '0'); return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}` }
 const textareaStyle = { padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', resize: 'vertical', outline: 'none', width: '100%', background: 'var(--surface)', color: 'var(--text)' }
@@ -226,11 +227,13 @@ export default function DefectueuxModal({ defect, onClose, onSaved, defaultMagas
     }
   }
 
+  // Adresse et n° client du magasin du défectueux, sinon ceux de la marque (comme les réassorts)
+  const coord = k => coordMarque(savedCtx?.fournisseur, Number(form.magasinId), k)
   function buildMailUrl() {
     return buildDefectueuxMailUrl({
       modele: form.modele, pointure: form.pointure, note: form.note, salarie: form.salarie,
-      societe: savedCtx?.societe || '', email: savedCtx?.fournisseur?.email || manualEmail.trim(),
-      numeroClient: savedCtx?.fournisseur?.numeroClient,
+      societe: savedCtx?.societe || '', email: coord('email') || manualEmail.trim(),
+      numeroClient: coord('numeroClient'),
     })
   }
 
@@ -239,7 +242,7 @@ export default function DefectueuxModal({ defect, onClose, onSaved, defaultMagas
     if (savedCtx?.defId && form.statut === 'À traiter') {
       try { await db.defectueux.update(savedCtx.defId, { statut: 'Mail envoyé' }) } catch { /* ignore */ }
     }
-    if (!savedCtx?.fournisseur?.email && manualEmail.trim()) {
+    if (!coord('email') && manualEmail.trim()) {
       setStep('save-contact')
     } else {
       onSaved?.(); onClose?.()
@@ -248,7 +251,7 @@ export default function DefectueuxModal({ defect, onClose, onSaved, defaultMagas
   function skipMail() { onSaved?.(); onClose?.() }
 
   async function saveContactEmail() {
-    try { await db.fournisseurs.update(savedCtx?.fournisseur?.id, { email: manualEmail.trim() }) } catch { /* ignore */ }
+    try { await db.fournisseurs.update(savedCtx?.fournisseur?.id, { coordsMagasin: enregistrerEmailMagasin(savedCtx?.fournisseur, Number(form.magasinId), manualEmail) }) } catch { /* ignore */ }
     onSaved?.(); onClose?.()
   }
 
@@ -287,8 +290,8 @@ export default function DefectueuxModal({ defect, onClose, onSaved, defaultMagas
             </p>
             <p style={{ fontSize: 14, color: 'var(--text-2)' }}>
               Envoyer un mail au <strong>SAV de {savedCtx?.fournisseur?.nom}</strong> ?
-              {savedCtx?.fournisseur?.email
-                ? <> <br /><span style={{ fontSize: 13, color: 'var(--text-3)' }}>→ {savedCtx.fournisseur.email}</span></>
+              {coord('email')
+                ? <> <br /><span style={{ fontSize: 13, color: 'var(--text-3)' }}>→ {coord('email')}</span></>
                 : <>
                     <br />
                     <span style={{ fontSize: 13, color: '#f59e0b' }}>⚠️ Aucun email SAV dans le répertoire.</span>
@@ -303,7 +306,7 @@ export default function DefectueuxModal({ defect, onClose, onSaved, defaultMagas
             </p>
             <div className="modal-actions">
               <button className="btn-secondary" onClick={skipMail}>Non, terminer</button>
-              <button className="btn-primary" onClick={sendMail} disabled={!savedCtx?.fournisseur?.email && !manualEmail.trim()}>✉️ Envoyer le mail</button>
+              <button className="btn-primary" onClick={sendMail} disabled={!coord('email') && !manualEmail.trim()}>✉️ Envoyer le mail</button>
             </div>
           </div>
         ) : (

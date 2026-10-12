@@ -5,6 +5,7 @@ import { useSeason } from '../context/SeasonContext'
 import { getSociete } from '../data/societes'
 import { fmtTel } from '../components/shared'
 import { buildSavRetourMailUrl } from './mail'
+import { coordMarque, enregistrerEmailMagasin } from '../reassort/mail'
 
 const inputStyle = { padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', outline: 'none', width: '100%', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }
 const textareaStyle = { ...inputStyle, resize: 'vertical' }
@@ -295,12 +296,14 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
     }
   }
 
+  // Adresse et n° client du magasin du dossier, sinon ceux de la marque (comme les réassorts)
+  const coord = k => coordMarque(savedCtx?.fournisseur || fournisseur, Number(form.magasinId), k)
   function buildMailUrl(email) {
     return buildSavRetourMailUrl({
       modele: form.modele, pointure: form.pointure, probleme: form.probleme, salarie: form.salarie,
       societe: savedCtx?.societe || societe || '',
-      email: email ?? (savedCtx?.fournisseur?.email || manualEmail.trim()),
-      numeroClient: savedCtx?.fournisseur?.numeroClient ?? fournisseur?.numeroClient,
+      email: email ?? (coord('email') || manualEmail.trim()),
+      numeroClient: coord('numeroClient'),
     })
   }
 
@@ -312,7 +315,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
     if (savedCtx?.defectueuxId) {
       try { await db.defectueux.update(savedCtx.defectueuxId, { statut: 'Mail envoyé' }) } catch {}
     }
-    if (!savedCtx?.fournisseur?.email && manualEmail.trim()) {
+    if (!coord('email') && manualEmail.trim()) {
       setStep('save-contact')
     } else {
       onSaved?.(); onClose?.()
@@ -320,7 +323,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
   }
 
   async function saveContactEmail() {
-    try { await db.fournisseurs.update(savedCtx?.fournisseur?.id, { email: manualEmail.trim() }) } catch {}
+    try { await db.fournisseurs.update(savedCtx?.fournisseur?.id, { coordsMagasin: enregistrerEmailMagasin(savedCtx?.fournisseur, Number(form.magasinId), manualEmail) }) } catch {}
     onSaved?.(); onClose?.()
   }
 
@@ -372,8 +375,8 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
             </p>
             <p style={{ fontSize: 14, color: 'var(--text-2)' }}>
               Envoyer un mail au <strong>SAV de {savedCtx?.fournisseur?.nom}</strong> ?
-              {savedCtx?.fournisseur?.email
-                ? <> <br /><span style={{ fontSize: 13, color: 'var(--text-3)' }}>→ {savedCtx.fournisseur.email}</span></>
+              {coord('email')
+                ? <> <br /><span style={{ fontSize: 13, color: 'var(--text-3)' }}>→ {coord('email')}</span></>
                 : <>
                     <br />
                     <span style={{ fontSize: 13, color: '#f59e0b' }}>⚠️ Aucun email SAV dans le répertoire.</span>
@@ -384,7 +387,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
             </p>
             <div className="modal-actions">
               <button className="btn-secondary" onClick={() => { onSaved?.(); onClose?.() }}>Non, terminer</button>
-              <button className="btn-primary" onClick={sendMail} disabled={!savedCtx?.fournisseur?.email && !manualEmail.trim()}>
+              <button className="btn-primary" onClick={sendMail} disabled={!coord('email') && !manualEmail.trim()}>
                 ✉️ Envoyer le mail
               </button>
             </div>
@@ -604,7 +607,7 @@ export default function SavModal({ sav, onClose, onSaved, defaultMagasinId, curr
             <div className="modal-actions">
               <button className="btn-secondary" onClick={onClose}>Annuler</button>
               {editing && (type === 'retour' || type === 'reparation') && (
-                <button className="btn-secondary" onClick={() => window.open(buildMailUrl(fournisseur?.email), '_blank')}>
+                <button className="btn-secondary" onClick={() => window.open(buildMailUrl(coord('email')), '_blank')}>
                   ✉️ Envoyer mail marque
                 </button>
               )}
