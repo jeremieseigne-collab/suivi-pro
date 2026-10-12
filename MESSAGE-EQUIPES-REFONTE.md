@@ -24,6 +24,11 @@ Sur l'**Accueil** :
 - « **En retard** » : ce qui attend depuis trop longtemps (réassort en route depuis 10 jours, dossier SAV ouvert depuis 15 jours) ;
 - « **À venir** » : les prochains rendez-vous ; « Voir l'agenda » ouvre l'agenda complet, où l'on ajoute un événement.
 
+## Détail — Connexion
+
+- L'écran de connexion change d'apparence ; votre adresse et votre mot de passe ne changent pas. « Afficher » permet de vérifier le mot de passe tapé. Mot de passe oublié : demandez-le à la direction.
+- « Se déconnecter » ne déconnecte que l'appareil sur lequel vous le touchez : les autres appareils du magasin restent connectés.
+
 ## Détail — Accueil
 
 - **Raccourcis** : « Saisir une entrée » ouvre directement la saisie du Cahier ; « Commande client » et « Dossier SAV » ouvrent directement un nouveau formulaire.

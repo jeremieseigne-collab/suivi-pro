@@ -58,7 +58,7 @@ function Pastille({ badge }) {
   return <span className="pastille-compte" title={badge.titre} style={{ background: badge.couleur }}>{badge.n}</span>
 }
 
-// Déconnexion : même appel qu'avant (supabase.auth.signOut(), réglage par défaut de Supabase) ; seule la fenêtre de confirmation change
+// Déconnexion de CET appareil seulement (accord écrit du 12/10) ; la déconnexion de tous les appareils d'un compte reste dans Réglages → Appareils connectés (Direction)
 function BoutonDeconnexion({ className, children }) {
   const [confirmer, setConfirmer] = useState(false)
   return (
@@ -66,7 +66,7 @@ function BoutonDeconnexion({ className, children }) {
       <button className={className} onClick={() => setConfirmer(true)}>{children}</button>
       {confirmer && (
         <Confirmation titre="Se déconnecter de cet appareil ?" texte="Il faudra ressaisir l’adresse et le mot de passe du magasin pour revenir."
-          confirmer="Se déconnecter" danger onAnnuler={() => setConfirmer(false)} onConfirmer={() => { setConfirmer(false); supabase.auth.signOut() }} />
+          confirmer="Se déconnecter" danger onAnnuler={() => setConfirmer(false)} onConfirmer={() => { setConfirmer(false); supabase.auth.signOut({ scope: 'local' }) }} />
       )}
     </>
   )
