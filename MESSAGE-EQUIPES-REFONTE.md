@@ -1,6 +1,6 @@
 # Message aux équipes — nouvelle version de l'outil
 
-> Message final (12/10). `[DATE]` = date de mise en ligne, à remplir (2 fois). Version courte pour tout le monde, détail par écran en dessous.
+> Message final (12/10). Le message à envoyer le jour J (étape 2 + refonte, daté) est dans `JOUR-J-REFONTE.md` ; les rubriques « Détail » ci-dessous servent de document joint. `[DATE]` = date de mise en ligne (2 fois). Version courte pour tout le monde, détail par écran en dessous.
 > Rien à faire pour les équipes : mêmes adresses et mots de passe, pas de reconnexion, données inchangées.
 
 ## Version courte (à envoyer)
@@ -118,7 +118,7 @@ Jérémie
 
 **Créer une marque depuis la saisie**
 - Dans « Marque », tapez le nom. Si la marque existe (même écrite autrement : majuscules, accents, espaces), elle est proposée : choisissez-la.
-- Si un nom proche existe (« Vouliez-vous dire … ? »), choisissez-le si c'est la même marque.
+- Si un nom proche existe (« Tu voulais dire… ? »), choisissez-le si c'est la même marque.
 - Sinon, « Créer la marque » : une fenêtre montre le nom exact tel qu'il sera enregistré (majuscules mises proprement) ; confirmez.
 - La marque apparaît ensuite pour les trois magasins.
 

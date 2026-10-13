@@ -1,6 +1,6 @@
 # Suivi du chantier de refonte
 
-> Mis à jour à chaque étape — **dernière mise à jour : dimanche 11 octobre 2026, protection mise en ligne**.
+> Mis à jour à chaque étape — **dernière mise à jour : mardi 13 octobre 2026 (nuit), étape 2 en ligne, refonte prête pour votre décision**.
 > Branches : `refonte` (dossier `Projets/suivi-pro-refonte`), `securite` (dossier `Projets/suivi-pro`). En production : `main` = correctifs I1-I3 + protection (d3b32c4) ; `dev` identique.
 
 ## Où on en est
@@ -10,10 +10,10 @@
 | 1. Audit (`AUDIT.md`) | ✅ fait, propositions triées |
 | Correctifs urgents I1-I2-I3 | ✅ **en ligne** depuis le 10/10/2026 01h13 (5 commits, vérifiés ensemble) |
 | Sécurité B6 étape 1 + plafond mails (`SECURITE.md`) | ✅ **EN LIGNE depuis le dimanche 11/10/2026** : code à 14h20, filtrage activé à 14h28 (fenêtre d'exposition ~6 min). Vérifié : anonyme = 0 ligne / écriture refusée ; comptes connectés OK ; mail sans connexion refusé ; vrai mail reçu et noté au journal |
-| **Sécurité B6 étape 2** — paie réservée aux comptes Direction, PIN supprimé | ✅ **faite et testée sur la base de test** (11/10, branche `securite-etape2`, `supabase-securite-etape2.sql`) ; ⏳ production : **nouvel accord écrit, après quelques jours de fonctionnement sans souci de l'étape 1 dans les 3 magasins** |
+| **Sécurité B6 étape 2** — paie réservée aux comptes Direction, PIN supprimé | ✅ **EN LIGNE depuis le 13/10 vers 0 h 15** (accord écrit du 12/10 ; code 31eec8e vérifié octet pour octet ; règles E3, E4, E4 bis, E7 appliquées et vérifiées : visiteur 0 ligne, compte magasin refusé, Direction OK) |
 | 2. Plan, charte, maquettes (`PLAN-REFONTE.md`, `maquettes/`) | ⏳ à valider |
 | 3. Construction écran par écran | ✅ socle commun validé (12/10) · ✅ **Cahier des entrées validé** (13/10) · ✅ **Accueil validé** (13/10) · ✅ **SAV & défectueux validé** (13/10) · ✅ **Commandes clients validé** (13/10) · ✅ **Réassorts validé** (13/10, « Demandé » gardé) · ✅ **Répertoire validé** (13/10) · ⏳ correctif des mails SAV / défectueux prêt (branche `correctif-mails-sav`), mise en ligne sur votre signal · ✅ **Planning et Éléments de paie validés** (A, C, E avec ; B, D sans ; P1-P3 avec) · ✅ **Direction validé** (12/10 : R1-R3, A1, A2 avec ; ajustements « déduit », chèques datés, bloc « En attente », mention du groupe) — calculs du Plan comparés ligne par ligne : identiques · ✅ correctif mails SAV / défectueux **en ligne** (8829c91, 12/10, vérifié octet pour octet, contrôles à l'écran bons) · ✅ **Connexion et choix du magasin validés** (C1, C2, S1 avec ; « Se déconnecter » = cet appareil seulement, aussi dans l'étape 2) · ✅ **Agenda validé** (G1 à G4 avec) · ✅ **Factures validé** (F1, F2 avec) · ⏳ **finitions communes faites**, en attente de validation (4 lignes) |
-| 4. Préparation de la mise en ligne | ⏳ **en cours (12/10)** : branches réunies (version en ligne + étape 2 + 3 correctifs) ; tous les essais refaits (compte magasin et Direction, téléphone / tablette / ordinateur, clair / sombre : 162 affichages sans défaut) ; calculs comparés à l'outil actuel (Plan de règlement, Achats, Suivi des livraisons, Factures, Agenda : identiques hors choix validés) ; CLAUDE.md et message aux équipes à jour. Reste : vos décisions (compte rendu du 12/10) |
+| 4. Préparation de la mise en ligne | ✅ **prête (nuit du 12 au 13/10)** — essai sur une **copie des données réelles** dans la base de test (remise ensuite en données fictives) : Plan de règlement identique (3 saisons, 98 filtres, 14 631 lignes), Achats identiques (3 saisons, 52 filtres), Suivi des livraisons identique (137 marques × magasin, 2 350 modèles), listes Cahier / Commandes / SAV / défectueux / Réassorts identiques pour les 3 magasins (Direction et compte magasin), 162 affichages sans défaut ; structure de la base identique test / production : **aucune modification de base** ; coexistence ancienne / nouvelle version sans risque ; correctif « rechargement si un écran manque après une mise en ligne » (28e248e) ; fichiers inutilisés retirés (056e139) ; tous les essais refaits ; déroulé `JOUR-J-REFONTE.md` |
 
 ## Décisions prises
 
