@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 .vercel
 .vercel-token.local
+
+# Pages et sessions de test locales (jamais envoyées)
+public/__*
