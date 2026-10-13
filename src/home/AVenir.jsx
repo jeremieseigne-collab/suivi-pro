@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { isoDate } from '../agenda/dates'
-import { fetchGoogleEvents } from '../agenda/googleCalendars'
+import { fetchGoogleEvents, messageCalendriers } from '../agenda/googleCalendars'
 import { aller } from '../shell/navigation'
 
 const MAX = 4
@@ -47,7 +47,9 @@ export default function AVenir() {
   }, [app, google, auj, maintenant])
 
   if (app === undefined) return <div className="liste"><div className="ligne"><span className="txt"><span className="t2">Chargement…</span></span></div></div>
-  if (!evs.length) return <div className="liste"><div className="ligne"><span className="txt"><span className="t1" style={{ fontWeight: 500, color: 'var(--doux)' }}>Aucun événement à venir</span></span></div></div>
+  const manque = messageCalendriers(google)
+  const avis = manque && <div key="avis" className="aide att" style={{ padding: '6px 14px' }}>{manque}</div>
+  if (!evs.length) return <div className="liste"><div className="ligne"><span className="txt"><span className="t1" style={{ fontWeight: 500, color: 'var(--doux)' }}>Aucun événement à venir</span></span></div>{avis}</div>
   let jourPrec = ''
   return (
     <div className="liste">
@@ -63,6 +65,7 @@ export default function AVenir() {
           </button>,
         ]
       })}
+      {avis}
     </div>
   )
 }
