@@ -50,12 +50,39 @@ export async function cloturerSav(row) {
   if (row.type === 'forme') await lancerAttente(row.magasinId, row.id)
 }
 
-// Prix unitaire HT d'un modèle (magasin × saison) : prix par modèle, sinon prix moyen — même calcul que l'outil actuel pour les retours
+// Prix unitaire HT d'un RETOUR (marque × magasin), dans cet ordre :
+//   1. prix du modèle dans la saison active ;
+//   2. prix du modèle dans une autre saison (la plus récente d'abord) — ajout du 13/10 : un retour saisi en Hiver
+//      d'un modèle acheté en Été trouvait 0 € ;
+//   3. prix moyen de la marque dans la saison active ;
+//   4. 0 €.
+// Renvoie { unit, source: 'modele' | 'modele-autre-saison' | 'prix-moyen' | 'aucun', saison }.
+const ordreSaison = id => { const m = /^(.+)_(\d{4})$/.exec(id || ''); return m ? Number(m[2]) * 2 + (m[1] === 'HIVER' ? 1 : 0) : -1 }
+const prixDuModele = (p, modele) => { const q = Number(p?.modeles?.[modele]), px = Number(p?.prixModeles?.[modele]); return q > 0 && px > 0 ? px / q : 0 }
+export async function prixRetour(fournisseurId, magasinId, season, modele) {
+  const lignes = await db.parametres.where({ fournisseurId, magasinId }).filter(() => true).toArray()
+  const active = lignes.find(x => x.season === season)
+  const u1 = prixDuModele(active, modele)
+  if (u1) return { unit: u1, source: 'modele', saison: season }
+  const autres = lignes.filter(x => x.season !== season).sort((a, b) => ordreSaison(b.season) - ordreSaison(a.season))
+  for (const p of autres) { const u = prixDuModele(p, modele); if (u) return { unit: u, source: 'modele-autre-saison', saison: p.season } }
+  if (Number(active?.pm) > 0) return { unit: Number(active.pm), source: 'prix-moyen', saison: season }
+  return { unit: 0, source: 'aucun', saison: '' }
+}
 export async function prixUnitaire(fournisseurId, magasinId, season, modele) {
-  const p = await db.parametres.where({ fournisseurId, magasinId }).filter(x => x.season === season).first()
-  if (!p) return 0
-  const q = p.modeles?.[modele], px = p.prixModeles?.[modele]
-  return q > 0 && px > 0 ? px / q : (p.pm || 0)
+  return (await prixRetour(fournisseurId, magasinId, season, modele)).unit
+}
+export const ORIGINE_PRIX = { 'modele': 'prix du modèle', 'modele-autre-saison': "prix du modèle d'une autre saison", 'prix-moyen': 'prix moyen de la marque', 'aucun': 'aucun prix connu' }
+
+// Effet du prix d'un retour sur le Plan de règlement, d'après l'état du défectueux lié (mêmes règles que calcul.js :
+// un avoir n'apparaît que si le défectueux est « Avoir reçu » ou « Clôturé » et si le prix n'est pas 0 €).
+export function effetPlanRetour(statutDefectueux, montant, avoirDeduit) {
+  const m = Math.abs(Number(montant) || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
+  if (!statutDefectueux) return 'Retour sans défectueux : aucun avoir dans le Plan de règlement (le prix sert seulement à la valeur du Cahier).'
+  if (statutDefectueux === 'Refusé') return 'Défectueux refusé : aucun avoir dans le Plan de règlement.'
+  if (!['Avoir reçu', 'Clôturé'].includes(statutDefectueux)) return `Défectueux « ${statutDefectueux} » : pas encore d'avoir ; il apparaîtra dans le Plan de règlement (${m}) quand le défectueux passera à « Avoir reçu ».`
+  if (!Number(montant)) return 'Prix à 0 € : aucun avoir dans le Plan de règlement.'
+  return `Avoir de ${m} dans le Plan de règlement, à la date du retour${avoirDeduit ? ' (déjà coché « déduit » : le montant déduit change aussi)' : ''}.`
 }
 
 // Pointures reçues, grille, catégorie et N° le plus fréquent d'un modèle (depuis le Cahier des entrées)
