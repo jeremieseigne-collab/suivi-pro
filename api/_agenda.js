@@ -62,6 +62,10 @@ function instant(t) {
   return t.toJSDate()
 }
 
+// Notes des rendez-vous (décision B du 13/10) : une note qui contient un lien n'est ni envoyée ni affichée
+const LIEN = /https?:\/\/|www\./i
+function noteAffichable(texte) { const t = texte || ''; return LIEN.test(t) ? '' : t }
+
 // Une occurrence → la forme attendue par l'agenda (mêmes règles qu'avant, quand c'était Google qui les calculait)
 function versAgenda(cle, item, debutT, finT, cleOcc) {
   let date, heure, dateFin
@@ -77,7 +81,7 @@ function versAgenda(cle, item, debutT, finT, cleOcc) {
     id: `g_${cle}_${cleOcc}`,
     date, heure, dateFin,
     titre: item.summary || '(sans titre)',
-    note: item.description || '',
+    note: noteAffichable(item.description),
     lieu: item.location || '',
   }
 }
