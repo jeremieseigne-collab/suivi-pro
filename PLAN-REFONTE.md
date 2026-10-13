@@ -429,6 +429,32 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 
 **Constat à décider plus tard (rien changé)** : le compteur de numéro est **propre à chaque appareil**. Deux appareils de la même société (ex. Albi et Les 2 Zèbres, tous deux B'Shoes, ou deux postes d'un même magasin) proposent **le même numéro** ; vider les données du navigateur remet le compteur à zéro. Or les numéros de facture doivent se suivre sans doublon. Il faudrait un compteur partagé dans la base (et, si vous le souhaitez, un registre des factures émises) : modification de la base, à faire seulement avec votre accord écrit (voir « Idées pour plus tard »).
 
+## Règles métier — Prix des retours (vérifiées dans le code, 13/10 ; branche `retours-prix`, pas encore en ligne)
+
+| Règle | Outil actuel | Refonte (branche `retours-prix`) |
+|---|---|---|
+| Prix d'un retour créé depuis un **défectueux** ou un **SAV** | prix tapé → prix du modèle (saison active) → prix moyen de la marque (saison active) → 0 € | prix tapé → prix du modèle (saison active) → **prix du modèle d'une autre saison** (la plus récente) → prix moyen (saison active) → **prix moyen de la marque dans la saison où le modèle a été commandé** → 0 € (décisions du 13/10) |
+| Prix d'un retour saisi au **Cahier** | prix du modèle (saison active), sinon **0 €** (pas de prix moyen) | ⚠️ **Changé (13/10)** : même ordre que ci-dessus (le prix moyen s'applique désormais aussi au Cahier) ; la saisie indique d'où vient le prix |
+| Prix estimé | — | **Ajout (13/10)** : quand le prix vient d'une moyenne de la marque (et non du prix du modèle), la saisie et la fiche du retour l'indiquent : « prix estimé, à vérifier avec l'avoir de la marque » |
+| Corriger le prix d'un retour existant | Impossible à l'écran (le prix est figé à la création) | **Ajout (13/10, validé)** : fiche d'un retour, **comptes Direction seulement** : « Prix du retour », effet sur le Plan de règlement d'après l'état du défectueux, « Corriger le prix » (prix proposé), confirmation, « Annuler » ; un compte magasin ne voit pas cette partie (la base ne le bloque pas : voir « Idées pour plus tard ») |
+| Entrées reçues (hors retours) | prix du modèle × paires, sinon 0 € ; « Modifier » puis « Enregistrer » recalcule avec le prix du modèle | **Inchangé** (vérifié par essai : une entrée saisie à 0 € puis dont le modèle reçoit un prix est recalculée à l'enregistrement) |
+| Avoir dans le Plan de règlement | si le défectueux lié est « Avoir reçu » ou « Clôturé » et le prix ≠ 0 € | **Inchangé** |
+
+**Avant / après sur les vrais retours à 0 € (production, lecture seule, 13/10)**
+
+| N° | Magasin · saison | Marque · modèle | Créé depuis | Avant | Après |
+|---|---|---|---|---|---|
+| 1299 | Rouffiac · Été 2026 | Tamaris 28236-42 | SAV | 25,86 € | 25,86 € (prix moyen, estimé) |
+| 2393 | Albi · Hiver 2026 | Aliwell A125248, Dore | Cahier | 0 € | 42,63 € (prix moyen Été 2026, estimé) |
+| 2416 | Albi · Hiver 2026 | Plakton CP_BETA_340010, Jungle | SAV | 0 € | 19,05 € (prix moyen Été 2026, estimé) |
+| 2448 | Albi · Hiver 2026 | Eva Frutos 773, Leopardo | Défectueux | 0 € | 20,88 € (prix moyen Été 2026, estimé) |
+| 2500 | Albi · Hiver 2026 | Carla Tortosa 25529, Platino | SAV | 0 € | 23,40 € (prix moyen Été 2026, estimé) |
+| 2508 | Rouffiac · Hiver 2026 | Carla Tortosa 25529, Marron | Défectueux | 0 € | 23,40 € (prix moyen Été 2026, estimé) |
+| 3321 | Rouffiac · Hiver 2026 | Miss Elastic 75050-67-05, Negro | SAV | 0 € | 39,00 € (prix moyen Été 2026, estimé) |
+| 2389, 2390, 2475, 2913, 3421 | — | Bopy, Aliwell A126162, Pepe Jeans, Eva Frutos « . », Pellet | SAV | 0 € | 0 € (rien de connu pour ce modèle dans ce magasin) |
+
+« Après » = prix qu'aurait reçu le retour s'il avait été créé avec la nouvelle règle ; les retours existants ne changent pas tout seuls (correction à la main par la Direction, liste dans `NETTOYAGES.md`, local). Les 25 retours qui ont déjà un prix auraient reçu le même prix.
+
 ## Plans préparés (non construits, 12/10)
 
 ### A. Calendriers des magasins lus par le serveur (point 2b)
@@ -485,6 +511,7 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 | **Avoir pour un retour saisi dans le Cahier** | Un retour saisi directement dans le Cahier (bouton Retour) n'a pas de défectueux, donc jamais d'avoir dans le Plan | Soit créer un défectueux lié à la saisie d'un retour au Cahier, soit un état d'avoir sur l'entrée elle-même (`entrees.avoir`, par ex. « attendu / reçu / refusé ») lu par le Plan. À concevoir — à faire avec votre accord écrit |
 | **Réorganisation des Réglages (U4)** | « Achats & assortiment » (modèles, quantités, prix de la saison rangés avec les Achats plutôt que dans Réglages → Marques), « Réglages → Équipe » (salariés), mode de règlement réglé dans la fiche fournisseur du Répertoire (un seul endroit au lieu de Réglages + fiche d'achat), magasins et fusion de marques dans une partie « Maintenance » | Aucune modification de la base : seulement l'emplacement des écrans. Non faite maintenant (décision du 12/10) |
 | **Total d'heures du planning, pause déduite** | Total d'heures **réellement travaillées** par salarié et par semaine (écran, éventuellement impression) — refusé sans la pause (décision B) | Une **durée de pause par créneau** : colonne `planning.pause` (nombre de minutes, vide = pas de pause), saisie avec les horaires (« Pause : 0 / 30 min / 1 h / autre »), et le total = Σ (fin − début − pause). Les créneaux existants resteraient sans pause (total à vérifier pour le passé). Modification **additive**, sans perte — à faire avec votre accord écrit. Variante sans changer la base : une pause fixe par règle (ex. 1 h dès 7 h de présence), moins juste |
+| **Prix des entrées réservés à la Direction, dans la base** | Aujourd'hui seul l'écran cache la correction du prix d'un retour aux comptes magasin ; la base accepte qu'un compte magasin modifie le prix (PHT) de n'importe quelle entrée, comme tous les autres champs d'une entrée | Une règle (déclencheur) sur `entrees`, sur le modèle du contrôle du pointage (E7) : un compte magasin ne pourrait plus changer `pht` directement. ⚠️ Conséquence pour **toutes** les entrées : la saisie et la correction d'une entrée par un magasin recalculent le PHT (prix du modèle × paires) ; la règle devrait laisser passer ce recalcul (par ex. accepter un PHT égal au prix du modèle × paires, ou faire calculer le PHT par la base), sinon les magasins ne pourraient plus enregistrer ni corriger leurs entrées. À construire et tester sur la base de test, avec accord écrit pour la production |
 | **Numéros de facture partagés (et registre des factures)** | Voir « Plans préparés — B » | Voir « Plans préparés — B » |
 
 ---

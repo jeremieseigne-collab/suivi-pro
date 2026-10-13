@@ -7,6 +7,7 @@ import { getClipboard, setClipboard } from '../data/clipboard'
 import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { Numero, Statut } from './Reperes'
+import { prixRetour, ORIGINE_PRIX, MENTION_ESTIME } from '../savdef/regles'
 import { STATUTS, CATEGORIES, CAT_TO_KEY, CAT_DE_GRILLE, libelleStatut, aujourdhuiFr, frVersIso, isoVersFr, classeNumero, fmtEur, pluriel, nomPropre, formeComparaison, marquesSemblables } from './commun'
 
 // Quantités par pointure { [pointure]: nombre } ; gardées par pointure (et non par position) pour ne rien perdre
@@ -89,7 +90,21 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
   }, [paramRow, f.modele])
   const memeArticle = modif && f.marque === (entree.marque || '') && f.modele === (entree.modele || '')
   const prixOrigine = memeArticle && entree.total && entree.pht ? Math.abs(entree.pht / entree.total) : 0
-  const prixUnitaire = prixModele || prixOrigine
+  // Nouveau retour sans prix du modèle dans la saison active : même recherche que les retours du SAV et des défectueux
+  // (prix du modèle d'une autre saison, sinon prix moyen de la marque, sinon 0 €) — ajout du 13/10
+  const cleRetour = f.retour && !modif && f.modele && f.marque && f.magasin && !prixModele ? `${f.marque}|${f.magasin}|${season}|${f.modele}` : ''
+  const [prixAuto, setPrixAuto] = useState({ cle: '', r: null })
+  useEffect(() => {
+    let actif = true
+    if (cleRetour) (async () => {
+      const mag = await db.magasins.where('nom').equals(f.magasin).first(), four = await db.fournisseurs.where('nom').equals(f.marque).first()
+      const r = mag && four ? await prixRetour(four.id, mag.id, season, f.modele) : { unit: 0, source: 'aucun' }
+      if (actif) setPrixAuto({ cle: cleRetour, r })
+    })()
+    return () => { actif = false }
+  }, [cleRetour])  // eslint-disable-line react-hooks/exhaustive-deps
+  const retourAuto = cleRetour && prixAuto.cle === cleRetour ? prixAuto.r : null
+  const prixUnitaire = prixModele || prixOrigine || (retourAuto?.unit || 0)
   const pht = prixUnitaire > 0 && total !== 0 ? Math.round(prixUnitaire * total * 100) / 100 : 0
 
   // ── Choix de la marque et du modèle ──
@@ -427,7 +442,7 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
           )}
           <div className="total">
             <b>{f.retour ? 'Retour : ' : ''}{pluriel(total, 'paire')}</b>
-            {pht ? fmtEur(pht) + (prixModele ? '' : ' (prix d\'origine)') : f.modele ? 'Prix du modèle non renseigné (Paramètres → Marques)' : 'Choisis un modèle'}
+            {pht ? fmtEur(pht) + (prixModele ? '' : prixOrigine ? ' (prix d\'origine)' : retourAuto?.unit ? ` (${ORIGINE_PRIX[retourAuto.source]}${['modele-autre-saison', 'prix-moyen-saison-modele'].includes(retourAuto.source) ? ' : ' + retourAuto.saison.replace('ETE_', 'Été ').replace('HIVER_', 'Hiver ') : ''}${retourAuto.estime ? ' — ' + MENTION_ESTIME : ''})` : '') : f.modele ? 'Prix du modèle non renseigné (Paramètres → Marques)' : 'Choisis un modèle'}
           </div>
           <button className="btn btn-prim" onClick={enregistrer} disabled={enCours} style={identique ? { background: 'var(--err)' } : undefined}>
             {enCours ? 'Enregistrement…' : identique ? (confirmDoublon ? 'Confirmer : enregistrer quand même' : 'Enregistrer quand même…') : 'Enregistrer'}
