@@ -6,6 +6,7 @@ import { isoDate, parseLocal, mondayOf, fmtDayShort, fmtDayLabel, fmtShort } fro
 import { useMediaQuery, PHONE, TABLET } from '../lib/useMediaQuery'
 import { GOOGLE_CALENDARS, fetchGoogleEvents, messageCalendriers, rangeFor } from './googleCalendars'
 import Icone from '../components/ui/Icone'
+import { useCompte } from '../context/CompteContext'
 import './agenda.css'
 
 // Agenda partagé : événements saisis dans l'outil (table evenements, modifiables par tous les comptes connectés)
@@ -23,6 +24,7 @@ export default function AgendaBoard() {
   const [mode,         setMode]         = useState('mois')
   const [cursor,       setCursor]       = useState(() => isoDate(new Date()))
   const [googleEvents, setGoogleEvents] = useState([])
+  const { estDirection } = useCompte()
   const [formDate,     setFormDate]     = useState(null)
   const [showForm,     setShowForm]     = useState(false)
   const [editEvent,    setEditEvent]    = useState(null)
@@ -101,7 +103,7 @@ export default function AgendaBoard() {
       <div className="agenda-legende">
         <span><i style={{ background: couleurOutil }} />Événements de l’outil</span>
         {GOOGLE_CALENDARS.map(c => <span key={c.cle}><i style={{ background: c.color }} />{c.label}</span>)}
-        {messageCalendriers(googleEvents) && <span className="aide att">{messageCalendriers(googleEvents)}</span>}
+        {messageCalendriers(googleEvents) && <span className="aide att">{messageCalendriers(googleEvents, estDirection)}</span>}
       </div>
 
       {data === undefined ? <div className="vide">Chargement…</div> : (

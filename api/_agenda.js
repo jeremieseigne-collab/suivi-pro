@@ -16,29 +16,48 @@ const MAX_JOURS  = 400                    // fenêtre maximale demandée (vue An
 const MAX_OCCURRENCES = 20000             // garde-fou sur le déroulé d'un rendez-vous récurrent
 const memoire = new Map()                 // cle → { t, comp }
 
+// Valeur d'une variable → lien https. Tolère ce qu'un copier-coller ajoute souvent : la ligne entière
+// (« AGENDA_ICAL_…= » en tête), des guillemets, des espaces ou caractères invisibles ; webcal:// devient https://.
+export function lienDepuis(valeur) {
+  let v = String(valeur || '').replace(/[\u200B-\u200D\uFEFF\u00A0]/g, ' ').trim()
+  v = v.replace(/^AGENDA_ICAL_[A-Z]+\s*=\s*/i, '').trim()
+  v = v.replace(/^["'«“‘\s]+|["'»”’\s]+$/g, '').trim()
+  return v.replace(/^webcal:\/\//i, 'https://')
+}
+// Motif d'une erreur, en code fixe (jamais le lien ni le contenu) : renvoyé à l'appareil et écrit dans le journal
+function motifErreur(e) {
+  if (e.motif) return e.motif
+  if (e.name === 'TimeoutError' || e.name === 'AbortError') return 'delai'
+  if (e.name === 'TypeError') return 'reseau' + (e.cause?.code ? '-' + e.cause.code : '')
+  return 'lecture-' + (e.name || 'erreur')
+}
+const echec = motif => { const e = new Error(motif); e.motif = motif; return e }
+
 // ── Lecture d'un calendrier (avec mémoire de 5 minutes ; en cas d'échec, la dernière copie lue est gardée) ──
 async function lireCalendrier(cal) {
-  const url = String(process.env[cal.variable] || '').trim().replace(/^webcal:\/\//i, 'https://')
-  if (!url) return { configure: false }
+  const brut = process.env[cal.variable]
+  if (!String(brut || '').trim()) return { configure: false }
+  const url = lienDepuis(brut)
   const deja = memoire.get(cal.cle)
   if (deja && Date.now() - deja.t < MEMOIRE_MS) return { configure: true, comp: deja.comp }
   try {
-    const r = await fetch(url, { signal: AbortSignal.timeout(DELAI_MS), headers: { 'User-Agent': 'suivi-pro-agenda' } })
-    if (!r.ok) { const e = new Error('réponse ' + r.status); e.code = r.status; throw e }
-    const texte = await r.text()
-    if (!texte.startsWith('BEGIN:VCALENDAR')) throw new Error('réponse inattendue')
+    if (!/^https:\/\/[^/\s]+\/\S+$/.test(url)) throw echec('lien-mal-forme')
+    const r = await fetch(url, { signal: AbortSignal.timeout(DELAI_MS), headers: { 'User-Agent': 'suivi-pro-agenda', Accept: 'text/calendar, */*' } })
+    if (!r.ok) throw echec('refus-' + r.status)
+    const texte = (await r.text()).replace(/^\uFEFF/, '').trimStart()
+    if (!texte.startsWith('BEGIN:VCALENDAR')) throw echec('pas-un-calendrier')
     const comp = new ICAL.Component(ICAL.parse(texte))
     for (const vtz of comp.getAllSubcomponents('vtimezone')) {
-      const tz = new ICAL.Timezone(vtz)
-      if (!ICAL.TimezoneService.has(tz.tzid)) ICAL.TimezoneService.register(tz.tzid, tz)
+      try { const tz = new ICAL.Timezone(vtz); if (tz.tzid && !ICAL.TimezoneService.has(tz.tzid)) ICAL.TimezoneService.register(tz, tz.tzid) } catch { /* fuseau illisible : ignoré */ }
     }
     memoire.set(cal.cle, { t: Date.now(), comp })
     return { configure: true, comp }
   } catch (e) {
-    // Journal sans le lien ni le contenu : seulement le magasin et la nature de l'erreur
-    console.error(`Agenda : calendrier « ${cal.cle} » indisponible (${e.code || e.name || 'erreur'})`)
+    const motif = motifErreur(e)
+    // Journal sans le lien ni le contenu : seulement le magasin et le motif
+    console.error(`Agenda : calendrier « ${cal.cle} » indisponible (${motif})`)
     if (deja) return { configure: true, comp: deja.comp }
-    return { configure: true, erreur: true }
+    return { configure: true, erreur: true, motif }
   }
 }
 
@@ -130,9 +149,9 @@ export async function agendaEntre(debut, fin) {
   const calendriers = await Promise.all(CALENDRIERS.map(async cal => {
     const c = await lireCalendrier(cal)
     if (!c.configure) return { cle: cal.cle, ok: false, nonConfigure: true, evenements: [] }
-    if (c.erreur) return { cle: cal.cle, ok: false, evenements: [] }
+    if (c.erreur) return { cle: cal.cle, ok: false, motif: c.motif, evenements: [] }
     try { return { cle: cal.cle, ok: true, evenements: evenementsEntre(cal.cle, c.comp, debut, fin) } }
-    catch (e) { console.error(`Agenda : lecture du calendrier « ${cal.cle} » impossible (${e.name})`); return { cle: cal.cle, ok: false, evenements: [] } }
+    catch (e) { const motif = 'deroule-' + (e.name || 'erreur'); console.error(`Agenda : calendrier « ${cal.cle} » indisponible (${motif})`); return { cle: cal.cle, ok: false, motif, evenements: [] } }
   }))
   return { calendriers }
 }

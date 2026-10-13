@@ -26,7 +26,7 @@ export function fetchGoogleEvents(timeMin, timeMax) {
 }
 
 async function charger(timeMin, timeMax) {
-  const resultat = (extra = {}) => Object.assign([], { indisponibles: [], nonConfigure: false, erreur: false }, extra)
+  const resultat = (extra = {}) => Object.assign([], { indisponibles: [], motifs: {}, nonConfigure: false, erreur: false }, extra)
   try {
     const { data } = await supabase.auth.getSession()
     const jeton = data?.session?.access_token
@@ -39,19 +39,25 @@ async function charger(timeMin, timeMax) {
     for (const c of liste) {
       const cal = GOOGLE_CALENDARS.find(x => x.cle === c.cle)
       if (!cal) continue
-      if (!c.ok) { if (!c.nonConfigure) out.indisponibles.push(cal.label); continue }
+      if (!c.ok) { if (!c.nonConfigure) { out.indisponibles.push(cal.label); if (c.motif) out.motifs[cal.label] = c.motif } continue }
       for (const e of c.evenements || []) out.push({ ...e, source: 'google', color: cal.color, calLabel: cal.label })
     }
     return out
   } catch { return resultat({ erreur: true }) }
 }
 
-// Message à afficher sous l'agenda / « À venir » quand un calendrier manque ('' si tout va bien)
-export function messageCalendriers(evs) {
+// Message à afficher sous l'agenda / « À venir » quand un calendrier manque ('' si tout va bien).
+// detail (comptes Direction) : ajoute le motif de l'erreur, en clair, pour savoir quoi corriger (jamais de lien).
+const MOTIFS = { 'lien-mal-forme': 'lien mal recopié dans Vercel', 'delai': 'iCloud trop lent', 'pas-un-calendrier': "iCloud n'a pas renvoyé de calendrier" }
+const motifEnClair = m => MOTIFS[m] || (m.startsWith('refus-') ? `refusé par iCloud, code ${m.slice(6)}` : m.startsWith('reseau') ? `iCloud injoignable${m.length > 6 ? ' (' + m.slice(7) + ')' : ''}` : m)
+export function messageCalendriers(evs, detail = false) {
   if (!evs) return ''
   if (evs.nonConfigure) return 'Calendriers des magasins non configurés'
   if (evs.erreur) return 'Calendriers des magasins indisponibles pour le moment'
-  if (evs.indisponibles?.length) return `${evs.indisponibles.length > 1 ? 'Calendriers' : 'Calendrier'} indisponible${evs.indisponibles.length > 1 ? 's' : ''} pour le moment : ${evs.indisponibles.join(', ')}`
+  if (evs.indisponibles?.length) {
+    const noms = evs.indisponibles.map(n => detail && evs.motifs?.[n] ? `${n} (${motifEnClair(evs.motifs[n])})` : n)
+    return `${evs.indisponibles.length > 1 ? 'Calendriers' : 'Calendrier'} indisponible${evs.indisponibles.length > 1 ? 's' : ''} pour le moment : ${noms.join(', ')}`
+  }
   return ''
 }
 
