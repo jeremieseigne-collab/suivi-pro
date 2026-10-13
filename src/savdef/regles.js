@@ -55,24 +55,29 @@ export async function cloturerSav(row) {
 //   2. prix du modèle dans une autre saison (la plus récente d'abord) — ajout du 13/10 : un retour saisi en Hiver
 //      d'un modèle acheté en Été trouvait 0 € ;
 //   3. prix moyen de la marque dans la saison active ;
-//   4. 0 €.
-// Renvoie { unit, source: 'modele' | 'modele-autre-saison' | 'prix-moyen' | 'aucun', saison }.
+//   4. prix moyen de la marque dans la saison où le modèle a été commandé (la plus récente) — décision du 13/10 ;
+//   5. 0 €.
+// Les étapes 3 et 4 donnent un prix ESTIMÉ (moyenne de la marque, pas le prix du modèle).
+// Renvoie { unit, source: 'modele' | 'modele-autre-saison' | 'prix-moyen' | 'prix-moyen-saison-modele' | 'aucun', saison, estime }.
 const ordreSaison = id => { const m = /^(.+)_(\d{4})$/.exec(id || ''); return m ? Number(m[2]) * 2 + (m[1] === 'HIVER' ? 1 : 0) : -1 }
 const prixDuModele = (p, modele) => { const q = Number(p?.modeles?.[modele]), px = Number(p?.prixModeles?.[modele]); return q > 0 && px > 0 ? px / q : 0 }
 export async function prixRetour(fournisseurId, magasinId, season, modele) {
   const lignes = await db.parametres.where({ fournisseurId, magasinId }).filter(() => true).toArray()
   const active = lignes.find(x => x.season === season)
   const u1 = prixDuModele(active, modele)
-  if (u1) return { unit: u1, source: 'modele', saison: season }
+  if (u1) return { unit: u1, source: 'modele', saison: season, estime: false }
   const autres = lignes.filter(x => x.season !== season).sort((a, b) => ordreSaison(b.season) - ordreSaison(a.season))
-  for (const p of autres) { const u = prixDuModele(p, modele); if (u) return { unit: u, source: 'modele-autre-saison', saison: p.season } }
-  if (Number(active?.pm) > 0) return { unit: Number(active.pm), source: 'prix-moyen', saison: season }
-  return { unit: 0, source: 'aucun', saison: '' }
+  for (const p of autres) { const u = prixDuModele(p, modele); if (u) return { unit: u, source: 'modele-autre-saison', saison: p.season, estime: false } }
+  if (Number(active?.pm) > 0) return { unit: Number(active.pm), source: 'prix-moyen', saison: season, estime: true }
+  const commande = autres.find(p => Object.prototype.hasOwnProperty.call(p.modeles || {}, modele) && Number(p.pm) > 0)
+  if (commande) return { unit: Number(commande.pm), source: 'prix-moyen-saison-modele', saison: commande.season, estime: true }
+  return { unit: 0, source: 'aucun', saison: '', estime: false }
 }
 export async function prixUnitaire(fournisseurId, magasinId, season, modele) {
   return (await prixRetour(fournisseurId, magasinId, season, modele)).unit
 }
-export const ORIGINE_PRIX = { 'modele': 'prix du modèle', 'modele-autre-saison': "prix du modèle d'une autre saison", 'prix-moyen': 'prix moyen de la marque', 'aucun': 'aucun prix connu' }
+export const ORIGINE_PRIX = { 'modele': 'prix du modèle', 'modele-autre-saison': "prix du modèle d'une autre saison", 'prix-moyen': 'prix moyen de la marque', 'prix-moyen-saison-modele': 'prix moyen de la marque, saison de la commande', 'aucun': 'aucun prix connu' }
+export const MENTION_ESTIME = "prix estimé, à vérifier avec l'avoir de la marque"
 
 // Effet du prix d'un retour sur le Plan de règlement, d'après l'état du défectueux lié (mêmes règles que calcul.js :
 // un avoir n'apparaît que si le défectueux est « Avoir reçu » ou « Clôturé » et si le prix n'est pas 0 €).

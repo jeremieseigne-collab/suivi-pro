@@ -7,7 +7,7 @@ import { getClipboard, setClipboard } from '../data/clipboard'
 import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { Numero, Statut } from './Reperes'
-import { prixRetour, ORIGINE_PRIX } from '../savdef/regles'
+import { prixRetour, ORIGINE_PRIX, MENTION_ESTIME } from '../savdef/regles'
 import { STATUTS, CATEGORIES, CAT_TO_KEY, CAT_DE_GRILLE, libelleStatut, aujourdhuiFr, frVersIso, isoVersFr, classeNumero, fmtEur, pluriel, nomPropre, formeComparaison, marquesSemblables } from './commun'
 
 // Quantités par pointure { [pointure]: nombre } ; gardées par pointure (et non par position) pour ne rien perdre
@@ -442,7 +442,7 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, onFerme
           )}
           <div className="total">
             <b>{f.retour ? 'Retour : ' : ''}{pluriel(total, 'paire')}</b>
-            {pht ? fmtEur(pht) + (prixModele ? '' : prixOrigine ? ' (prix d\'origine)' : retourAuto?.unit ? ` (${ORIGINE_PRIX[retourAuto.source]}${retourAuto.source === 'modele-autre-saison' ? ' : ' + retourAuto.saison.replace('ETE_', 'Été ').replace('HIVER_', 'Hiver ') : ''})` : '') : f.modele ? 'Prix du modèle non renseigné (Paramètres → Marques)' : 'Choisis un modèle'}
+            {pht ? fmtEur(pht) + (prixModele ? '' : prixOrigine ? ' (prix d\'origine)' : retourAuto?.unit ? ` (${ORIGINE_PRIX[retourAuto.source]}${['modele-autre-saison', 'prix-moyen-saison-modele'].includes(retourAuto.source) ? ' : ' + retourAuto.saison.replace('ETE_', 'Été ').replace('HIVER_', 'Hiver ') : ''}${retourAuto.estime ? ' — ' + MENTION_ESTIME : ''})` : '') : f.modele ? 'Prix du modèle non renseigné (Paramètres → Marques)' : 'Choisis un modèle'}
           </div>
           <button className="btn btn-prim" onClick={enregistrer} disabled={enCours} style={identique ? { background: 'var(--err)' } : undefined}>
             {enCours ? 'Enregistrement…' : identique ? (confirmDoublon ? 'Confirmer : enregistrer quand même' : 'Enregistrer quand même…') : 'Enregistrer'}
