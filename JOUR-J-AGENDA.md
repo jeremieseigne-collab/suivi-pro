@@ -1,6 +1,6 @@
 # Jour J — calendriers des magasins lus par le serveur (plan A)
 
-> **État au 14/10/2026** : étapes **a, b, c faites** — en ligne (main = b914345, redéployé avec les bonnes valeurs) ; accueil et agenda affichent les 3 calendriers, ordinateur et téléphone. **On laisse tourner jusqu'au 15/10 avant l'étape d.**
+> **État au 14/10/2026, vers 15 h 20** : étapes **a, b, c, d faites** ; étape **e en partie bonne** (voir « Résultat de l'étape e » en bas) : l'ancienne clé est refusée, mais **les 3 anciennes adresses publiques de Google servent encore les événements**. Étape d faite le 14/10 après-midi, à votre demande (au lieu du 15/10) : désabonnement des 3 calendriers dans Google Agenda, clé « Suivi Pro Calendar » supprimée dans la console Google (restaurable 30 jours), `VITE_GOOGLE_API_KEY` supprimée dans Vercel. **La marche arrière vers 7fc1ac7 ne rend plus les calendriers.**
 > Ce qui s'est passé : 1re mise en ligne (674ac50) → « Calendriers indisponibles » (les valeurs collées dans Vercel n'étaient pas les liens : 44 caractères identiques pour les 3) ; retour à 7fc1ac7 ; correctif b914345 (lien extrait de la valeur, diagnostic sans secret pour la Direction) ; valeurs recollées dans Vercel puis **Redeploy** → OK.
 > ⚠️ Leçon : après tout changement de variable dans Vercel, faire **Deployments → « … » → Redeploy** (la version en ligne garde sinon les anciennes valeurs).
 > Marche arrière jusqu'à l'étape d : Vercel → Deployments → **7fc1ac7** → Promote to Production (l'agenda relit Google).
@@ -22,7 +22,26 @@
 | — | Vous | **Laisser tourner au moins une journée** (de préférence deux), avec les 3 magasins. Tant que l'étape d n'est pas faite, la marche arrière reste sans coupure. | — |
 | d | **Vous** | Seulement si tout va bien : (1) **Google Agenda** (sur ordinateur, calendar.google.com) → dans la liste de gauche, pour chacun des 3 calendriers des magasins : les trois points → **Paramètres** → en bas, **« Se désabonner »** (ou « Supprimer »). (2) **Console Google** (console.cloud.google.com) → API et services → **Identifiants** → la clé utilisée par l'agenda → **Supprimer**. (3) **Vercel** → Settings → Environment Variables → **supprimer `VITE_GOOGLE_API_KEY`** (aucune nouvelle mise en ligne nécessaire : le nouveau site ne l'utilise plus). | ⚠️ **Point de non-retour simple** : après d, revenir à 7fc1ac7 donnerait un agenda **sans les calendriers des magasins** (plus d'abonnement Google ni de clé). En cas de souci après d, on corrige la fonction serveur ; revenir à l'ancienne lecture demanderait de se réabonner aux 3 calendriers dans Google (nouveaux identifiants) et de recréer une clé. |
 | e | Claude | **Vérification finale** (une personne extérieure ne lit plus rien) : les 3 anciens calendriers aux adresses publiques de Google (sans clé) → plus accessibles ; l'ancienne clé → refusée par Google (« clé non valable ») ; le code publié ne contient aucune clé ni identifiant ; `api/agenda` sans connexion → refusée. Les liens iCloud ne sont lisibles que par qui les connaît (rangés seulement dans Vercel et dans votre fichier local). | — |
-| f | Claude | Mettre à jour CLAUDE.md, le plan et le suivi ; `dev` à votre signal ; retirer `VITE_GOOGLE_API_KEY` des fichiers `.env.local` de cet ordinateur (avec votre accord). | — |
+| f | Claude | Mettre à jour CLAUDE.md, le plan et le suivi ; `dev` à votre signal ; retirer `VITE_GOOGLE_API_KEY` des fichiers `.env.local` de cet ordinateur (avec votre accord). — ✅ fait le 14/10 sur l'iMac (`.env.local` et `.env.example`) ; **à faire aussi sur l'autre Mac** à la prochaine bascule. | — |
+
+## Résultat de l'étape e (14/10/2026, vers 15 h 20, lecture seule)
+
+| Contrôle | Avant d (14 h 50) | Après d | Bon ? |
+|---|---|---|---|
+| Ancienne clé Google, avec les 3 calendriers et seule | acceptée (200) | **refusée** (400 « API Key not found ») | ✅ |
+| `VITE_GOOGLE_API_KEY` dans Vercel | présente | **absente** (restent `AGENDA_ICAL_*` ×3, `GMAIL_*`, `VITE_SUPABASE_*`) | ✅ |
+| Code publié (b914345) : clé, identifiants, adresses Google | aucun | aucun ; page publiée inchangée | ✅ |
+| `api/agenda` sans connexion / jeton bidon ; `api/send-mail` sans connexion | 401 | 401 / 401 / 401 | ✅ |
+| **Anciennes adresses publiques Google des 3 calendriers** (sans clé, sans connexion) | lisibles (200) | **toujours lisibles** (200, réponse non mise en cache) : 17 événements (aucun à venir), 209 (dont 6 à venir), 61 (dont 1 à venir) | ❌ |
+| Agenda du site en ligne avec les 3 calendriers | vérifié à l'écran le matin | **à vérifier par vous à l'écran** (Claude n'a pas de compte de production) ; la fonction lit iCloud, que l'étape d ne touche pas | ⏳ |
+
+**Pourquoi les adresses Google répondent encore (hypothèse, non vérifiée)** : ces calendriers sont des copies faites par Google d'un lien iCloud (« abonnement à partir d'une URL », identifiants `…@import.calendar.google.com`). Se désabonner retire la copie **de votre compte**, mais Google peut la garder (et continuer à la mettre à jour) tant qu'**un autre compte Google** est abonné au même lien (poste ou téléphone d'un magasin, autre adresse), ou la supprimer seulement plus tard.
+⚠️ Les 3 identifiants étaient dans le code publié jusqu'au 13/10 et restent dans l'historique du dépôt GitHub, qui est **public** : toute personne qui les a relevés peut encore lire ces copies (titres, dates, lieux, notes).
+
+**Suite proposée** (à décider) :
+1. Revérifier le 15/10 (Claude, lecture seule, codes et nombres seulement) : si Google a supprimé les copies, l'étape e est bonne.
+2. Chercher un autre compte Google abonné aux mêmes calendriers (postes et téléphones des magasins) et l'en désabonner.
+3. Solution sûre : **renouveler les 3 liens iCloud publiés** (option ci-dessous). L'ancien lien cesse de fonctionner pour tout le monde, donc la copie Google ne peut plus se mettre à jour ; il faut ensuite mettre les nouveaux liens dans Vercel et dans `~/.suivi-pro/agenda.env`, puis **Redeploy** (mise en ligne lancée par vous). Ce qui est déjà dans la copie Google y resterait tant que Google la garde.
 
 ## Ce qui reste exposé après l'étape e
 - Les **3 liens iCloud publiés** : lisibles par toute personne qui connaît leur adresse (longue, impossible à deviner). Ils n'ont jamais été dans le code de l'outil ; ils sont rangés dans Vercel et dans `~/.suivi-pro/agenda.env` (sur cet ordinateur, lisible par votre compte seulement). On ne sait pas s'ils ont été donnés ailleurs (téléphones abonnés, autres personnes).
