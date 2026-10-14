@@ -801,7 +801,14 @@ Rien n'est supprimé ni modifié dans les tables existantes.
 
 **Ordre retenu (14/10)** : **1, 2, 3, puis 7, puis 4, 5, 6**. Les étapes 1 à 3 en ligne **avant fin janvier 2027** (premiers cartons d'Été 2027). Chaque étape : construite et essayée sur la base de test, montrée en local, puis mise en ligne par vous (la structure de la base de production n'est modifiée que sur votre commande, avec sa propre sauvegarde).
 
-**Étape 1 (en cours)** : `supabase-plan-c.sql` (modifications, M1 à M20) et `supabase-plan-c-annulation.sql` (annulation), branche `plan-c-etape1`. **Rien n'est appliqué** avant votre accord écrit, d'abord sur la base de test seulement.
+**Étape 1 — ✅ faite sur la base de test (14/10, accord écrit)** : `supabase-plan-c.sql` (M1 à M20) et `supabase-plan-c-annulation.sql`, branche `plan-c-etape1`.
+- Sauvegarde avant : `~/Sauvegardes/suivi-pro/test-2026-10-14_16h22-avant-plan-c/` (vérifiée : 18 tables, nombres de lignes identiques).
+- Essais par l'API avec les comptes de test (magasin et Direction) : **66/66** — import (droits, saison, deux prix, tout ou rien, deux BC additionnés), écritures directes refusées, réceptions (hors commande et au-delà du reste refusés sans confirmation, acceptés avec, carton de plusieurs modèles), **réceptions simultanées** (2 puis 6 appareils pour le même reste : un seul accepté), corriger / modifier / supprimer une réception, pointage inchangé, annuler / rétablir (commande et article, motif dans les deux sens, journal), **réimport aperçu puis validé** (reçu intouchable, prix pour les réceptions suivantes, PHT enregistré figé, hors commande régularisé, article jamais reçu retiré), visiteur sans connexion refusé. Entrée ordinaire du Cahier (sans commande) : créer, corriger, changer de saison, supprimer — inchangé.
+- Un défaut trouvé par les essais et corrigé (réimport : nom de variable en collision avec un alias de requête).
+- **Aller-retour** : annulation → structure **identique** à la sauvegarde (528 lignes de définition, temps réel 16 tables) → réapplication du fichier corrigé → essais 66/66.
+- État final de la base de test : structure du plan C en place, **aucune donnée d'essai** (nombres de lignes identiques à la sauvegarde).
+- **Production : rien.** La migration se fera sur votre commande, avec sa propre sauvegarde (même fichier, déjà essayé).
+- Scripts d'essai : `~/.suivi-pro/essais/essais-plan-c.mjs` et `entree-ordinaire.mjs` (hors du projet ; module `pg` à installer dans un dossier de travail).
 
 ## Idées pour plus tard (non construites)
 

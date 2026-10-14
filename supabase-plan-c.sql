@@ -414,9 +414,9 @@ begin
   -- comparaison avec la commande actuelle
   for x in
     select e.id, e.code_modele, e.couleur, e.taille, e.qte_commandee, e.qte_recue, e.qte_annulee, e.prix_achat, e.hors_commande,
-           n.qte as n_qte, n.prix as n_prix, n.brut, (n.code_modele is not null) as dans_fichier
+           nv.qte as n_qte, nv.prix as n_prix, nv.brut, (nv.code_modele is not null) as dans_fichier
     from public.achats_lignes_etat e
-    left join _nouv n on (n.code_modele, n.couleur, n.taille) = (e.code_modele, e.couleur, e.taille)
+    left join _nouv nv on (nv.code_modele, nv.couleur, nv.taille) = (e.code_modele, e.couleur, e.taille)
     where e.commande_id = c.id
   loop
     if not x.dans_fichier then
