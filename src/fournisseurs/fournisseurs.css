@@ -1,0 +1,13 @@
+/* Commandes fournisseurs (plan C) — classes de la charte + quelques réglages propres à l'écran */
+.cf-grille { display: grid; grid-template-columns: minmax(0, 1fr) minmax(380px, 0.95fr); gap: 16px; align-items: start; }
+.cf-cote { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; padding: 16px; }
+.cf-cote .groupe-titre { margin-top: 18px; }
+.ligne.cf-carte { align-items: flex-start; }
+.ligne.cf-carte[aria-current="true"] { background: var(--action-teinte); }
+.ligne.cf-carte .etat-mot { margin-top: 2px; }
+.cf-encart { width: 100%; border: 0; cursor: pointer; margin-top: 10px; text-align: left; font: inherit; align-items: center; }
+.cf-encart:hover { filter: brightness(.98); }
+.groupe-titre .lien { font: inherit; color: inherit; padding: 0; min-height: 0; }
+.cf-carte .t1, .cf-carte .t2, .cf-modele .t1, .cf-modele .t2 { display: block; }
+.ligne .t1 > span.etat-mot { font-weight: 600; }
+.ligne .t1 > .etat-mot.att { color: var(--att); } .ligne .t1 > .etat-mot.info { color: var(--action-texte); }

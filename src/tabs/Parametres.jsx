@@ -9,6 +9,8 @@ import { getSociete } from '../data/societes'
 import { confirmDanger } from '../components/DangerConfirm'
 import { supabase } from '../lib/supabase'
 import Icone from '../components/ui/Icone'
+import CorrespondanceMagasins from '../fournisseurs/CorrespondanceMagasins'
+import { aDesCommandes } from '../fournisseurs/donnees'
 
 const MODES_REGLEMENT = ['', 'PRELEVEMENT', 'CHEQUE', 'GARANT', 'VIREMENT', 'GMS', 'LCR']
 
@@ -101,6 +103,14 @@ function AddForm({ placeholder, onAdd, disabled }) {
   )
 }
 
+// Plan C : une marque, un magasin ou une saison qui ont des commandes fournisseurs ne se suppriment ni ne se fusionnent ici
+// (la base le refuserait de toute façon, pour ne rien perdre) — message clair avant toute action.
+async function bloqueParCommandes(champ, valeur, quoi) {
+  const n = await aDesCommandes(champ, valeur)
+  if (n) alert(`${quoi} a ${n} commande${n > 1 ? 's' : ''} fournisseur${n > 1 ? 's' : ''} (écran Commandes fournisseurs) : ${champ === 'fournisseur_id' ? 'suppression et fusion impossibles' : 'suppression impossible'} ici, pour ne rien perdre.`)
+  return n > 0
+}
+
 // ─── Section Magasins ───────────────────────────────────────────────────────
 function SectionMagasins() {
   const magasins = useLiveQuery(() => db.magasins.orderBy('nom').toArray(), [])
@@ -114,6 +124,7 @@ function SectionMagasins() {
   async function del(id) {
     const mag = (magasins || []).find(m => m.id === id)
     if (!mag) return
+    if (await bloqueParCommandes('magasin_id', id, `Le magasin « ${mag.nom} »`)) return
     const nbEntrees = (await db.entrees.where('magasinId').equals(id).toArray()).length
     const ok = await confirmDanger({
       title: `Supprimer le magasin « ${mag.nom} » ?`,
@@ -134,6 +145,7 @@ function SectionMagasins() {
   }
 
   return (
+    <>
     <div className="store-card">
       <h3 style={{ marginBottom: 16, fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Magasins</h3>
       {(magasins || []).length === 0
@@ -144,6 +156,8 @@ function SectionMagasins() {
       }
       <AddForm placeholder="Nom du magasin…" onAdd={add} />
     </div>
+    <CorrespondanceMagasins magasins={magasins || []} />
+    </>
   )
 }
 
@@ -481,6 +495,7 @@ function SectionFournisseurs() {
   async function del(id) {
     const four = (fournisseurs || []).find(f => f.id === id)
     if (!four) return
+    if (await bloqueParCommandes('fournisseur_id', id, `La marque « ${four.nom} »`)) return
     const nbEntrees = (await db.entrees.where('fournisseurId').equals(id).toArray()).length
     const ok = await confirmDanger({
       title: `Supprimer la marque « ${four.nom} » ?`,
@@ -508,6 +523,7 @@ function SectionFournisseurs() {
     const src = (fournisseurs || []).find(f => f.id === sId)
     const tgt = (fournisseurs || []).find(f => f.id === tId)
     if (!src || !tgt) return
+    if (await bloqueParCommandes('fournisseur_id', sId, `La marque « ${src.nom} »`)) return
     const ok = await confirmDanger({
       title: `Fusionner « ${src.nom} » dans « ${tgt.nom} » ?`,
       message: `Toutes les entrées, achats, SAV, défectueux et modèles de « ${src.nom} » seront rattachés à « ${tgt.nom} », puis « ${src.nom} » sera supprimée.`,
@@ -1010,6 +1026,7 @@ function SectionSaisons() {
   async function supprimer(s) {
     setBusy(s.id)
     try {
+      if (await bloqueParCommandes('season', s.id, `La saison « ${s.label} »`)) return
       const [nbEntrees, nbAchats] = await Promise.all([
         db.entrees.where('season').equals(s.id).toArray().then(r => r.length),
         db.parametres.where('season').equals(s.id).toArray().then(r => r.length),

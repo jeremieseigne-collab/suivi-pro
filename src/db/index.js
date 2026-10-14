@@ -50,7 +50,7 @@ function dbf(table, field) {
 // Supabase/PostgREST plafonne chaque réponse à 1000 lignes (max-rows) : on lit par pages.
 // build() doit renvoyer une requête triée (ordre stable entre les pages).
 const PAGE = 1000
-async function fetchAll(build) {
+export async function fetchAll(build) {
   const out = []
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await build().range(from, from + PAGE - 1)

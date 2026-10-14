@@ -40,6 +40,7 @@ const SavDefectueux   = ecran(() => import('./savdef/SavDefectueux'))
 const Factures        = ecran(() => import('./factures/Factures'))
 const Reassort        = ecran(() => import('./reassort/Reassort'))
 const AgendaBoard     = ecran(() => import('./agenda/AgendaBoard'))
+const CommandesFournisseurs = ecran(() => import('./fournisseurs/CommandesFournisseurs'))
 
 // Écrans réservés aux comptes Direction (la base refuse de toute façon les écritures sensibles aux comptes magasin)
 const DIRECTION_VIEWS = new Set(['reglement', 'parametres', 'achats'])
@@ -55,6 +56,7 @@ function Root() {
   let content
   if (vue === 'cahier')          content = <Cahier />
   else if (vue === 'commandes')  content = <Commandes onHome={home} />
+  else if (vue === 'fournisseurs') content = <CommandesFournisseurs />
   else if (vue === 'paie')       content = <PageShell title="Éléments variables de paie" withSeason={false}><Paie /></PageShell>
   else if (vue === 'achats')     content = <PageShell title="Achats"><Achats /></PageShell>
   else if (vue === 'repertoire') content = <Repertoire />
