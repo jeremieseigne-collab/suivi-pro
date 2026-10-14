@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { db } from '../db'
 import { fmtTel } from './shared'
+import { enregistrerContacts } from '../fournisseurs/contactsEcriture'
 
 // Normalise un libellé d'en-tête (minuscules, sans accents, alphanumérique)
 const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim()
@@ -109,15 +110,12 @@ export default function RepertoireImportModal({ onClose, onDone }) {
       }
 
       let nbF = 0
+      // Plan C, étape 2 bis : au fournisseur quand la marque en hérite (comptabilité, adresse, notes : toujours au fournisseur)
       for (const fId of Object.keys(patches)) {
-        const current = await db.fournisseurs.get(Number(fId))
-        const newCoords = { ...(current?.coordsMagasin || {}) }
-        for (const [magId, fields] of Object.entries(patches[fId].coords)) {
-          newCoords[magId] = { ...(newCoords[magId] || {}), ...fields }
-        }
+        for (const [magId, fields] of Object.entries(patches[fId].coords)) await enregistrerContacts(Number(fId), Number(magId), fields)
         const common = { ...patches[fId].common }
         if (common.telCompta) common.telCompta = fmtTel(common.telCompta)
-        await db.fournisseurs.update(Number(fId), { coordsMagasin: newCoords, ...common })
+        if (Object.keys(common).length) await enregistrerContacts(Number(fId), null, common)
         nbF++
       }
       setDone({ fournisseurs: nbF, lignes: parsed.rows.length, unknownMag })

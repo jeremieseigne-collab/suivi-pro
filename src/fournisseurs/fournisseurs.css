@@ -11,3 +11,6 @@
 .cf-carte .t1, .cf-carte .t2, .cf-modele .t1, .cf-modele .t2 { display: block; }
 .ligne .t1 > span.etat-mot { font-weight: 600; }
 .ligne .t1 > .etat-mot.att { color: var(--att); } .ligne .t1 > .etat-mot.info { color: var(--action-texte); }
+.ligne-choix { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 15px; cursor: pointer; }
+.fournisseurs-marques .ligne.cf-carte .t2 { white-space: normal; }
+.cf-sous-titre { font-size: var(--t-meta); font-weight: 600; color: var(--texte); margin: 10px 4px 6px; }

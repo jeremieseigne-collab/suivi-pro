@@ -8,6 +8,10 @@ import { useCompte } from '../context/CompteContext'
 import { useSeason } from '../context/SeasonContext'
 import { useMediaQuery, TABLET } from '../lib/useMediaQuery'
 import { PageShell } from '../shell/EnTete'
+import { ouvrirAvec } from '../shell/navigation'
+import { useVariantes } from '../shell/essai'
+import PanneauEssai from '../shell/PanneauEssai'
+import { POINTS_2BIS } from './points2bis'
 import { Toast } from '../cahier/Reperes'
 import { commandesDeSaison, lignesDe } from './donnees'
 import { suivieParCommandes, libelleSaison, forme } from './csvPolaris'
@@ -33,6 +37,9 @@ export default function CommandesFournisseurs() {
   const [importer, setImporter] = useState(false)
   const [reimport, setReimport] = useState(null)
   const [toast, setToast] = useState(null)
+  const [frId, setFrId] = useState('')               // filtre fournisseur
+  const [aVerifier, setAVerifier] = useState(null)   // marque créée à l'import : fournisseur à vérifier
+  const v2 = useVariantes(POINTS_2BIS)
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 6000); return () => clearTimeout(t) }, [toast])
 
   const donnees = useLiveQuery(async () => {
@@ -41,14 +48,19 @@ export default function CommandesFournisseurs() {
   }, [season])
   const fournisseurs = useLiveQuery(() => db.fournisseurs.orderBy('nom').toArray(), [])
   const magasins = useLiveQuery(() => db.magasins.orderBy('nom').toArray(), [])
+  const frs = useLiveQuery(() => db.fournisseursReels.toArray(), [])
 
   const nomMarque = id => (fournisseurs || []).find(f => f.id === id)?.nom || '—'
+  // Fournisseur d'une marque (plan C, étape 2 bis) : la liste est groupée par fournisseur, puis par marque
+  const frDeMarque = id => { const m = (fournisseurs || []).find(f => f.id === id); return (frs || []).find(x => x.id === m?.fournisseurReelId) }
+  const nomFr = id => frDeMarque(id)?.nom || nomMarque(id)
   const nomMagasin = id => (magasins || []).find(m => m.id === id)?.nom || '—'
   const lignesPar = useMemo(() => {
     const g = {}; for (const l of donnees?.lignes || []) (g[l.commande_id] ||= []).push(l); return g
   }, [donnees])
 
-  const duMagasin = useMemo(() => (donnees?.commandes || []).filter(c => !magasinId || c.magasin_id === Number(magasinId)), [donnees, magasinId])
+  const duMagasin = useMemo(() => (donnees?.commandes || []).filter(c => (!magasinId || c.magasin_id === Number(magasinId))
+    && (!frId || (fournisseurs || []).find(f => f.id === c.fournisseur_id)?.fournisseurReelId === Number(frId))), [donnees, magasinId, frId, fournisseurs])
   const retards = duMagasin.filter(enRetard)
   const visibles = useMemo(() => {
     const q = forme(rech)
@@ -59,22 +71,24 @@ export default function CommandesFournisseurs() {
       if (filtre === 'retard' && !enRetard(c)) return false
       if (filtre === 'hors' && !(c.lignes_hors_commande > 0)) return false
       if (q) {
-        const marque = (fournisseurs || []).find(f => f.id === c.fournisseur_id)?.nom
-        const hay = [marque, c.fichier, ...(c.numeros_bc || []), ...(lignesPar[c.id] || []).flatMap(l => [l.code_modele, l.libelle, l.couleur, l.gencode])].map(forme).join(' ')
+        const marque = (fournisseurs || []).find(f => f.id === c.fournisseur_id)
+        const fr = (frs || []).find(x => x.id === marque?.fournisseurReelId)
+        const hay = [marque?.nom, fr?.nom, c.fichier, ...(c.numeros_bc || []), ...(lignesPar[c.id] || []).flatMap(l => [l.code_modele, l.libelle, l.couleur, l.gencode])].map(forme).join(' ')
         if (!hay.includes(q)) return false
       }
       return true
     }).sort((a, b) => b.id - a.id)
-  }, [duMagasin, filtre, rech, lignesPar, fournisseurs])
+  }, [duMagasin, filtre, rech, lignesPar, fournisseurs, frs])
 
-  if (donnees === undefined || fournisseurs === undefined || magasins === undefined) return <PageShell title="Commandes fournisseurs"><LoadingState /></PageShell>
+  if (donnees === undefined || fournisseurs === undefined || magasins === undefined || frs === undefined) return <PageShell title="Commandes fournisseurs"><LoadingState /></PageShell>
 
   const fiche = ficheId && (donnees.commandes || []).find(c => c.id === ficheId)
   const chip = (k, l, n) => <button key={k} className="chip" aria-pressed={filtre === k} onClick={() => setFiltre(k)}>{l}{n != null && <span style={{ opacity: .6 }}> {n}</span>}</button>
   const tot = duMagasin.reduce((a, c) => ({ cmd: a.cmd + c.qte_commandee, recu: a.recu + c.qte_recue, reste: a.reste + c.reste }), { cmd: 0, recu: 0, reste: 0 })
 
-  function importee(ids, saison) {
+  function importee(ids, saison, creee) {
     setImporter(false)
+    setAVerifier(creee)
     if (saison !== season) { if (!seasons.some(s => s.id === saison)) addSeason(libelleSaison(saison)); setSeason(saison) }
     setFiltre('tous'); setRech('')
     setToast({ texte: ids.length > 1 ? `${ids.length} commandes importées (une par magasin)` : 'Commande importée' })
@@ -103,10 +117,18 @@ export default function CommandesFournisseurs() {
   let liste
   if (!visibles.length) liste = <div className="vide">{duMagasin.length ? 'Aucune commande ne correspond.' : estDirection ? 'Aucune commande pour cette saison — touche « Importer une commande ».' : 'Aucune commande pour cette saison.'}</div>
   else {
-    const groupes = {}; visibles.forEach(c => (groupes[nomMarque(c.fournisseur_id)] ||= []).push(c))
-    liste = Object.keys(groupes).sort((a, b) => a.localeCompare(b, 'fr')).map(m => (
-      <section key={m}><h2 className="groupe-titre">{m}</h2><div className="liste">{groupes[m].map(carte)}</div></section>
-    ))
+    // Par fournisseur, puis par marque (sous-titre de marque : quand le fournisseur a plusieurs marques ou un autre nom)
+    const groupes = {}
+    visibles.forEach(c => { const fr = nomFr(c.fournisseur_id); ((groupes[fr] ||= {})[nomMarque(c.fournisseur_id)] ||= []).push(c) })
+    liste = Object.keys(groupes).sort((a, b) => a.localeCompare(b, 'fr')).map(fr => {
+      const marques = Object.keys(groupes[fr]).sort((a, b) => a.localeCompare(b, 'fr'))
+      const sousTitres = !v2['cf-niveau-marque'] || marques.length > 1 || marques[0] !== fr
+      return (
+        <section key={fr}><h2 className="groupe-titre">{fr}</h2>
+          {marques.map(m => <div key={m}>{sousTitres && <div className="cf-sous-titre">{m}</div>}<div className="liste">{groupes[fr][m].map(carte)}</div></div>)}
+        </section>
+      )
+    })
   }
 
   const ficheEl = fiche && (
@@ -117,6 +139,7 @@ export default function CommandesFournisseurs() {
   return (
     <PageShell title="Commandes fournisseurs"
       rightExtra={estDirection && <button className="btn btn-prim seulement-grand" onClick={() => setImporter(true)}><Icone nom="ajout" taille={20} />Importer une commande</button>}>
+      <PanneauEssai points={POINTS_2BIS} />
       {!suivieParCommandes(season) && (
         <div className="encart neutre" style={{ marginBottom: 12 }}>Les commandes fournisseurs sont suivies à partir d’Été 2027. {libelleSaison(season)} reste dans Achats et le Cahier, comme aujourd’hui.</div>
       )}
@@ -128,6 +151,15 @@ export default function CommandesFournisseurs() {
           {magasins.map(m => <button key={m.id} className="chip" aria-pressed={Number(magasinId) === m.id} onClick={() => setMagasinId(m.id)}>{m.nom}</button>)}
         </div>
       </div>
+      {(() => {
+        const avecCommandes = [...new Set((donnees.commandes || []).map(c => frDeMarque(c.fournisseur_id)?.id).filter(Boolean))]
+        return avecCommandes.length > 1 && (
+          <select className="champ" style={{ width: 'auto', minWidth: 220, marginTop: 10 }} value={frId} onChange={e => setFrId(e.target.value)} aria-label="Fournisseur">
+            <option value="">Tous les fournisseurs</option>
+            {avecCommandes.map(id => frs.find(x => x.id === id)).sort((a, b) => a.nom.localeCompare(b.nom, 'fr')).map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
+          </select>
+        )
+      })()}
       <div className="chips" style={{ margin: '10px 0 0', flexWrap: 'wrap' }}>
         {chip('tous', 'Toutes', duMagasin.length)}
         {chip('recevoir', 'À recevoir', duMagasin.filter(c => c.qte_recue === 0 && c.reste > 0).length)}
@@ -137,6 +169,13 @@ export default function CommandesFournisseurs() {
         {estDirection && chip('hors', 'Hors commande', duMagasin.filter(c => c.lignes_hors_commande > 0).length)}
       </div>
       <div className="sous-info">{libelleSaison(season)} · {duMagasin.length} commande{duMagasin.length > 1 ? 's' : ''} · {tot.recu.toLocaleString('fr-FR')} / {tot.cmd.toLocaleString('fr-FR')} paires reçues · reste {tot.reste.toLocaleString('fr-FR')}</div>
+      {aVerifier && (
+        <div className="encart att" style={{ marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ flex: 1 }}>Marque « {aVerifier.marque} » créée{aVerifier.rattache ? ` (rattachée au fournisseur ${aVerifier.rattache})` : ', fournisseur à vérifier'}.</span>
+          <button className="btn petit" onClick={() => ouvrirAvec('parametres', 'fournisseurs-marques')}>Ouvrir dans Réglages</button>
+          <button className="icone-btn" onClick={() => setAVerifier(null)} aria-label="Fermer"><Icone nom="fermer" taille={18} /></button>
+        </div>
+      )}
       {retards.length > 0 && filtre !== 'retard' && (
         <button className="encart att cf-encart" onClick={() => setFiltre('retard')}>
           <Icone nom="horloge" taille={18} />{retards.length} commande{retards.length > 1 ? 's ont' : ' a'} dépassé la livraison prévue — voir
@@ -151,7 +190,7 @@ export default function CommandesFournisseurs() {
 
       <div style={{ height: 72 }} className="seulement-petit" aria-hidden="true" />
       {estDirection && <button className="btn btn-prim action-flottante" onClick={() => setImporter(true)}><Icone nom="ajout" taille={20} />Importer</button>}
-      {importer && <FenetreImport fournisseurs={fournisseurs} magasins={magasins} onFermer={() => setImporter(false)} onImportee={importee}
+      {importer && <FenetreImport fournisseurs={fournisseurs} fournisseursReels={frs} magasins={magasins} onFermer={() => setImporter(false)} onImportee={importee}
         onReimporter={c => { setImporter(false); setReimport(c) }} />}
       {reimport && <FenetreReimport commande={reimport} marque={nomMarque(reimport.fournisseur_id)} magasinNom={nomMagasin(reimport.magasin_id)}
         onFermer={() => setReimport(null)} onFait={() => { setReimport(null); setToast({ texte: 'Commande réimportée' }) }} />}

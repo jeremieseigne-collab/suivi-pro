@@ -3,6 +3,7 @@ import { db } from '../db'
 import Icone from '../components/ui/Icone'
 import { fmtEur } from '../components/shared'
 import { lireFichierPolaris, forme, suivieParCommandes, libelleSaison } from './csvPolaris'
+import { marquesSemblables } from '../cahier/commun'
 import { correspondances, commandesDeMarque, importerCommande, reimporterCommande, messageErreur } from './donnees'
 
 const aujourdhuiIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
@@ -88,7 +89,7 @@ function NumerosBC({ valeurs, onChange }) {
 }
 
 // ─── Importer une commande (Direction) ───
-export function FenetreImport({ fournisseurs, magasins, onFermer, onImportee, onReimporter }) {
+export function FenetreImport({ fournisseurs, fournisseursReels = [], magasins, onFermer, onImportee, onReimporter }) {
   const [fichier, setFichier] = useState('')
   const [r, setR] = useState(null)
   const [fournisseurId, setFournisseurId] = useState('')
@@ -97,6 +98,7 @@ export function FenetreImport({ fournisseurs, magasins, onFermer, onImportee, on
   const [livraison, setLivraison] = useState('')
   const [type, setType] = useState('saison')
   const [cmdMarque, setCmdMarque] = useState({ fid: null, liste: [] })
+  const [rattacher, setRattacher] = useState('')   // marque créée : '' = son propre fournisseur ; sinon n° d'un fournisseur homonyme (Q7)
   const [envoi, setEnvoi] = useState(false)
   const [erreur, setErreur] = useState('')
   const nomMag = id => magasins.find(m => m.id === Number(id))?.nom || `magasin ${id}`
@@ -104,9 +106,12 @@ export function FenetreImport({ fournisseurs, magasins, onFermer, onImportee, on
   function lu(nom, res) {
     setFichier(nom); setR(res); setErreur(''); setBc([])   // nouveau fichier = nouvelle commande : n° de BC à ressaisir
     setType(/r[ée]assort/i.test(nom) ? 'reassort' : 'saison')
+    setRattacher('')
     if (res && !res.erreur) {
+      // Garde-fou anti-doublon (comme le Cahier) : même nom à la casse / ponctuation près → la marque existante ;
+      // nom proche → « Tu voulais dire… ? » (à choisir) ; sinon création de la marque et de son fournisseur
       const f = fournisseurs.find(x => forme(x.nom) === forme(res.marque))
-      setFournisseurId(f ? String(f.id) : '__nouvelle')
+      setFournisseurId(f ? String(f.id) : marquesSemblables(res.marque, fournisseurs.map(x => x.nom)).length ? '' : '__nouvelle')
     }
   }
 
@@ -133,12 +138,12 @@ export function FenetreImport({ fournisseurs, magasins, onFermer, onImportee, on
     setEnvoi(true); setErreur('')
     try {
       let fid = Number(fournisseurId)
-      if (fournisseurId === '__nouvelle') fid = await db.fournisseurs.add({ nom: r.marque, modelesBySeason: {} })
+      if (fournisseurId === '__nouvelle') fid = await db.fournisseurs.add({ nom: r.marque, modelesBySeason: {}, ...(rattacher ? { fournisseurReelId: Number(rattacher) } : {}) })
       const ids = await importerCommande({
         fournisseur_id: fid, season: r.saison, type, numeros_bc: bc,
         date_commande: dateCommande || null, livraison_prevue: livraison || null, fichier,
       }, r.lignes.map(pourLaBase))
-      onImportee(ids, r.saison)
+      onImportee(ids, r.saison, fournisseurId === '__nouvelle' ? { marque: r.marque, rattache: fournisseursReels.find(x => x.id === Number(rattacher))?.nom } : null)
     } catch (e) { setErreur(messageErreur(e)); setEnvoi(false) }
   }
 
@@ -165,6 +170,28 @@ export function FenetreImport({ fournisseurs, magasins, onFermer, onImportee, on
           {r.prixDifferents?.length > 0 && <div className="encart err" style={{ marginTop: 12 }}>Même article avec deux prix différents : {r.prixDifferents.slice(0, 5).join(', ')}{r.prixDifferents.length > 5 ? '…' : ''}. Corrige le fichier.</div>}
           <Refusees refusees={r.refusees} />
 
+          {!fournisseurs.some(x => forme(x.nom) === forme(r.marque)) && fournisseurId !== '__nouvelle' && !Number(fournisseurId) && (() => {
+            const proches = marquesSemblables(r.marque, fournisseurs.map(x => x.nom))
+            return proches.length > 0 && (
+              <div className="encart att" style={{ marginTop: 12, flexDirection: 'column', gap: 6 }}>
+                <b>« {r.marque} » n’existe pas. Tu voulais dire… ?</b>
+                {proches.map(n => <button key={n} className="btn" onClick={() => setFournisseurId(String(fournisseurs.find(x => x.nom === n).id))}>{n}</button>)}
+                <button className="btn" onClick={() => setFournisseurId('__nouvelle')}>Non, créer la marque « {r.marque} »</button>
+              </div>
+            )
+          })()}
+          {fournisseurId === '__nouvelle' && (() => {
+            const homonymes = fournisseursReels.filter(x => forme(x.nom) === forme(r.marque))
+            return (
+              <div className="carte" style={{ marginTop: 12 }}>
+                <div className="aide" style={{ marginTop: 0 }}>La marque « {r.marque} » sera créée{homonymes.length ? '.' : <>, avec son fournisseur du même nom (à vérifier ensuite dans Réglages → Fournisseurs et marques).</>}</div>
+                {homonymes.length > 0 && <>
+                  <label className="ligne-choix"><input type="radio" checked={!rattacher} onChange={() => setRattacher('')} /> Avec son propre fournisseur « {r.marque} »</label>
+                  {homonymes.map(f => <label key={f.id} className="ligne-choix"><input type="radio" checked={rattacher === String(f.id)} onChange={() => setRattacher(String(f.id))} /> Rattachée au fournisseur existant « {f.nom} »</label>)}
+                </>}
+              </div>
+            )
+          })()}
           <label className="etiquette" style={{ marginTop: 16 }}>Marque dans Suivi Pro
             <select className="champ" value={fournisseurId} onChange={e => setFournisseurId(e.target.value)}>
               <option value="">— Choisir —</option>
