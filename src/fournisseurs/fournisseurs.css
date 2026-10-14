@@ -14,3 +14,4 @@
 .ligne-choix { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 15px; cursor: pointer; }
 .fournisseurs-marques .ligne.cf-carte .t2 { white-space: normal; }
 .cf-sous-titre { font-size: var(--t-meta); font-weight: 600; color: var(--texte); margin: 10px 4px 6px; }
+.fournisseurs-marques .ligne .t1, .fournisseurs-marques .ligne .t2 { display: block; }
