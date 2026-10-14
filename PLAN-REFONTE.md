@@ -506,7 +506,7 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 
 **Effort** : moyen (2 tables, 1 fonction, règles d'accès, écran Factures et registre, essais) — environ une journée.
 
-### C. Refonte de la partie Achat : commandes, réceptions, entrées (étude du 14/10, décisions du 14/10, rien de construit)
+### C. Refonte de la partie Achat : commandes, réceptions, entrées (étude et décisions du 14/10 — ✅ **validé le 14/10** ; étape 1 en préparation, branche `plan-c-etape1`)
 
 **But** : remplacer la ligne d'achat actuelle (une marque × magasin × saison, statut ✅ ⏳ ❌ posé à la main, « tout ou rien ») par un modèle **Commande → Réceptions**, détaillé par modèle, coloris et pointure, avec une table de **mouvements de stock** comme structure de fond.
 - Le **Plan de règlement ne change pas**.
@@ -542,13 +542,15 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 | 10 | Reliquat | Annulation **sur toute la commande et article par article**. « **Rétablir** » possible. Direction seulement, **motif obligatoire dans les deux sens**. |
 | 11 | Retours fournisseurs | **Pas de sortie maintenant**. Ils restent des lignes « Retour » du Cahier et rejoindront le chantier des sorties. |
 | 12 | « Pointé » | Veut dire « **facture (ou avoir) reçue et rapprochée** », sans rapport avec Polaris. Fonctionnement **exactement inchangé**, sur les réceptions comme sur les retours. Aucun repère « validé dans Polaris » (voir « Idées pour plus tard »). |
-| 13 | Onglet Entrées | Dans le **premier groupe du menu, sous « Commandes fournisseurs »**. Visible des comptes magasin (**quantités seulement**, sans montants). |
+| 13 | Écran « Reçu par marque » | Dans le **premier groupe du menu, sous « Commandes fournisseurs »**. Visible des comptes magasin (**quantités seulement**, sans montants). |
 | 14 | Données existantes | **Option B**. Été 2027 est la première saison suivie par commandes. **Hiver 2026 est clos le 31/03/2027** ; jusque-là les deux modèles cohabitent, chaque saison dans le sien. |
 | 15 | Noms | « **Commandes fournisseurs** » pour le nouvel écran. L'écran actuel devient « **Commandes clients** » partout où il est nommé. |
 | 16 | Réglages → Marques | Sebago est réglé. **On ne corrige pas l'ancien filtre à part** : l'import des commandes (étape 2) le remplace. |
 
-**Encore ouvert (relevé en rédigeant)** :
-- **Onglet « Entrées » du téléphone.** Sur téléphone, l'onglet du bas « **Entrées** » ouvre aujourd'hui le **Cahier**. Le nouvel onglet « Entrées » (lecture seule) porterait le même nom. Il faut choisir l'un de ces trois noms : « Cahier » pour l'onglet du bas, « Entrées reçues » pour le nouveau, ou un autre.
+**Complément du 14/10 (validation du plan)** :
+- **Nom du nouvel écran : « Reçu par marque »** (menu et plan). L'onglet du bas du téléphone « **Entrées** » reste le **Cahier**, sans changement.
+- **Réimport** : lecture confirmée, un nouveau prix ne s'applique qu'aux réceptions suivantes.
+- **Ordre retenu : 1, 2, 3, puis 7, puis 4, 5, 6.** Les étapes 1 à 3 en ligne **avant fin janvier 2027**.
 - **Nom de l'écran actuel.** Il s'appelle déjà « Commandes clients » dans le menu et dans son titre ; il reste à relever les autres mentions (messages, mails, accueil) au moment de construire.
 
 #### 1. Format du CSV de commande (= CSV d'import Polaris)
@@ -673,13 +675,13 @@ Aucun calcul ne change : l'échéance reste déclenchée par la première récep
   - Il affiche le réel achat saisi. Une commande importée alors que le réel achat est à 0 n'y apparaît pas : c'est l'écart affiché dans Achats qui le signale.
 - **Avoirs et pointage** : rien.
 
-#### 5. Mouvements de stock et onglet « Entrées »
+#### 5. Mouvements de stock et écran « Reçu par marque »
 
 - **Table `mouvements_stock`** : date, magasin, marque, saison, Code Modèle, Couleur, Taille, gencode, quantité (positive), type (`entree` / `sortie` / `correction`), réception (id de l'entrée), ligne de commande, « hors commande », créé par, créé le.
 - **Seules les réceptions l'alimentent** pour l'instant (type `entree`, par `enregistrer_reception`). Personne ne peut y écrire directement.
 - Les retours fournisseurs n'y entrent pas (décision 11).
-- **Onglet « Entrées »**, en lecture seule : ce qui a été reçu, par marque et par magasin, pour la saison choisie.
-  - Il est **nommé « Entrées » et non « Stock »** tant que les sorties n'existent pas (nom du téléphone à régler, voir « Encore ouvert »).
+- **Écran « Reçu par marque »**, en lecture seule : ce qui a été reçu, par marque et par magasin, pour la saison choisie.
+  - Il n'est **pas appelé « Stock »** tant que les sorties n'existent pas.
   - Il se trouve dans le premier groupe du menu, sous « Commandes fournisseurs ».
   - Il est visible des comptes magasin, **quantités seulement** (décision 13).
 - **Pour alimenter les sorties plus tard** (à ne pas concevoir maintenant) :
@@ -692,7 +694,7 @@ Aucun calcul ne change : l'échéance reste déclenchée par la première récep
 
 #### 6. Écrans (style de la refonte, téléphone d'abord)
 
-**Menu (premier groupe)** : … Cahier des entrées, **Commandes fournisseurs**, **Entrées**, Top modèles & réassorts, **Commandes clients** … L'emplacement exact de « Commandes fournisseurs » dans le groupe est à valider à l'écran.
+**Menu (premier groupe)** : … Cahier des entrées, **Commandes fournisseurs**, **Reçu par marque**, Top modèles & réassorts, **Commandes clients** … L'emplacement exact de « Commandes fournisseurs » dans le groupe est à valider à l'écran.
 
 **Commandes fournisseurs**
 - **Liste** : des cartes groupées par marque.
@@ -724,7 +726,7 @@ En cours de saisie :
 - la liste du Cahier ne change pas : mention de la commande et, s'il y a lieu, « hors commande » ;
 - pour les saisons d'avant Été 2027, la saisie reste celle d'aujourd'hui (cohabitation, point 8), avec un repère « saison suivie par commandes » pour les autres.
 
-**Entrées** (lecture seule)
+**Reçu par marque** (lecture seule)
 - **Choix** : saison (puces), magasin (puces, « Tous » pour la Direction).
 - **Liste** : une ligne par marque avec les paires reçues, le nombre de réceptions, la dernière réception, et le montant pour la Direction seulement. En la touchant, on voit les modèles-coloris, puis les tailles.
 - **Fichier CSV** : export réservé à la Direction.
@@ -740,7 +742,6 @@ En cours de saisie :
 - le statut posé à la main ✅ ⏳ ❌ des Achats, pour les saisons en commandes ;
 - l'import « Modèles » de Réglages → Marques, remplacé par l'import des commandes (pas de correctif à part, décision 16) ; il reste utilisable pour Hiver 2026 jusqu'au 31/03/2027 ;
 - le choix libre de la saison d'une entrée rattachée à une commande ;
-- le nom « Entrées » de l'onglet du téléphone (voir « Encore ouvert »).
 
 #### 7. Droits (décisions 5, 7, 9, 10, 13)
 
@@ -755,7 +756,7 @@ En cours de saisie :
 | Pointer une réception ou un retour | Non (inchangé) | Oui (inchangé) |
 | Écrire directement dans les mouvements | Non (la base l'interdit à tous) | Non |
 | Table de correspondance des magasins | Lecture | Lecture et modification |
-| Onglet Entrées | Oui, son magasin (quantités seulement) | Oui (avec montants) |
+| Reçu par marque | Oui, son magasin (quantités seulement) | Oui (avec montants) |
 
 Comme aujourd'hui pour les Achats, les prix restent **lisibles par la base** pour un compte magasin : seul l'écran les masque (décision 9).
 
@@ -768,7 +769,7 @@ Comme aujourd'hui pour les Achats, les prix restent **lisibles par la base** pou
   - les saisons d'avant Été 2027 deviennent de l'historique consultable ;
   - l'ancien chemin de saisie peut être retiré (avec accord) ;
   - l'import « Modèles » de Réglages → Marques aussi.
-- **L'onglet Entrées** peut montrer les saisons passées en recréant les mouvements à partir des entrées existantes (sans commande, sans lien à une ligne).
+- **L'écran « Reçu par marque »** peut montrer les saisons passées en recréant les mouvements à partir des entrées existantes (sans commande, sans lien à une ligne).
 
 **Risques gardés en tête** :
 - deux façons de saisir pendant quelques mois, d'où un repère clair à l'écran et un message aux équipes ;
@@ -792,17 +793,15 @@ Rien n'est supprimé ni modifié dans les tables existantes.
 | 2. Import et Commandes fournisseurs | Import du CSV Polaris (fenêtre avec n° de BC, dates, type ; contrôle de l'en-tête ; aperçu ; refus listés), **réimport** avec récapitulatif, écran **Commandes fournisseurs** en lecture (liste, recherche par n° de BC, détail, grilles, journal) ; correspondance des magasins dans Réglages → Magasins | Direction : un nouvel écran « Commandes fournisseurs » où importer les CSV d'Été 2027 et suivre ce qui est commandé ; magasins : le même écran en lecture, sans prix | 2 jours |
 | 3. Réception rattachée | La saisie du Cahier pour les saisons en commandes (commande, modèle-coloris, grille pré-remplie, plusieurs modèles par carton), hors commande avec confirmation et mention, mouvements, reste à livrer, Suivi des livraisons recalculé ; comparaison du Plan de règlement avant et après | Tous : une saisie du Cahier qui part de la commande pour Été 2027 (inchangée pour Hiver 2026) ; les commandes se remplissent au fil des cartons ; Direction : filtre « Hors commande » | 2 jours |
 | 4. Reliquat | Annuler / rétablir, sur la commande ou par article, motif dans les deux sens, journal ; encart des commandes anciennes non soldées | Direction : boutons « Annuler le reliquat » et « Rétablir » dans le détail d'une commande, encart des commandes qui traînent | 0,5 jour |
-| 5. Onglet Entrées | Écran en lecture seule par saison, marque et magasin (quantités pour les magasins, montants pour la Direction), mouvements recréés pour les saisons passées, export CSV ; nom de l'onglet du téléphone réglé | Tous : « Entrées » dans le menu, sous « Commandes fournisseurs » | 1 jour |
+| 5. Reçu par marque | Écran en lecture seule par saison, marque et magasin (quantités pour les magasins, montants pour la Direction), mouvements recréés pour les saisons passées, export CSV | Tous : « Reçu par marque » dans le menu, sous « Commandes fournisseurs » | 1 jour |
 | 6. Réassorts en commandes | Un réassort devient une commande de type réassort (Demandé → Commandé → En route à la main, alertes inchangées), réception par la même saisie, reprise des réassorts en cours | Tous : l'écran Réassorts quasi identique ; la réception d'un réassort passe par la saisie du Cahier | 1,5 à 2 jours |
 | 7. Achats | L'écran Achats au style de la refonte : commandé net, reçu, écart indicatif avec le réel achat ; retraits accordés (statut ✅ ⏳ ❌ pour les saisons en commandes) | Direction : l'écran Achats redessiné, avec l'écart réel / commandé | 1 à 1,5 jour |
 
 **Total** : environ **9,5 à 10,5 jours**, plus vos essais en local entre chaque étape.
 
-**Ordre** :
-- **Les étapes 1 à 3 doivent être en ligne avant le premier carton d'Été 2027.**
-- Les étapes 4 et 5 peuvent suivre de près.
-- L'étape 6 peut attendre la fin des réassorts d'hiver (au plus tard le 31/03/2027).
-- L'étape 7 est indépendante.
+**Ordre retenu (14/10)** : **1, 2, 3, puis 7, puis 4, 5, 6**. Les étapes 1 à 3 en ligne **avant fin janvier 2027** (premiers cartons d'Été 2027). Chaque étape : construite et essayée sur la base de test, montrée en local, puis mise en ligne par vous (la structure de la base de production n'est modifiée que sur votre commande, avec sa propre sauvegarde).
+
+**Étape 1 (en cours)** : `supabase-plan-c.sql` (modifications, M1 à M20) et `supabase-plan-c-annulation.sql` (annulation), branche `plan-c-etape1`. **Rien n'est appliqué** avant votre accord écrit, d'abord sur la base de test seulement.
 
 ## Idées pour plus tard (non construites)
 
