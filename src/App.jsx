@@ -9,6 +9,7 @@ import { MagasinProvider, useMagasin } from './context/MagasinContext'
 import Coque, { VueClients } from './shell/Coque'
 import { useVue, aller } from './shell/navigation'
 import { PageShell } from './shell/EnTete'
+import { useFournisseursReels } from './fournisseurs/contacts'
 import './App.css'
 import './styles/charte.css'
 import './styles/pont.css'
@@ -52,6 +53,7 @@ function Root() {
   const home = () => aller('home')
   const { magasin, setMagasin } = useMagasin()
   const alerts  = useAlerts(magasin)
+  useFournisseursReels()   // fournisseurs en mémoire pour la lecture des contacts (mails SAV, défectueux, réassorts)
 
   let content
   if (vue === 'cahier')          content = <Cahier />

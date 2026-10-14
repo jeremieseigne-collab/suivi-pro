@@ -1,3 +1,4 @@
+import { contact } from '../fournisseurs/contacts'
 import { SENDER_BY_SOCIETE } from '../defectueux/mail'
 import { sortSizes } from './constants'
 
@@ -25,10 +26,9 @@ Société ${societe}`
 
 // Coordonnée de la marque pour un magasin (répertoire par magasin, sinon valeur commune), sans espaces en trop.
 // Utilisée par les mails de réassort, SAV et défectueux (correctif du 13/10, aussi dans l'outil en ligne).
+// Contact d'une marque pour un magasin : la marque, puis son fournisseur, puis l'ancienne adresse commune (plan C, étape 2 bis)
 export function coordMarque(f, magasinId, key) {
-  if (!f) return ''
-  const cm = f.coordsMagasin && f.coordsMagasin[magasinId]
-  return String((cm && cm[key] && String(cm[key]).trim()) || f[key] || '').trim()
+  return contact(f, magasinId, key)
 }
 
 // « Enregistrer dans le répertoire » : l'adresse tapée est enregistrée pour le magasin du dossier (et non plus pour toute la marque)

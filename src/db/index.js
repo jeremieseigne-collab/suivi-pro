@@ -2,7 +2,11 @@ import { supabase } from '../lib/supabase'
 
 // ─── Mapping camelCase JS ↔ snake_case Postgres ───────────────────────────────
 const FIELD_TO_DB = {
-  fournisseurs:    { modelesBySeason: 'modeles_by_season', contactSav: 'contact_sav', telephoneFixe: 'telephone_fixe', numeroClient: 'numero_client', coordsMagasin: 'coords_magasin', contactCompta: 'contact_compta', telCompta: 'tel_compta', emailCompta: 'email_compta' },
+  fournisseurs:    { modelesBySeason: 'modeles_by_season', contactSav: 'contact_sav', telephoneFixe: 'telephone_fixe', numeroClient: 'numero_client', coordsMagasin: 'coords_magasin', contactCompta: 'contact_compta', telCompta: 'tel_compta', emailCompta: 'email_compta', fournisseurReelId: 'fournisseur_reel_id', contactsHerites: 'contacts_herites' },
+  // Plan C, étape 2 bis : fournisseurs (une ou plusieurs marques), leur règlement et leurs plans chèques
+  fournisseurs_reels:      { contactSav: 'contact_sav', telephoneFixe: 'telephone_fixe', numeroClient: 'numero_client', coordsMagasin: 'coords_magasin', contactCompta: 'contact_compta', telCompta: 'tel_compta', emailCompta: 'email_compta', clePointage: 'cle_pointage', creeLe: 'cree_le', nbMarques: 'nb_marques' },
+  reglements_fournisseurs: { fournisseurReelId: 'fournisseur_reel_id', magasinId: 'magasin_id', modeReglement: 'mode_reglement' },
+  plans_cheques:           { fournisseurReelId: 'fournisseur_reel_id', magasinId: 'magasin_id' },
   parametres:      { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id', recuN1: 'recu_n1', objectifN: 'objectif_n', reelN: 'reel_n', prixModeles: 'prix_modeles', modelesSizes: 'modeles_sizes', modelesTypes: 'modeles_types' },
   entrees:         { magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', typeKey: 'type_key' },
   modes_reglement: { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id', modeReglement: 'mode_reglement' },
@@ -225,4 +229,7 @@ export const db = {
   sav:            new SupabaseTable('sav'),
   topModeles:     new SupabaseTable('top_modeles'),
   reassorts:      new SupabaseTable('reassorts'),
+  fournisseursReels:      new SupabaseTable('fournisseurs_reels'),
+  reglementsFournisseurs: new SupabaseTable('reglements_fournisseurs'),
+  plansCheques:           new SupabaseTable('plans_cheques'),
 }
