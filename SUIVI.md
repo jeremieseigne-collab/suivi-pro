@@ -189,3 +189,12 @@ Seuls **`~/.suivi-pro/`** et **`~/Sauvegardes/suivi-pro/`** passent d'un Mac à 
 - [x] Direction B choisie ; décisions de détail prises sur l'accueil, les statuts, les N°, les couleurs
 - [ ] Votre avis général après essai complet des maquettes, puis passage à l'étape 3 (socle, puis Cahier des entrées)
 - [ ] Étape 3 : socle, puis les écrans dans l'ordre du plan
+
+## À traiter plus tard
+
+- [ ] **Alertes `npm audit`** (relevées le 14/10/2026 après `npm ci` sur l'autre ordinateur ; **rien corrigé** : à voir **après l'étape e de `JOUR-J-AGENDA.md`**). 8 alertes (6 hautes, 2 moyennes), toutes corrigeables d'après `npm audit fix` (non lancé) :
+  - **Dans le code publié** :
+    - `nodemailer` 9.0.0 (**haute**, dépendance directe, utilisée par `api/send-mail`) : lecture de fichiers / requêtes détournées via l'option `raw`, contournement de la liste de domaines autorisés, déni de service sur l'analyse des adresses, cache DNS partagé entre transports. **La plus importante à regarder** (fonction serveur en production).
+    - `dompurify` 3.4.11 (moyenne, via `jspdf`) : contournements du nettoyage HTML (XSS) dans des modes particuliers (`IN_PLACE`, `CUSTOM_ELEMENT_HANDLING`).
+  - **Outils de construction seulement** (pas dans le site publié) : `brace-expansion` 5.0.6, `browserslist` 4.28.2, `nanoid` 3.3.12, `postcss` 8.5.15, `source-map-js` 1.2.1 (hautes) et `baseline-browser-mapping` 2.10.34 (moyenne) — dénis de service ou lecture de fichiers `.map` sur des entrées piégées.
+  - À la reprise : relancer `npm audit` (la liste aura bougé), corriger sur `dev`, essayer en local (envoi de mails de paie sur la base de test notamment), puis mise en ligne lancée par vous.
