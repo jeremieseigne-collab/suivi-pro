@@ -10,6 +10,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Pendant la refonte, **aucune information ni fonction visible dans l'outil actuel ne doit disparaître, être masquée ou déplacée** si elle ne figure pas dans la liste « **Ce qui est retiré, masqué ou déplacé** » de `PLAN-REFONTE.md`, **avec l'accord de l'utilisateur ligne par ligne**. En cas de doute, on garde l'élément et on pose la question.
 
+## ⚠️ Deux ordinateurs, un seul à la fois (14/10/2026)
+
+Suivi Pro se travaille depuis **deux Mac, jamais en même temps**. Le code passe uniquement par GitHub :
+- **en quittant un poste** : tout enregistrer sur la branche `dev` et faire `git push` (après accord de l'utilisateur, comme toujours) ;
+- **en arrivant sur l'autre** : `git pull` sur `dev` avant de commencer (voir aussi le rituel de début de session).
+
+**Note de nettoyages** (seul fichier hors Git qui évolue) : `~/Documents/2 Domaines/Business/BS - Logiciels/Suivi Pro/BShoes_Interne_Courrier_SuiviPro-Nettoyages-BShoesJRShoes.md` — synchronisée par **iCloud** entre les deux Mac. Toujours l'écrire avec `~` (le nom d'utilisateur peut différer d'un Mac à l'autre).
+- **Ne jamais la renommer ni la déplacer**, et ne jamais l'ajouter à Git ni la remettre dans le projet.
+- **Ne pas la modifier depuis les deux Mac en même temps.**
+- Si un fichier « … 2.md » apparaît à côté (`BShoes_Interne_Courrier_SuiviPro-Nettoyages-BShoesJRShoes 2.md`), c'est une **copie en conflit** d'iCloud : **la signaler à l'utilisateur pour fusion**, sans rien supprimer.
+
+**Restent locaux à chaque ordinateur, et ne vont jamais sur iCloud, GitHub ni un dossier partagé** : `~/.suivi-pro/agenda.env` (liens secrets des calendriers), `~/.suivi-pro/comptes-base-de-test.txt` (mots de passe de la base de test), `~/.suivi-pro/essais/`, `~/Sauvegardes/suivi-pro/` (sauvegardes confidentielles), ainsi que `.env.local`, `.dev-db-url.local`, `.prod-db-url.local`, `.vercel-token.local` dans le projet. Ils passent d'un Mac à l'autre **par AirDrop ou clé USB** seulement (voir `SUIVI.md`, « Reprendre sur l'autre ordinateur »).
+
 ## ⚠️ Essais de navigateur : ne jamais fermer ceux d'un autre projet (14/10/2026)
 
 Deux projets lancent des Chrome sans écran sur l'ordinateur où se trouve Iris : **Suivi Pro** (ports **9370 à 9399** — 9379 et 9390 —, profils `…/chrome-profil`) et **Iris / factures-auto** (ports **9330 à 9359**, profils `…/prof`). Le 14/10, Iris fermait « tous les Chrome `--remote-debugging-port` » après chaque test, ce qui fermait le navigateur d'essai de Suivi Pro en plein essai.

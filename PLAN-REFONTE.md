@@ -456,7 +456,7 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 | 3321 | Rouffiac · Hiver 2026 | Miss Elastic 75050-67-05, Negro | SAV | 0 € | 39,00 € (prix moyen Été 2026, estimé) |
 | 2389, 2390, 2475, 2913, 3421 | — | Bopy, Aliwell A126162, Pepe Jeans, Eva Frutos « . », Pellet | SAV | 0 € | 0 € (rien de connu pour ce modèle dans ce magasin) |
 
-« Après » = prix qu'aurait reçu le retour s'il avait été créé avec la nouvelle règle ; les retours existants ne changent pas tout seuls (correction à la main par la Direction, liste dans `NETTOYAGES.md`, local). Les 25 retours qui ont déjà un prix auraient reçu le même prix.
+« Après » = prix qu'aurait reçu le retour s'il avait été créé avec la nouvelle règle ; les retours existants ne changent pas tout seuls (correction à la main par la Direction, liste dans la note de nettoyages (`~/Documents/2 Domaines/Business/BS - Logiciels/Suivi Pro/BShoes_Interne_Courrier_SuiviPro-Nettoyages-BShoesJRShoes.md`)). Les 25 retours qui ont déjà un prix auraient reçu le même prix.
 
 ## Plans préparés (non construits, 12/10)
 
