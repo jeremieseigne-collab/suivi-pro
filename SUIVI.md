@@ -1,7 +1,7 @@
 # Suivi du chantier de refonte
 
-> Mis à jour à chaque étape — **dernière mise à jour : mardi 13 octobre 2026, étape 2, refonte et prix des retours en ligne**.
-> Branches : `refonte` (dossier `Projets/suivi-pro-refonte`), `securite` (dossier `Projets/suivi-pro`). En production : `main` = correctifs I1-I3 + protection (d3b32c4) ; `dev` identique.
+> Mis à jour à chaque étape — **dernière mise à jour : mercredi 14 octobre 2026, agenda lu par le serveur en ligne ; bascule du chantier vers l'autre ordinateur**.
+> **En production : `main` = b914345** (refonte + prix des retours + agenda lu par le serveur). **`dev` = `main` + documents** (aucun code en plus). Le travail continue **sur l'autre ordinateur, branche `dev`** (voir « Reprendre sur l'autre ordinateur » ci-dessous).
 
 ## Où on en est
 
@@ -16,6 +16,40 @@
 | 4. Préparation de la mise en ligne | ✅ **prête (nuit du 12 au 13/10)** — essai sur une **copie des données réelles** dans la base de test (remise ensuite en données fictives) : Plan de règlement identique (3 saisons, 98 filtres, 14 631 lignes), Achats identiques (3 saisons, 52 filtres), Suivi des livraisons identique (137 marques × magasin, 2 350 modèles), listes Cahier / Commandes / SAV / défectueux / Réassorts identiques pour les 3 magasins (Direction et compte magasin), 162 affichages sans défaut ; structure de la base identique test / production : **aucune modification de base** ; coexistence ancienne / nouvelle version sans risque ; correctif « rechargement si un écran manque après une mise en ligne » (28e248e) ; fichiers inutilisés retirés (056e139) ; tous les essais refaits ; déroulé `JOUR-J-REFONTE.md` |
 | 5. Mise en ligne de la refonte | ✅ **EN LIGNE depuis le 13/10/2026 vers 8 h 55** (votre feu vert du matin) : sauvegarde `prod-2026-10-13_08h50-avant-refonte` ; envoi `31eec8e..24a8175` ; site identique octet pour octet à une construction propre de la branche (49 fichiers) ; aucun fichier de test ; mail sans connexion refusé ; visiteur 0 ligne ; données inchangées ; contrôles à l'écran bons (compte Direction, ordinateur et téléphone) ; message aux équipes envoyé. Marche arrière : `JOUR-J-REFONTE.md` |
 | 6. Prix des retours | ✅ **EN LIGNE depuis le 13/10/2026 vers 16 h 15** (branche `retours-prix`, 81704e5 + 7fc1ac7, votre accord « on met en ligne ») : correction du prix d'un retour par la Direction (fiche, effet sur le Plan, confirmation, « Annuler ») ; prix d'un nouveau retour cherché aussi dans les autres saisons, puis prix moyen (saison active, puis saison de la commande), mention « prix estimé ». Sauvegarde `prod-2026-10-13_16h09-avant-retours-prix` ; site identique octet pour octet (50 fichiers) ; mail sans connexion refusé ; visiteur 0 ligne ; contrôles à l'écran bons (Direction, ordinateur et téléphone). Essais base de test 37/37 ; Plan identique à la version précédente hors l'avoir de l'essai. Retours à corriger : `NETTOYAGES.md` (local) |
+| 7. Agenda lu par le serveur (plan A) | ✅ **EN LIGNE depuis le 14/10/2026** (main = b914345, redéployé dans Vercel avec les bonnes valeurs) : la fonction `api/agenda` lit les 3 liens iCloud (variables Vercel), refusée sans connexion ; accueil et agenda affichent les 3 calendriers (vérifié à l'écran, ordinateur et téléphone) ; plus de clé ni d'identifiant de calendrier dans le code publié. Notes avec un lien ni envoyées ni affichées (décision B). Essais : 24/24 à l'écran contre la version Google, 162 affichages, comparaison 2012-2027. ⏳ **Étapes d et e de `JOUR-J-AGENDA.md` à faire au plus tôt le 15/10** (désabonnement des 3 calendriers dans Google, suppression de la clé dans la console Google et de `VITE_GOOGLE_API_KEY` dans Vercel, puis vérification finale). Marche arrière d'ici là : Vercel → Deployments → 7fc1ac7 → Promote to Production |
+
+## 🖥 Reprendre sur l'autre ordinateur (bascule du 14/10/2026)
+
+Le chantier Suivi Pro continue sur **l'autre ordinateur** ; celui-ci garde Iris (factures-auto). La session de là-bas reprend exactement ici.
+
+### 1. Fichiers hors du projet à recopier (par AirDrop ou clé USB — jamais par mail, messagerie ou nuage)
+| Fichier sur cet ordinateur | Emplacement d'arrivée sur l'autre ordinateur | Contenu / précaution |
+|---|---|---|
+| `~/.suivi-pro/agenda.env` | `~/.suivi-pro/agenda.env` | **Secrets** : liens iCloud des 3 calendriers (serveur local seulement). Puis `chmod 600 ~/.suivi-pro/agenda.env`. Ne jamais l'afficher ni le coller dans une conversation |
+| `~/.suivi-pro/comptes-base-de-test.txt` | `~/.suivi-pro/comptes-base-de-test.txt` | Mots de passe des 5 comptes de la **base de test** (renouvelés le 13/10 à 12 h 30). Puis `chmod 600`. Le refermer sans l'enregistrer s'il est ouvert dans TextEdit |
+| `~/.suivi-pro/essais/` (dossier) | `~/.suivi-pro/essais/` | Scripts des essais automatiques (aucun secret) ; chemins à adapter : voir `LISEZMOI.txt` |
+| `Projets/suivi-pro-refonte/NETTOYAGES.md` | à la racine du dossier Suivi Pro (à côté de `CLAUDE.md`) | Nettoyages de données à faire à l'écran (montants : **hors Git**). Ajouter la ligne `NETTOYAGES.md` à `.git/info/exclude` |
+| `Projets/suivi-pro/VERIFICATIONS-PROD.md` (facultatif) | à la racine du dossier Suivi Pro | Rapport de vérification de la production (hors Git : l'ajouter aussi à `.git/info/exclude`) |
+| `~/Sauvegardes/suivi-pro/` (facultatif, conseillé) | `~/Sauvegardes/suivi-pro/` | Sauvegardes **confidentielles** de la production et de la base de test ; au minimum `prod-2026-10-10_00h49` (procédure de restauration `LISEZMOI.txt`), `prod-2026-10-14_09h59-avant-agenda-v2` (la plus récente) et `test-2026-10-13_00h08-donnees-fictives` (données fictives de la base de test) |
+| `~/.claude/projects/-Users-jeremieseigne-Projets--suivi-pro/memory/` (facultatif) | le dossier `memory/` du projet Suivi Pro dans `~/.claude/projects/` (créé au premier lancement de Claude dans le projet) | Mémoire de Claude (votre profil, règles de mise en ligne, état du chantier) |
+
+**Déjà sur l'autre ordinateur en principe (à vérifier, pas à recopier à l'aveugle)** : `.env.local` (doit pointer sur la **base de test** `xrxmnblhpcxlefjcvczw`, sans `SEND_REAL_MAIL=1`), `.dev-db-url.local` (base de test), `.prod-db-url.local` (production), `.vercel-token.local` (accès Vercel en lecture : permet à Claude de lire les journaux et les déploiements).
+
+### 2. Au premier démarrage (consignes pour la session Claude de là-bas)
+1. `git fetch origin` puis `git checkout dev` et `git pull --ff-only` → `dev` doit contenir le commit « Bascule du chantier vers l'autre ordinateur » (14/10) ; `main` = b914345.
+2. `npm ci` (installe exactement les bibliothèques de `package-lock.json`, dont `ical.js` — c'est aussi ce que fait Vercel).
+3. Vérifier sans rien afficher de secret : `.env.local` pointe sur la base de test ; `~/.suivi-pro/agenda.env` et `~/.suivi-pro/comptes-base-de-test.txt` existent, lisibles par le compte seulement (`ls -la ~/.suivi-pro`) ; `NETTOYAGES.md` bien ignoré par Git (`git check-ignore NETTOYAGES.md`).
+4. `npm run dev` puis ouvrir `http://localhost:5173` : connexion avec un compte de test, accueil « À venir » et Agenda affichent les 3 calendriers des magasins **sans message orange** (le serveur local lit `agenda.env`).
+5. Lire `CLAUDE.md` (règles de sécurité, rituel de fin **suspendu**, cloisonnement des essais de navigateur), ce `SUIVI.md` et `JOUR-J-AGENDA.md`.
+6. Mettre à jour la mémoire de Claude avec l'état ci-dessous si le dossier `memory/` n'a pas été recopié.
+
+### 3. Où on s'est arrêté (14/10, fin de matinée)
+- **Production** : `main` = b914345, tout est vérifié ; **ne pas toucher à la production avant le 15/10**.
+- **Prochaine action prévue** : étapes **d et e** de `JOUR-J-AGENDA.md` (le 15/10 au plus tôt, si l'agenda a bien tourné une journée) : vous vous désabonnez des 3 calendriers dans Google Agenda, supprimez la clé dans la console Google et `VITE_GOOGLE_API_KEY` dans Vercel ; Claude vérifie ensuite qu'une personne extérieure ne lit plus rien (anciennes adresses publiques de Google et ancienne clé refusées). Puis retirer `VITE_GOOGLE_API_KEY` des `.env.local` (avec votre accord).
+- **À faire par vous, à l'écran** : `NETTOYAGES.md` (16 lignes d'achat sans réception, 11 retours à 0 € à corriger avec « Corriger le prix ») ; import du bon de commande Sebago (Réglages → Marques, Les 2 Zèbres, Été 2026), puis « Modifier → Enregistrer » sur les 7 entrées à 0 €.
+- **En attente** : plan B (numéros de facture partagés) — avis de l'expert-comptable ; idées pour plus tard (plan, section « Idées pour plus tard »), dont le renouvellement des liens iCloud et le blocage par la base du prix des entrées pour les comptes magasin.
+- **Règles inchangées** : aucune mise en ligne sans que vous lanciez vous-même la commande (sauvegarde fraîche → commande → vérification en lecture seule) ; rien en production sans votre accord écrit ; essais d'écriture seulement sur la base de test (données fictives, magasins 7/8/9).
+- **Branches** : tout le code utile est dans `main` / `dev`. Les branches locales de cet ordinateur (`refonte`, `retours-prix`, `agenda-serveur`, `agenda-serveur-v2`, `retour-7fc1ac7`, `securite-etape2`…) ne sont pas nécessaires là-bas.
 
 ## Décisions prises
 

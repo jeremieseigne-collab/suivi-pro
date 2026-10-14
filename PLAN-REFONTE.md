@@ -460,7 +460,7 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 
 ## Plans préparés (non construits, 12/10)
 
-### A. Calendriers des magasins lus par le serveur (point 2b) — ✅ construit (13/10, branche `agenda-serveur`, solution B : liens iCloud lus par le serveur ; déroulé `JOUR-J-AGENDA.md`)
+### A. Calendriers des magasins lus par le serveur (point 2b) — ✅ **EN LIGNE depuis le 14/10** (solution B : liens iCloud lus par le serveur ; étapes d et e à faire, voir `JOUR-J-AGENDA.md`)
 
 > **Constat du 13/10** : les copies Google des 3 calendriers étaient lisibles **sans clé et sans connexion** à une adresse publique de Google fabriquée à partir de leurs identifiants (eux-mêmes dans le code publié) : la restriction de la clé ne protégeait pas les événements. Le compte de service n'est pas possible (abonnements « à partir d'une URL », non partageables). **Solution retenue (votre accord du 13/10)** : le serveur lit directement les liens iCloud publiés (variables Vercel), puis désabonnement des 3 calendriers dans Google et suppression de la clé.
 
