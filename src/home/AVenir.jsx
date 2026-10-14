@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from 'react'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { isoDate } from '../agenda/dates'
-import { fetchGoogleEvents } from '../agenda/googleCalendars'
+import { fetchGoogleEvents, messageCalendriers } from '../agenda/googleCalendars'
 import { aller } from '../shell/navigation'
+import { useCompte } from '../context/CompteContext'
 
 const MAX = 4
 const JOURS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
@@ -24,6 +25,7 @@ function libelleJour(iso, auj) {
 const COULEUR_COMMUN = '#8b5cf6'
 export default function AVenir() {
   const [google, setGoogle] = useState([])
+  const { estDirection } = useCompte()
   const [maintenant, setMaintenant] = useState(() => new Date())
   const app = useLiveQuery(() => db.evenements.toArray(), [])
 
@@ -47,7 +49,9 @@ export default function AVenir() {
   }, [app, google, auj, maintenant])
 
   if (app === undefined) return <div className="liste"><div className="ligne"><span className="txt"><span className="t2">Chargement…</span></span></div></div>
-  if (!evs.length) return <div className="liste"><div className="ligne"><span className="txt"><span className="t1" style={{ fontWeight: 500, color: 'var(--doux)' }}>Aucun événement à venir</span></span></div></div>
+  const manque = messageCalendriers(google, estDirection)
+  const avis = manque && <div key="avis" className="aide att" style={{ padding: '6px 14px' }}>{manque}</div>
+  if (!evs.length) return <div className="liste"><div className="ligne"><span className="txt"><span className="t1" style={{ fontWeight: 500, color: 'var(--doux)' }}>Aucun événement à venir</span></span></div>{avis}</div>
   let jourPrec = ''
   return (
     <div className="liste">
@@ -63,6 +67,7 @@ export default function AVenir() {
           </button>,
         ]
       })}
+      {avis}
     </div>
   )
 }

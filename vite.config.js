@@ -1,5 +1,19 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import { readFileSync, existsSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
+
+// En local seulement : les liens des calendriers des magasins (secrets) sont lus dans ~/.suivi-pro/agenda.env,
+// HORS du projet (jamais dans .env.local, jamais dans Git). En production, ils sont dans les variables de Vercel.
+function chargerAgendaLocal() {
+  const f = join(homedir(), '.suivi-pro', 'agenda.env')
+  if (!existsSync(f)) return
+  for (const l of readFileSync(f, 'utf8').split(/\r?\n/)) {
+    const m = /^(AGENDA_ICAL_[A-Z]+)=(.*)$/.exec(l.trim())
+    if (m && m[2].trim() && !process.env[m[1]]) process.env[m[1]] = m[2].trim()
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -14,6 +28,14 @@ export default defineConfig(({ mode }) => {
         // Sert /api/send-mail en dev (en prod c'est la fonction serverless Vercel api/send-mail.js)
         name: 'dev-api-send-mail',
         configureServer(server) {
+          // Sert /api/agenda en dev (en prod : fonction serverless Vercel api/agenda.js)
+          chargerAgendaLocal()
+          server.middlewares.use('/api/agenda', async (req, res, next) => {
+            if (req.method !== 'GET') return next()
+            const { default: handler } = await import('./api/agenda.js')
+            req.url = req.originalUrl || req.url
+            await handler(req, res)
+          })
           server.middlewares.use('/api/send-mail', (req, res, next) => {
             if (req.method !== 'POST') return next()
             let body = ''
