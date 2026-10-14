@@ -39,7 +39,7 @@ async function charger(timeMin, timeMax) {
     for (const c of liste) {
       const cal = GOOGLE_CALENDARS.find(x => x.cle === c.cle)
       if (!cal) continue
-      if (!c.ok) { if (!c.nonConfigure) { out.indisponibles.push(cal.label); if (c.motif) out.motifs[cal.label] = c.motif } continue }
+      if (!c.ok) { if (!c.nonConfigure) { out.indisponibles.push(cal.label); if (c.motif) out.motifs[cal.label] = c.motif + (c.diag ? '|' + c.diag : '') } continue }
       for (const e of c.evenements || []) out.push({ ...e, source: 'google', color: cal.color, calLabel: cal.label })
     }
     return out
@@ -49,7 +49,7 @@ async function charger(timeMin, timeMax) {
 // Message à afficher sous l'agenda / « À venir » quand un calendrier manque ('' si tout va bien).
 // detail (comptes Direction) : ajoute le motif de l'erreur, en clair, pour savoir quoi corriger (jamais de lien).
 const MOTIFS = { 'lien-mal-forme': 'lien mal recopié dans Vercel', 'delai': 'iCloud trop lent', 'pas-un-calendrier': "iCloud n'a pas renvoyé de calendrier" }
-const motifEnClair = m => MOTIFS[m] || (m.startsWith('refus-') ? `refusé par iCloud, code ${m.slice(6)}` : m.startsWith('reseau') ? `iCloud injoignable${m.length > 6 ? ' (' + m.slice(7) + ')' : ''}` : m)
+const motifEnClair = mm => { const [m, diag] = mm.split('|'); return (MOTIFS[m] || (m.startsWith('refus-') ? `refusé par iCloud, code ${m.slice(6)}` : m.startsWith('reseau') ? `iCloud injoignable${m.length > 6 ? ' (' + m.slice(7) + ')' : ''}` : m)) + (diag ? ' ; ' + diag : '') }
 export function messageCalendriers(evs, detail = false) {
   if (!evs) return ''
   if (evs.nonConfigure) return 'Calendriers des magasins non configurés'

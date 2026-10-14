@@ -4,6 +4,7 @@
 // (Vercel ; en local, ~/.suivi-pro/agenda.env, hors du projet). Jamais dans le code, jamais dans les journaux.
 // Le contenu des événements n'est jamais écrit dans les journaux.
 import ICAL from 'ical.js'
+import { createHash } from 'node:crypto'
 
 const CALENDRIERS = [
   { cle: 'albi',     variable: 'AGENDA_ICAL_ALBI' },
@@ -16,14 +17,25 @@ const MAX_JOURS  = 400                    // fenêtre maximale demandée (vue An
 const MAX_OCCURRENCES = 20000             // garde-fou sur le déroulé d'un rendez-vous récurrent
 const memoire = new Map()                 // cle → { t, comp }
 
-// Valeur d'une variable → lien https. Tolère ce qu'un copier-coller ajoute souvent : la ligne entière
-// (« AGENDA_ICAL_…= » en tête), des guillemets, des espaces ou caractères invisibles ; webcal:// devient https://.
-export function lienDepuis(valeur) {
-  let v = String(valeur || '').replace(/[\u200B-\u200D\uFEFF\u00A0]/g, ' ').trim()
-  v = v.replace(/^AGENDA_ICAL_[A-Z]+\s*=\s*/i, '').trim()
-  v = v.replace(/^["'«“‘\s]+|["'»”’\s]+$/g, '').trim()
-  return v.replace(/^webcal:\/\//i, 'https://')
+// Valeur d'une variable → lien https, avec un diagnostic sans secret.
+// Le lien iCloud publié est extrait de la valeur, quoi qu'il y ait autour (ligne entière collée, guillemets, espaces,
+// ponctuation ou caractères invisibles) ; dans le jeton, tout caractère qui ne peut pas en faire partie est retiré.
+// iCloud répond 400 dès que le jeton a un caractère de trop ou de moins (vérifié le 14/10).
+// eslint-disable-next-line no-control-regex -- caractères de contrôle recherchés exprès
+const INVISIBLES = /[\u0000-\u001F\u007F-\u009F\u00A0\u00AD\u200B-\u200F\u2028\u2029\u2060\uFEFF]/g
+export function lireLien(valeur) {
+  const brut = String(valeur || '')
+  // eslint-disable-next-line no-control-regex -- caractères de contrôle recherchés exprès
+  const inattendus = [...new Set([...brut].filter(c => /[\u0000-\u001F\u007F-\u009F\u00A0\u00AD\u200B-\u200F\u2028\u2029\u2060\uFEFF"'«»“”‘’…]/.test(c)).map(c => 'U+' + c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')))]
+  const net = brut.replace(INVISIBLES, '')
+  const m = /(?:webcal|https?):\/\/(p\d+-caldav\.icloud\.com)\/published\/2\/([^\s"'«»“”‘’<>]+)/i.exec(net)
+  let url, jeton = ''
+  if (m) { jeton = m[2].replace(/[^A-Za-z0-9_-]/g, ''); url = `https://${m[1].toLowerCase()}/published/2/${jeton}` }
+  else url = net.trim().replace(/^AGENDA_ICAL_[A-Z]+\s*=\s*/i, '').replace(/^["'«“‘]+|["'»”’]+$/g, '').replace(/^webcal:\/\//i, 'https://')
+  const empreinte = createHash('sha256').update(url).digest('hex').slice(0, 8)
+  return { url, diag: `valeur ${brut.length} car., jeton ${m ? jeton.length + ' car.' : 'introuvable'}${inattendus.length ? ', caractères inattendus ' + inattendus.join(' ') : ''}, empreinte ${empreinte}` }
 }
+export function lienDepuis(valeur) { return lireLien(valeur).url }
 // Motif d'une erreur, en code fixe (jamais le lien ni le contenu) : renvoyé à l'appareil et écrit dans le journal
 function motifErreur(e) {
   if (e.motif) return e.motif
@@ -37,13 +49,13 @@ const echec = motif => { const e = new Error(motif); e.motif = motif; return e }
 async function lireCalendrier(cal) {
   const brut = process.env[cal.variable]
   if (!String(brut || '').trim()) return { configure: false }
-  const url = lienDepuis(brut)
+  const { url, diag } = lireLien(brut)
   const deja = memoire.get(cal.cle)
   if (deja && Date.now() - deja.t < MEMOIRE_MS) return { configure: true, comp: deja.comp }
   try {
     if (!/^https:\/\/[^/\s]+\/\S+$/.test(url)) throw echec('lien-mal-forme')
     const r = await fetch(url, { signal: AbortSignal.timeout(DELAI_MS), headers: { 'User-Agent': 'suivi-pro-agenda', Accept: 'text/calendar, */*' } })
-    if (!r.ok) throw echec('refus-' + r.status)
+    if (!r.ok) { await r.text().catch(() => ''); throw echec('refus-' + r.status) }
     const texte = (await r.text()).replace(/^\uFEFF/, '').trimStart()
     if (!texte.startsWith('BEGIN:VCALENDAR')) throw echec('pas-un-calendrier')
     const comp = new ICAL.Component(ICAL.parse(texte))
@@ -55,9 +67,9 @@ async function lireCalendrier(cal) {
   } catch (e) {
     const motif = motifErreur(e)
     // Journal sans le lien ni le contenu : seulement le magasin et le motif
-    console.error(`Agenda : calendrier « ${cal.cle} » indisponible (${motif})`)
+    console.error(`Agenda : calendrier « ${cal.cle} » indisponible (${motif} ; ${diag})`)
     if (deja) return { configure: true, comp: deja.comp }
-    return { configure: true, erreur: true, motif }
+    return { configure: true, erreur: true, motif, diag }
   }
 }
 
@@ -149,7 +161,7 @@ export async function agendaEntre(debut, fin) {
   const calendriers = await Promise.all(CALENDRIERS.map(async cal => {
     const c = await lireCalendrier(cal)
     if (!c.configure) return { cle: cal.cle, ok: false, nonConfigure: true, evenements: [] }
-    if (c.erreur) return { cle: cal.cle, ok: false, motif: c.motif, evenements: [] }
+    if (c.erreur) return { cle: cal.cle, ok: false, motif: c.motif, diag: c.diag, evenements: [] }
     try { return { cle: cal.cle, ok: true, evenements: evenementsEntre(cal.cle, c.comp, debut, fin) } }
     catch (e) { const motif = 'deroule-' + (e.name || 'erreur'); console.error(`Agenda : calendrier « ${cal.cle} » indisponible (${motif})`); return { cle: cal.cle, ok: false, motif, evenements: [] } }
   }))
