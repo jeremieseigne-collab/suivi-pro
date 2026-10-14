@@ -6,8 +6,6 @@ import { useCompte } from '../context/CompteContext'
 import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { aller, useApparence, APPARENCES } from './navigation'
-import { useVariantes } from './essai'
-import { POINTS_FOURNISSEURS } from '../fournisseurs/points'
 import './coque.css'
 
 // ─── Menu : mêmes destinations et mêmes intitulés qu'aujourd'hui, rangés selon le plan ───
@@ -33,18 +31,14 @@ const MENU_BASE = [
     { id: 'parametres', icone: 'reglages',  label: 'Réglages' },
   ] },
 ]
-// Commandes fournisseurs (plan C, étape 2) : premier groupe ; juste sous « Cahier des entrées » (point à trancher, sinon après Factures)
+// Commandes fournisseurs (plan C, étape 2) : premier groupe, juste sous « Cahier des entrées » (choix du 14/10)
 const CF = { id: 'fournisseurs', icone: 'livraison', label: 'Commandes fournisseurs' }
-function construireMenu(sousCahier) {
-  return MENU_BASE.map((g, i) => {
-    if (i !== 0) return g
-    const items = [...g.items]
-    const pos = sousCahier ? items.findIndex(it => it.id === 'cahier') + 1 : items.length
-    items.splice(pos, 0, CF)
-    return { ...g, items }
-  })
-}
-function useMenu() { return construireMenu(useVariantes(POINTS_FOURNISSEURS)['cf-menu-sous-cahier']) }
+const MENU = MENU_BASE.map((g, i) => {
+  if (i !== 0) return g
+  const items = [...g.items]
+  items.splice(items.findIndex(it => it.id === 'cahier') + 1, 0, CF)
+  return { ...g, items }
+})
 // Onglets du téléphone (en bas, à portée du pouce) ; le reste est dans « Plus »
 const ONGLETS = [
   { id: 'home',     icone: 'accueil',  label: 'Accueil' },
@@ -125,7 +119,6 @@ function ChoixApparence() {
 // ─── Barre latérale (ordinateur et tablette) ───
 function BarreLaterale({ vue, alerts, magasin, setMagasin }) {
   const { estDirection, email } = useCompte()
-  const menu = useMenu()
   const [replie, setReplie] = useState(() => { try { return localStorage.getItem('sidebar_collapsed') === '1' } catch { return false } })
   const basculer = () => setReplie(r => { try { localStorage.setItem('sidebar_collapsed', r ? '0' : '1') } catch { /* ignore */ } return !r })
   const { badges, notes } = reperes(alerts)
@@ -133,7 +126,7 @@ function BarreLaterale({ vue, alerts, magasin, setMagasin }) {
     <nav className={`barre-laterale${replie ? ' replie' : ''}`} aria-label="Menu">
       <button className="marque-app" onClick={() => aller('home')} title="Accueil"><b>S</b>{!replie && 'Suivi Pro'}</button>
       <ChoixMagasin magasin={magasin} setMagasin={setMagasin} replie={replie} />
-      {menu.filter(g => !g.direction || estDirection).map((g, i) => (
+      {MENU.filter(g => !g.direction || estDirection).map((g, i) => (
         <div key={i}>
           {g.titre && (replie ? <div className="separateur" /> : <div className="nav-titre">{g.titre}</div>)}
           {g.items.map(it => (
@@ -158,11 +151,10 @@ function BarreLaterale({ vue, alerts, magasin, setMagasin }) {
 // ─── Barre d'onglets + feuille « Plus » (téléphone) ───
 function BarreOnglets({ vue, alerts, magasin, setMagasin }) {
   const { estDirection, email } = useCompte()
-  const menu = useMenu()
   const [plus, setPlus] = useState(false)
   const { badges, notes } = reperes(alerts)
   const dansOnglets = new Set(ONGLETS.flatMap(o => o.vues || [o.id]))
-  const autres = menu.filter(g => !g.direction || estDirection).flatMap(g => g.items).filter(it => !dansOnglets.has(it.id))
+  const autres = MENU.filter(g => !g.direction || estDirection).flatMap(g => g.items).filter(it => !dansOnglets.has(it.id))
   const ongletActif = o => (o.vues || [o.id]).includes(vue)
   const nbClients = (badges.commandes.n || 0) + (badges.sav.n || 0)
   return (
