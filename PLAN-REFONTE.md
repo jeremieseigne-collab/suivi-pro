@@ -807,6 +807,7 @@ Rien n'est supprimé ni modifié dans les tables existantes.
 - Un défaut trouvé par les essais et corrigé (réimport : nom de variable en collision avec un alias de requête).
 - **Aller-retour** : annulation → structure **identique** à la sauvegarde (528 lignes de définition, temps réel 16 tables) → réapplication du fichier corrigé → essais 66/66.
 - État final de la base de test : structure du plan C en place, **aucune donnée d'essai** (nombres de lignes identiques à la sauvegarde).
+- **Vérification à l'écran (14/10, serveur local, base de test)** : accueil, Cahier, Suivi des livraisons, Achats, Plan de règlement — compte magasin et compte Direction — **texte affiché identique** avant et après l'étape 1 (8 écrans relevés avec l'étape 1 retirée puis remise) ; Cahier à l'écran : créer, corriger, supprimer une entrée d'essai avec les deux comptes, contrôlé en base, entrée d'essai effacée. Scripts : `~/.suivi-pro/essais/cdp-captures-etape1.mjs`, `cdp-cahier-etape1.mjs`.
 - **Production : rien.** La migration se fera sur votre commande, avec sa propre sauvegarde (même fichier, déjà essayé).
 - Scripts d'essai : `~/.suivi-pro/essais/essais-plan-c.mjs` et `entree-ordinaire.mjs` (hors du projet ; module `pg` à installer dans un dossier de travail).
 
