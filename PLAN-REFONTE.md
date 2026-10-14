@@ -506,6 +506,228 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 
 **Effort** : moyen (2 tables, 1 fonction, règles d'accès, écran Factures et registre, essais) — environ une journée.
 
+### C. Refonte de la partie Achat : commandes, réceptions, entrées (étude du 14/10, rien de construit)
+
+**But** : remplacer la ligne d'achat actuelle (une marque × magasin × saison, statut ✅ ⏳ ❌ posé à la main, « tout ou rien ») par un modèle **Commande → Réceptions**, détaillé par modèle, coloris et pointure, avec une table de **mouvements de stock** comme structure de fond. Le Plan de règlement ne change pas. Aucun envoi automatique vers Polaris.
+
+**Ce qui existe aujourd'hui (relevé dans le code)** :
+- **Achats** (`parametres`) : une ligne par marque × magasin × saison, avec reçu N-1, objectif, **réel achat** (`reel_n`), quantité, stratégie, statut. Le détail par modèle et pointure est rangé **dans la même ligne** (`modeles`, `prix_modeles`, `modeles_sizes`, `modeles_types`). Il est rempli par un **second import**, celui de Réglages → Marques. Le modèle y est le texte « Code, Couleur » : il n'y a ni coloris séparé ni gencode. Rien ne relie le total des Achats au total des modèles.
+- **Cahier des entrées** (`entrees`) : une entrée par modèle et par date, avec les quantités par pointure, le nombre de paires et un PHT figé à l'enregistrement (prix du modèle × paires). Le lien avec l'achat est implicite (même marque, même magasin, même saison, même texte de modèle). La saison d'une entrée est celle **choisie sur l'appareil**.
+- **Réassorts** (`reassorts`) : c'est déjà une petite commande avec réceptions partielles (5 étapes, réceptions datées, « entièrement reçu »). Chaque réception crée une entrée « Réassort ». Il n'y a aucun lien avec les Achats.
+- **Suivi des livraisons** : la référence (« attendu ») vient des Achats pour la marque et des données de Réglages → Marques pour les modèles. Le reçu compte aussi les réassorts, qui ne sont pas dans l'attendu.
+
+#### 1. Format du CSV de commande (= CSV d'import Polaris)
+
+Relevé sur les 62 fichiers de `Bon de Commande/Import Polaris/` (H26, 5 627 lignes) : **un seul en-tête**, séparateur `;`, UTF-8, 20 colonnes dans cet ordre :
+`Collection;Magasin;Marque;Gencode;Code Modèle;Libelle;Couleur;Taille;Rayon;Famille;Sous famille;Prix d'achat;PVC (FR);Chaussant;Hauteur de talon;Matière;Semelle extérieure;Fermeture;Saison;Quantité commandé`
+Une ligne = un article (modèle × coloris × taille) pour un magasin. **Suivi Pro lirait exactement ce fichier**, sans colonne en plus ni en moins, et garderait toutes les colonnes de chaque ligne.
+
+**Ce qui manque à Suivi Pro dans ce fichier** :
+- **Identité de la commande** : le CSV ne porte ni n° de bon de commande ni date de commande. Votre méthode de production **regroupe plusieurs BC dans un seul CSV** par marque (DROP1 + DROP2, deux numéros de commande). Un fichier ne correspond donc pas toujours à une commande.
+- **Date de livraison prévue** : absente. Elle servirait à l'idée « Livraisons attendues cette semaine ».
+- **Type** (saison ou réassort) : absent. Seul le nom de fichier le dit parfois (`…-Birkenstock-reassort_…`).
+- **Société** : elle n'est pas dans le fichier (seulement dans le dossier `B'Shoes/` ou `JR Shoes/`). On la déduit du magasin.
+
+Proposition : ces informations sont **saisies à l'import** (fenêtre d'import : n° BC, date, livraison prévue, type), pour que le fichier reste identique à celui de Polaris.
+
+**Ce qui diffère ou demande une règle** :
+- **`Magasin`** vaut `1 Bailly Albi`, `2 Les 2 Zèbres` ou `3 Bailly Rouffiac`, alors que Suivi Pro nomme ses magasins `Bailly Albi`, `les 2 Zèbres` et `Bailly Rouffiac tolosan`. Il faut une table de correspondance fixe. Un fichier (1 sur 62) contient plusieurs magasins : l'import créerait une commande par magasin.
+- ⚠️ **L'import actuel de Réglages → Marques prend la colonne `Magasin` pour une société** (« B'Shoes », « JR Shoes ») et écarte les lignes qui ne correspondent pas. Avec un fichier Polaris, qui contient un magasin, **toutes les lignes seraient écartées**. C'est une lecture du code, pas encore essayée. Cela concerne l'import Sebago prévu dans la note de nettoyages.
+- **`Collection`** (`H26`) donne la saison Suivi Pro (`HIVER_2026`) ; `E27` donnerait `ETE_2027`.
+- **`Saison`** vaut toujours `Permanent` : c'est une notion Polaris (article permanent), sans rapport avec la saison de Suivi Pro. On la garde telle quelle sans s'en servir.
+- **`Gencode`** : vide sur 731 lignes (13 %) et autre chose qu'un code à 13 chiffres sur 313 lignes. Il ne peut donc pas servir seul d'identifiant. L'article est repéré par **Code Modèle + Couleur + Taille**, et le gencode s'y ajoute quand il existe. `Code Modèle` est vide sur 5 lignes, que l'import refuserait en les listant.
+- **`Taille`** s'écrit de plusieurs façons (`36,5` et `36.5`, tailles doubles `35-36`, `TU`). On la normaliserait comme aujourd'hui (`36,5` devient `36.5`).
+- **`Prix d'achat`** est en virgule décimale. Il s'entend **après remise** (par exemple Tamaris −4 %, déjà appliqué dans le fichier) : c'est lui qui donnerait le PHT des réceptions.
+- **`Quantité commandé`** : l'intitulé est repris tel quel, sans « e ».
+
+À noter côté projet « Bon de commande CSV » (`~/Projets/Automatisation CSV/CLAUDE.md`) : ses chemins (`Documents/2 Domaines/BS - Commandes…`) et ses noms de fichiers (`MARQUE.csv`) datent d'avant le rangement actuel (`…/Business/BS - Commandes & achats/Bon de Commande/…`, `BShoes_import-polaris-Marque_date.csv`). Il existe une copie `BShoes_import-polaris-K-Mary_01-09-2026 2.csv` à vérifier.
+
+#### 2. Commande
+
+- **Table `achats_commandes`** (nom choisi pour ne pas la confondre avec `commandes`, qui sert aux commandes clients) :
+  - marque, magasin, saison ;
+  - type (`saison` / `reassort`) et statut ;
+  - n° BC fournisseur, date de commande, livraison prévue ;
+  - fichier importé, créée par, créée le ;
+  - reliquat annulé le, par, motif.
+- **Table `achats_lignes`**, une ligne par article et par commande :
+  - les 20 colonnes du CSV ;
+  - quantité commandée, prix d'achat ;
+  - quantité annulée.
+- **Calculés** (par une vue, jamais saisis) :
+  - quantité reçue = Σ des réceptions de la ligne ;
+  - reste à livrer = commandée − reçue − annulée.
+- **Statut d'une commande de saison** : il est **déduit**, plus jamais posé à la main.
+  - « Commandée » : rien n'est reçu.
+  - « Partiellement reçue ».
+  - « Soldée » : le reste à livrer vaut 0, par réception ou par annulation.
+  - « Reliquat annulé » est affiché quand une annulation a soldé la commande.
+- **Réassort** : c'est une commande comme une autre, de type `reassort`. Le cycle **Demandé → Commandé** est conservé.
+  - La suite, « En route » et « Reçu », se déduit des réceptions. Le maintien d'« En route » en statut posé à la main, avec ses alertes à 10 et 15 jours, est à décider (question 8).
+  - « À réassortir » et les top modèles (`top_modeles`) restent dans l'écran Réassorts, en amont de la commande.
+  - Le prix d'achat d'une ligne de réassort est repris de la commande de saison du même article. Sinon il est saisi, comme aujourd'hui.
+- **« Annuler le reliquat »** : action réservée à la Direction, avec un **motif obligatoire**.
+  - Pour chaque ligne, la quantité annulée prend la valeur du reste à livrer.
+  - L'action est notée au journal de la commande (qui, quand, motif). « Rétablir » est possible par la Direction.
+  - **Aucune annulation automatique** : une commande ancienne non soldée est seulement signalée (encart « reste à livrer depuis plus de N jours »).
+
+#### 3. Réception
+
+- **Le Cahier des entrées devient la saisie des réceptions.** On garde la table `entrees` comme table des réceptions : on lui **ajoute** `commande_id`. Ainsi le Cahier, les retours SAV / défectueux, le pointage et **les clés de pointage du Plan de règlement (`liv|<entrée>|…`) ne bougent pas**.
+- Chaque réception est datée et rattachée à **une** commande. Le détail par article est enregistré dans les mouvements (point 5), qui portent la ligne de commande concernée : rien n'est compté deux fois. Une commande peut recevoir autant de réceptions que nécessaire.
+- **Enregistrement en une seule opération par la base** (une fonction `enregistrer_reception`, sur le modèle de `emettre_facture` du plan B). Elle crée l'entrée et ses mouvements, vérifie que l'article est dans la commande et calcule le PHT (Σ quantité × prix d'achat de la ligne). Deux appareils qui reçoivent la même commande au même moment ne peuvent pas se marcher dessus.
+- **La saison de la réception est celle de la commande**, et plus celle de l'appareil. Cela supprime une source d'écart actuelle.
+- **Corriger une réception** reste permis aux mêmes comptes qu'aujourd'hui : la fonction réécrit ses mouvements. Supprimer une réception supprime ses mouvements.
+- **Saisie** : comptes magasin et Direction, comme aujourd'hui.
+- **Polaris** : la validation reste manuelle, faite par vous d'après Suivi Pro. Rien n'est prévu vers Polaris. Si le « pointé » actuel du Cahier signifie « saisi dans Polaris », il en garde le rôle (question 12).
+
+#### 4. Plan de règlement : inchangé
+
+Aucun calcul ne change : l'échéance reste déclenchée par la première réception, avec les règles actuelles. Ce qu'une réception partielle change :
+
+- **Chèques automatiques** : rien.
+  - La date de départ est la première réception (hors retours) de la marque, ou du groupe, pour le magasin et la saison. **Un premier carton partiel suffit** à déclencher la série complète.
+  - Le montant reste le **réel achat de la commande totale** (Σ `reel_n` du groupe ÷ nombre de chèques), même si tout n'est pas livré.
+  - Conséquence à connaître : si un reliquat est annulé, les chèques ne baissent pas tout seuls. Il faut corriger le réel achat dans Achats ou passer par un plan chèque personnalisé. C'est déjà le cas aujourd'hui pour une livraison incomplète.
+  - Proposition, sans toucher au calcul : afficher dans Achats l'écart entre le réel achat et le montant net des commandes (commandé − annulé).
+- **Plan chèque personnalisé** : rien (dates et montants saisis).
+- **LCR, virement, prélèvement, etc.** : rien. Ils sont déjà calculés **par entrée** (PHT de la réception, à la date de la réception, plus les délais), et chaque réception partielle a déjà sa propre série d'échéances. Plusieurs cartons donnent plusieurs séries, chacune sur le montant réellement reçu.
+  - Seule différence : le PHT vient du prix d'achat de la ligne de commande au lieu du prix du modèle de Réglages → Marques. Ces deux prix viennent du même fichier, donc les montants restent les mêmes.
+- **Réassorts payés par chèque** : comme aujourd'hui, leur montant n'est pas dans le réel achat. Ils ne sont donc pas dans la série de chèques (sauf si le réel achat est corrigé). Une réception de réassort compte en revanche pour la date de première réception.
+- **Bloc « En attente de 1ère réception »** : même condition qu'aujourd'hui. Le mode du groupe est CHEQUE, sans plan personnalisé, avec un réel achat non nul et **aucune réception datée hors retours**.
+  - Avec des commandes, il disparaît dès la **première réception partielle**, remplacé par la série complète des chèques.
+  - Il continue d'afficher le réel achat, et non le montant des commandes.
+  - Une commande importée alors que le réel achat est à 0 n'y apparaît pas (question 6).
+- **Avoirs** : rien (retours SAV / défectueux inchangés).
+
+#### 5. Mouvements de stock et onglet « Entrées »
+
+- **Table `mouvements_stock`** : date, magasin, marque, saison, Code Modèle, Couleur, Taille, gencode, quantité (positive), type (`entree` / `sortie` / `correction`), source (réception = id de l'entrée + id de la ligne de commande), créé par, créé le.
+- **Pour l'instant, seules les réceptions l'alimentent** (type `entree`, par la fonction `enregistrer_reception`). Personne ne peut y écrire directement.
+- **Onglet « Entrées »**, en lecture seule : ce qui a été reçu, par marque et par magasin, pour la saison choisie. Il est **nommé « Entrées » et non « Stock »** tant que les sorties n'existent pas.
+- **Pour alimenter les sorties plus tard** (à ne pas concevoir maintenant) :
+  - **Source des ventes** : un export régulier des ventes de Polaris (par article et par magasin), à importer en CSV. Le format exact de l'export est à étudier dans la documentation Polaris (`SynologyDrive-Ressources/Polaris/`).
+  - **Identifiant d'article commun** à Polaris et Suivi Pro : le gencode s'il est fiable (aujourd'hui 13 % vides), sinon Code Modèle + Couleur + Taille, à condition que Polaris l'exporte à l'identique.
+  - **Retours fournisseurs** (SAV, défectueux) et transferts entre magasins : une sortie et une entrée.
+  - **Inventaire** : des corrections réservées à la Direction.
+  - **Choix d'une source de vérité** : Polaris reste-t-il la référence du stock, avec Suivi Pro en simple miroir ?
+
+#### 6. Écrans (style de la refonte, téléphone d'abord)
+
+**Commandes fournisseurs** (nom à confirmer : « Commandes » existe déjà pour les commandes clients)
+- **Liste** : cartes groupées par marque, avec des puces pour la saison, le magasin et le statut (« à recevoir », « partielles », « soldées »).
+- **Carte d'une commande** : marque, magasin, n° BC, date, barre « reçu / commandé » en paires, reste à livrer, livraison prévue (en orange si dépassée). Le montant n'apparaît que pour la Direction.
+- **Détail** : une ligne par modèle-coloris (libellé, code, couleur), avec commandé, reçu et reste. On la touche pour voir la grille des tailles (commandé, reçu, reste), puis la liste des réceptions datées et le journal.
+- **Boutons Direction** : « Importer une commande » (fichier CSV, puis n° BC, date, livraison prévue et type ; aperçu « N articles, N paires, N € » ; lignes refusées listées avant de valider) et « Annuler le reliquat » (motif obligatoire).
+- **Réassorts** : le bouton « Nouvelle commande de réassort » reste dans l'écran Réassorts.
+- **Sur ordinateur** : la liste et le détail côte à côte (direction B).
+
+**Réception** (la saisie du Cahier)
+1. Marque, puis la commande ouverte du magasin, choisie d'office s'il n'y en a qu'une.
+2. Modèle-coloris : recherche par code ou libellé, en commençant par ceux qui ont un reste à livrer.
+3. La grille des tailles est **pré-remplie avec le reste à livrer** (comme aujourd'hui), avec des boutons − et +. La date est celle du jour, modifiable.
+4. « Ajouter un autre modèle » permet de saisir tout un carton, puis « Enregistrer la réception ».
+
+En option : la saisie d'un article hors commande (question 7). Une quantité supérieure au reste est signalée sans être bloquée. La liste du Cahier ne change pas, avec la mention de la commande sur chaque entrée.
+
+**Entrées** (lecture seule)
+- **Choix** : saison (puces), puis magasin (puces, « Tous » pour la Direction).
+- **Liste** : une ligne par marque avec les paires reçues, le nombre de réceptions, la dernière réception et le montant (Direction seulement). On la touche pour voir les modèles-coloris, puis les tailles.
+- **Fichier CSV** : export réservé à la Direction.
+- **Place dans le menu** : sous le Cahier, ou à côté des Commandes fournisseurs (question 13).
+
+**Achats** (écran pas encore retouché) : il garde le budget par marque (reçu N-1, objectif, réel achat, stratégie), passe au style de la refonte et affiche « commandé net » et « reçu » d'après les commandes. Le statut posé à la main ✅ ⏳ ❌ serait remplacé par le statut déduit des commandes (à accorder).
+
+**Suivi des livraisons** : recalculé d'après les commandes (attendu = commandé − annulé, réassorts compris), au lieu des Achats et de Réglages → Marques.
+
+**Ce qui serait retiré, masqué ou déplacé** (à accorder ligne par ligne, règle de la refonte) :
+- le statut posé à la main ✅ ⏳ ❌ des Achats ;
+- l'import « Modèles » de Réglages → Marques, remplacé par l'import des commandes ;
+- l'import « Achats » par marque, si le réel achat devient calculé ;
+- l'étape « Reçu » posée à la main des réassorts ;
+- le choix libre de la saison d'une entrée rattachée à une commande.
+
+#### 7. Droits proposés
+
+| | Compte magasin | Compte Direction |
+|---|---|---|
+| Voir les commandes et le reste à livrer de son magasin | Oui (montants masqués à l'écran ; question 9) | Oui, tous magasins |
+| Importer une commande de saison | Non | Oui |
+| Créer, faire avancer une commande de réassort | Oui (comme aujourd'hui) | Oui |
+| Enregistrer, corriger une réception | Oui | Oui |
+| Annuler / rétablir un reliquat (motif) | Non | Oui |
+| Écrire directement dans les mouvements | Non (la base l'interdit à tous) | Non |
+| Onglet Entrées | Oui, son magasin (montants masqués) | Oui |
+
+#### 8. Données existantes : deux options
+
+**Option A : migration.** Chaque ligne d'achat existante devient une commande « réputée reçue en totalité ».
+- **Principe** :
+  - la commande reçoit une ligne par article quand le détail Réglages → Marques existe, sinon une seule ligne globale (paires, réel achat) ;
+  - les entrées existantes y sont rattachées ;
+  - les mouvements sont recréés à partir des entrées (elles ont déjà les quantités par pointure).
+- **Risques** :
+  - « Reçue en totalité » est faux pour les marques encore attendues (⏳). Leur reste à livrer tomberait à 0, et un carton en retard ne pourrait plus être rattaché. Il faudrait donc migrer seulement les ✅ ou traiter les ⏳ à part.
+  - Les textes de modèle des entrées ne correspondent pas toujours aux modèles importés (fautes, modèles hors commande) : il y aurait des entrées non rattachables à traiter à la main.
+  - Les lignes globales n'ont ni coloris ni taille.
+  - Il y a une modification de masse sur la production, avec une sauvegarde et une comparaison du Plan avant et après (le Plan ne devrait pas bouger, puisque les entrées et les réels achats restent).
+  - Le travail est plus long à préparer et à essayer.
+
+**Option B : cohabitation jusqu'à la fin de la saison en cours.**
+- **Principe** :
+  - Hiver 2026 et Été 2026 restent sur l'ancien modèle (Achats, Cahier, Suivi des livraisons tels qu'aujourd'hui) ;
+  - **Été 2027 est la première saison en commandes** : ses BC sont en cours (`3- e27`) et ses CSV ne sont pas encore produits ;
+  - l'onglet Entrées peut tout de même montrer les saisons passées en recréant les mouvements à partir des entrées (sans commande).
+- **Risques** :
+  - Pendant quelques mois, deux façons de saisir coexistent selon la saison choisie, ce qui peut troubler les équipes. Il faut un repère clair à l'écran : « saison suivie par commandes ».
+  - Les cartons H26 en retard et les réassorts d'hiver restent sur l'ancien modèle jusqu'à la fin de la saison.
+  - Les écrans doivent savoir lire les deux modèles pendant cette période (plus de code à maintenir, à retirer ensuite).
+  - La fin de saison est floue (hiver : fin février 2027 ?). Il faut une date de bascule décidée.
+
+**Recommandation : B**, avec Été 2027 comme première saison en commandes. On évite toute réécriture des données de production, le Plan de règlement ne voit aucune différence, et la saison démarre proprement depuis les fichiers Polaris. Le fait de garder `entrees` comme table des réceptions rend la cohabitation peu coûteuse.
+
+**Modifications de la base (ajouts, sans perte, avec votre accord écrit)** :
+- 3 tables (`achats_commandes`, `achats_lignes`, `mouvements_stock`) ;
+- 1 colonne `entrees.commande_id` ;
+- 1 vue (reçu, reste à livrer) ;
+- 2 fonctions : `enregistrer_reception` et `annuler_reliquat`, qui contrôle le rôle Direction et le motif ;
+- les règles d'accès ci-dessus et les GRANT de chaque nouvelle table.
+
+Rien n'est supprimé ni modifié dans les tables existantes.
+
+#### 9. Questions à vous poser avant de commencer
+
+1. **Identité d'une commande** : un CSV regroupe parfois plusieurs BC (DROP1 + DROP2). Une commande dans Suivi Pro = un fichier, ou un BC ? Dans le second cas, il faut un fichier par BC.
+2. **N° BC, date de commande, livraison prévue** : sont-ils saisis à l'import (recommandé), ou faut-il des colonnes en plus dans le CSV ? Dans ce cas, Polaris accepte-t-il des colonnes supplémentaires ?
+3. **Magasins** : la correspondance `1 Bailly Albi` → Bailly Albi, `2 Les 2 Zèbres` → les 2 Zèbres, `3 Bailly Rouffiac` → Bailly Rouffiac tolosan est-elle juste et définitive ?
+4. **Prix d'achat du CSV** : est-ce toujours le prix net à payer (remises déduites), donc le bon prix pour le PHT des réceptions ?
+5. **Fichier corrigé après import** (une erreur de taille ou de prix corrigée dans le CSV) : faut-il pouvoir le réimporter sur une commande existante sans toucher à ce qui est déjà reçu ?
+6. **Réel achat (Achats)** : reste-t-il saisi à la main (Plan strictement inchangé, écart affiché), ou devient-il le total net des commandes ? Le second choix modifierait le montant des chèques.
+7. **Réception hors commande** (article absent, ou quantité supérieure au reste) : faut-il l'accepter avec une mention, la refuser, ou la proposer seulement à la Direction ?
+8. **Réassorts** : faut-il garder « En route » comme étape posée à la main (avec ses alertes à 10 et 15 jours), ou le déduire de la première réception partielle ?
+9. **Prix d'achat et montants** : faut-il les masquer seulement à l'écran pour les comptes magasin (comme aujourd'hui, où les Achats restent lisibles par la base), ou aussi dans la base (plus lourd) ?
+10. **Annuler le reliquat** : sur toute la commande seulement, ou aussi article par article ? « Rétablir » doit-il être possible ?
+11. **Retours fournisseurs** (SAV, défectueux) : faut-il les compter dès maintenant comme des sorties, ou attendre le chantier des sorties ?
+12. **« Pointé » du Cahier** : veut-il dire « saisi dans Polaris » ? Si oui, il devient le repère « validé dans Polaris » des réceptions.
+13. **Onglet Entrées** : où le mettre dans le menu, et doit-il être visible des comptes magasin ?
+14. **Données existantes** : option A ou B ? Si B, Été 2027 est-elle bien la première saison, et à quelle date l'hiver 2026 est-il considéré comme clos ?
+15. **Nom de l'écran** : « Commandes fournisseurs », pour le distinguer des « Commandes clients » ?
+16. **Réglages → Marques** : faut-il corriger tout de suite le filtre de la colonne `Magasin` pour l'import Sebago en attente, ou le faire sans passer par cet import ?
+
+#### 10. Découpage en étapes livrables séparément (chacune mise en ligne par vous)
+
+| Étape | Contenu | Visible des équipes | Effort estimé |
+|---|---|---|---|
+| 1 | Base : tables, vue, fonctions, règles d'accès, essais complets sur la base de test (réceptions simultanées, droits, annulation) | Non | 1 à 1,5 jour |
+| 2 | Import des commandes (CSV Polaris) et écran **Commandes fournisseurs** en lecture (liste, détail, grilles) | Direction | 1,5 jour |
+| 3 | **Réception rattachée** dans le Cahier pour les saisons en commandes, mouvements, Suivi des livraisons recalculé, comparaison du Plan de règlement avant et après | Oui | 2 jours |
+| 4 | **Annuler / rétablir le reliquat** (motif, journal), encart des commandes anciennes non soldées | Direction | 0,5 jour |
+| 5 | Onglet **Entrées** (lecture seule), mouvements recréés pour les saisons passées, export CSV | Oui | 1 jour |
+| 6 | **Réassorts en commandes** (Demandé → Commandé, réception par la même saisie), reprise des réassorts en cours | Oui | 1,5 à 2 jours |
+| 7 | **Achats** au style de la refonte : commandé net et reçu, écart avec le réel achat ; retraits accordés (statut ✅ ⏳ ❌, import des modèles) | Direction | 1 à 1,5 jour |
+
+Total : **environ 9 à 10 jours**, plus vos essais en local entre chaque étape. Les étapes 1 à 3 doivent être en ligne avant l'arrivée des premiers cartons d'Été 2027. Les étapes 4 à 7 peuvent suivre. L'étape 6 peut attendre la fin des réassorts d'hiver.
+
 ## Idées pour plus tard (non construites)
 
 | Idée | Pour quoi faire | Ce qu'il faudrait ajouter à la base |
@@ -519,6 +741,7 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 | **Prix des entrées réservés à la Direction, dans la base** | Aujourd'hui seul l'écran cache la correction du prix d'un retour aux comptes magasin ; la base accepte qu'un compte magasin modifie le prix (PHT) de n'importe quelle entrée, comme tous les autres champs d'une entrée | Une règle (déclencheur) sur `entrees`, sur le modèle du contrôle du pointage (E7) : un compte magasin ne pourrait plus changer `pht` directement. ⚠️ Conséquence pour **toutes** les entrées : la saisie et la correction d'une entrée par un magasin recalculent le PHT (prix du modèle × paires) ; la règle devrait laisser passer ce recalcul (par ex. accepter un PHT égal au prix du modèle × paires, ou faire calculer le PHT par la base), sinon les magasins ne pourraient plus enregistrer ni corriger leurs entrées. À construire et tester sur la base de test, avec accord écrit pour la production |
 | **Renouveler les liens iCloud publiés des 3 calendriers** | Couper l'accès de toute personne ou de tout téléphone qui connaîtrait l'adresse actuelle d'un calendrier (on ne sait pas s'ils ont été donnés ailleurs) | Rien dans la base. Dans le partage iCloud de chaque calendrier : décocher puis recocher « Calendrier public » (nouveau lien, l'ancien cesse de fonctionner **pour tout le monde**, y compris un téléphone abonné) ; mettre le nouveau lien dans Vercel et dans `~/.suivi-pro/agenda.env`, puis une mise en ligne |
 | **Numéros de facture partagés (et registre des factures)** | Voir « Plans préparés — B » | Voir « Plans préparés — B » |
+| **Partie Achat : commandes, réceptions, entrées** | Voir « Plans préparés — C » | Voir « Plans préparés — C » |
 
 ---
 
