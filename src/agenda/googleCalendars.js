@@ -1,64 +1,64 @@
-import { isoDate } from './dates'
 
-// Clé API Google (Calendar API) — dans .env.local, ignoré par git
-export const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || ''
+import { supabase } from '../lib/supabase'
 
-// Les 3 calendriers Google (publics) affichés en lecture seule dans l'agenda.
+// Les 3 calendriers des magasins (abonnements iCloud), lus par le SERVEUR (fonction api/agenda, plan A du 13/10) :
+// ni clé Google, ni identifiant, ni lien de calendrier dans le code publié ; seul un appareil connecté reçoit les événements.
 // Couleurs alignées sur les magasins (cf. provenance des Commandes).
 export const GOOGLE_CALENDARS = [
-  { id: '9efscnevn3g2nk701ooscqkcr0vi5ap1@import.calendar.google.com', label: 'Bailly Albi',     color: '#2563eb' },
-  { id: 'ki70pq3ab7kcbj56qrrc0ech1jm42nc9@import.calendar.google.com', label: 'Bailly Rouffiac', color: '#059669' },
-  { id: '8h2o2u9k4jjsaj14v4qi9bo70rsdc6mc@import.calendar.google.com', label: 'Les 2 Zèbres',     color: '#d97706' },
+  { cle: 'albi',     label: 'Bailly Albi',     color: '#2563eb' },
+  { cle: 'rouffiac', label: 'Bailly Rouffiac', color: '#059669' },
+  { cle: 'zebres',   label: 'Les 2 Zèbres',     color: '#d97706' },
 ]
 
-function timeOf(d) {
-  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')
+const MEMOIRE_MS = 3 * 60 * 1000   // l'appareil garde une période déjà lue 3 minutes (le serveur garde les calendriers 5 minutes)
+const memoire = new Map()
+
+// Événements des 3 calendriers entre deux dates (objets Date), sous la même forme qu'avant.
+// Le tableau renvoyé porte aussi : indisponibles (noms des calendriers illisibles pour le moment),
+// nonConfigure (aucun calendrier réglé sur le serveur), erreur (serveur injoignable). Jamais d'exception : l'agenda reste utilisable.
+export function fetchGoogleEvents(timeMin, timeMax) {
+  const cle = timeMin.toISOString() + '|' + timeMax.toISOString()
+  const deja = memoire.get(cle)
+  if (deja && Date.now() - deja.t < MEMOIRE_MS) return deja.p
+  const p = charger(timeMin, timeMax).then(r => { if (r.erreur || r.indisponibles.length) memoire.delete(cle); return r })
+  memoire.set(cle, { t: Date.now(), p })
+  return p
 }
 
-// Récupère les événements des 3 calendriers entre deux dates (objets Date).
-// Renvoie [] si la clé API n'est pas configurée ou en cas d'erreur réseau.
-export async function fetchGoogleEvents(timeMin, timeMax) {
-  if (!GOOGLE_API_KEY) return []
-  const out = []
-  await Promise.all(GOOGLE_CALENDARS.map(async cal => {
-    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events`
-      + `?key=${GOOGLE_API_KEY}`
-      + `&timeMin=${timeMin.toISOString()}`
-      + `&timeMax=${timeMax.toISOString()}`
-      + `&singleEvents=true&orderBy=startTime&maxResults=2500`
-    try {
-      const res = await fetch(url)
-      if (!res.ok) {
-        if (res.status === 403 || res.status === 404) {
-          console.warn(`Calendrier "${cal.label}" inaccessible (${res.status}) — vérifier qu'il est public et l'ID.`)
-        }
-        return
-      }
-      const data = await res.json()
-      for (const ev of (data.items || [])) {
-        const s = ev.start || {}, f = ev.end || {}
-        let date, heure, dateFin
-        if (s.date) {                                              // événement journée entière (fin exclue chez Google)
-          date = s.date; heure = ''
-          if (f.date) { const d = new Date(Number(f.date.slice(0, 4)), Number(f.date.slice(5, 7)) - 1, Number(f.date.slice(8, 10))); d.setDate(d.getDate() - 1); dateFin = isoDate(d) }
-        }
-        else if (s.dateTime) { const d = new Date(s.dateTime); date = isoDate(d); heure = timeOf(d); if (f.dateTime) { const e = new Date(f.dateTime); if (e.getHours() === 0 && e.getMinutes() === 0) e.setDate(e.getDate() - 1); dateFin = isoDate(e) } }
-        else continue
-        if (!dateFin || dateFin < date) dateFin = date               // dernier jour de l'événement (refonte : affichage sur plusieurs jours)
-        out.push({
-          id: 'g_' + cal.id + '_' + ev.id,
-          date, heure, dateFin,
-          titre: ev.summary || '(sans titre)',
-          note: ev.description || '',
-          lieu: ev.location || '',
-          source: 'google',
-          color: cal.color,
-          calLabel: cal.label,
-        })
-      }
-    } catch { /* réseau : on ignore, l'agenda reste utilisable */ }
-  }))
-  return out
+async function charger(timeMin, timeMax) {
+  const resultat = (extra = {}) => Object.assign([], { indisponibles: [], motifs: {}, nonConfigure: false, erreur: false }, extra)
+  try {
+    const { data } = await supabase.auth.getSession()
+    const jeton = data?.session?.access_token
+    if (!jeton) return resultat({ erreur: true })
+    const r = await fetch(`/api/agenda?debut=${encodeURIComponent(timeMin.toISOString())}&fin=${encodeURIComponent(timeMax.toISOString())}`, { headers: { Authorization: `Bearer ${jeton}` } })
+    if (!r.ok) return resultat({ erreur: true })
+    const d = await r.json()
+    const liste = d.calendriers || []
+    const out = resultat({ nonConfigure: liste.length > 0 && liste.every(c => c.nonConfigure) })
+    for (const c of liste) {
+      const cal = GOOGLE_CALENDARS.find(x => x.cle === c.cle)
+      if (!cal) continue
+      if (!c.ok) { if (!c.nonConfigure) { out.indisponibles.push(cal.label); if (c.motif) out.motifs[cal.label] = c.motif + (c.diag ? '|' + c.diag : '') } continue }
+      for (const e of c.evenements || []) out.push({ ...e, source: 'google', color: cal.color, calLabel: cal.label })
+    }
+    return out
+  } catch { return resultat({ erreur: true }) }
+}
+
+// Message à afficher sous l'agenda / « À venir » quand un calendrier manque ('' si tout va bien).
+// detail (comptes Direction) : ajoute le motif de l'erreur, en clair, pour savoir quoi corriger (jamais de lien).
+const MOTIFS = { 'lien-mal-forme': 'lien mal recopié dans Vercel', 'delai': 'iCloud trop lent', 'pas-un-calendrier': "iCloud n'a pas renvoyé de calendrier" }
+const motifEnClair = mm => { const [m, diag] = mm.split('|'); return (MOTIFS[m] || (m.startsWith('refus-') ? `refusé par iCloud, code ${m.slice(6)}` : m.startsWith('reseau') ? `iCloud injoignable${m.length > 6 ? ' (' + m.slice(7) + ')' : ''}` : m)) + (diag ? ' ; ' + diag : '') }
+export function messageCalendriers(evs, detail = false) {
+  if (!evs) return ''
+  if (evs.nonConfigure) return 'Calendriers des magasins non configurés'
+  if (evs.erreur) return 'Calendriers des magasins indisponibles pour le moment'
+  if (evs.indisponibles?.length) {
+    const noms = evs.indisponibles.map(n => detail && evs.motifs?.[n] ? `${n} (${motifEnClair(evs.motifs[n])})` : n)
+    return `${evs.indisponibles.length > 1 ? 'Calendriers' : 'Calendrier'} indisponible${evs.indisponibles.length > 1 ? 's' : ''} pour le moment : ${noms.join(', ')}`
+  }
+  return ''
 }
 
 // Fenêtre [timeMin, timeMax] (objets Date) à charger selon la vue affichée
