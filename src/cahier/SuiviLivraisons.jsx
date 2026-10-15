@@ -7,6 +7,9 @@ import { LoadingState } from '../components/shared'
 import Icone from '../components/ui/Icone'
 import { Numero } from './Reperes'
 import { niveauJauge } from './commun'
+import { suivieParCommandes } from '../fournisseurs/csvPolaris'
+import { commandesDeSaison, lignesDe } from '../fournisseurs/donnees'
+import { nomModele, grilleDe } from '../fournisseurs/reception'
 
 const pc = (r, a) => a > 0 ? Math.round(r / a * 100) : 0
 
@@ -64,6 +67,32 @@ export default function SuiviLivraisons({ magasinAppareil }) {
       const rs = ((recuSizesByKey[k] ||= {})[mod] ||= {})
       for (const [t, q] of Object.entries(e.sizes || {})) { const n = Number(q) || 0; if (n) rs[t] = (rs[t] || 0) + n }
     })
+    // Plan C, étape 3 : pour une saison suivie par commandes, l'attendu vient des commandes (commandé − annulé, réassorts
+    // compris), par marque × magasin, modèle-coloris (« Code, Couleur ») et pointure ; le reçu reste lu dans le Cahier.
+    if (suivieParCommandes(season)) {
+      const commandes = await commandesDeSaison(season)
+      const lignes = commandes.length ? await lignesDe(commandes.map(c => c.id)) : []
+      const cmd = Object.fromEntries(commandes.map(c => [c.id, c]))
+      const att = {}
+      for (const l of lignes) {
+        const c = cmd[l.commande_id], key = c.fournisseur_id + '_' + c.magasin_id, mod = nomModele(l.code_modele, l.couleur), q = l.qte_commandee - l.qte_annulee
+        const a = (att[key] ||= { total: 0, modeles: {}, sizes: {}, types: {} })
+        a.total += q; a.modeles[mod] = (a.modeles[mod] || 0) + q
+        ;(a.sizes[mod] ||= {})[l.taille] = ((a.sizes[mod] || {})[l.taille] || 0) + q
+        a.types[mod] ||= grilleDe(l)
+      }
+      return Object.entries(att).map(([key, a]) => {
+        const [fId, mId] = key.split('_').map(Number)
+        const recuModels = recuModelByKey[key] || {}, numeroModels = numeroModelByKey[key] || {}
+        const names = [...new Set([...Object.keys(a.modeles), ...Object.keys(recuModels)])]
+        const modeles = names.map(nom => ({
+          nom, recu: recuModels[nom] || 0, attendu: a.modeles[nom] || 0,
+          numero: [...(numeroModels[nom] || [])].sort((x, y) => x - y).join(', '),
+          sizesAttendu: a.sizes[nom] || {}, sizesRecu: (recuSizesByKey[key] || {})[nom] || {}, typeKey: a.types[nom] || null,
+        })).sort((x, y) => (y.attendu - x.attendu) || (y.recu - x.recu) || x.nom.localeCompare(y.nom))
+        return { suiviId: key, magasin: magasinMap[mId] || '?', marque: fournisseurMap[fId] || '?', recu: recuByKey[key] || 0, attendu: a.total, modeles }
+      })
+    }
     return params.filter(p => p.fournisseurId && p.magasinId).map(p => {
       const key = p.fournisseurId + '_' + p.magasinId
       const recuModels = recuModelByKey[key] || {}, attenduModels = p.modeles || {}, numeroModels = numeroModelByKey[key] || {}

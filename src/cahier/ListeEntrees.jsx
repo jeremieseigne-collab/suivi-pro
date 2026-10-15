@@ -4,6 +4,8 @@ import Icone from '../components/ui/Icone'
 import ActionsSelection from './ActionsSelection'
 import { Numero, Statut } from './Reperes'
 import { STATUTS, libelleStatut, cleDate, libelleJour, fmtEur, pluriel } from './commun'
+import { useVariantes } from '../shell/essai'
+import { POINTS_3 } from '../fournisseurs/points3'
 
 const PAR_PAGE = 50
 const FILTRES_VIDES = { societe: '', magasin: null, marque: '', categorie: '', statut: '', pointe: '' }   // magasin null = celui de l'appareil
@@ -11,6 +13,7 @@ const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCom
 
 // Liste des entrées de la saison : recherche, filtres, regroupement par jour, sélection multiple, pointage (Direction)
 export default function ListeEntrees({ rapideInitial = 'toutes', entrees, magasinAppareil, estDirection, estPointe, onPointer, onOuvrir, onToast, onModeSelection }) {
+  const mentionCommande = useVariantes(POINTS_3)['r3-mention-liste']   // plan C, étape 3 : « Commande BC … » sous une réception
   const [recherche, setRecherche] = useState('')
   const [rapide, setRapide]       = useState(estDirection ? rapideInitial : 'toutes')   // toutes | apointer | retours
   const [filtres, setFiltres]     = useState(FILTRES_VIDES)
@@ -91,6 +94,7 @@ export default function ListeEntrees({ rapideInitial = 'toutes', entrees, magasi
                     <span className="txt">
                       <span className="t1">{e.marque} <span>· {e.modele || 'sans modèle'}</span><Numero n={e.numero} /></span>
                       <span className="t2">{estDirection || plusieursMagasins ? e.magasin + ' · ' : ''}{pluriel(e.total || 0, 'paire')} · {e.pht ? fmtEur(e.pht) : '—'}</span>
+                      {e.commandeId && (mentionCommande || e.horsCommande) && <span className="t2">{mentionCommande ? (e.commandeBc?.length ? 'Commande BC ' + e.commandeBc.join(', ') : 'Commande sans n° de BC') : ''}{e.horsCommande && <span className="etat-mot att">{mentionCommande ? ' · ' : ''}hors commande</span>}</span>}
                     </span>
                     <Statut s={e.statut} />
                   </button>

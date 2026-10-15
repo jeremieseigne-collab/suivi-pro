@@ -22,14 +22,14 @@ const listeTailles = sz => Object.entries(sz).map(([t, q]) => Math.abs(q) > 1 ? 
  * - entrees : entrées de la saison (avec noms de magasin/marque) — rappel, doublons, déjà reçu
  * Les données enregistrées sont exactement celles de l'outil actuel (Retour saisi au Cahier : statut « Retour », quantités positives).
  */
-export default function SaisieEntree({ entree, entrees, magasinAppareil, onFermer, onToast }) {
+export default function SaisieEntree({ entree, entrees, magasinAppareil, retourInitial = false, onFermer, onToast }) {
   const modif = !!entree
   const { season } = useSeason()
   const { params } = useParams()
   const [f, setF] = useState(() => modif ? {
     retour: entree.statut === 'Retour', statut: entree.statut || '', magasin: entree.magasin || '', date: entree.date || aujourdhuiFr(),
     marque: entree.marque || '', modele: entree.modele || '', numero: entree.numero || '', categorie: entree.categorie || '', typeKey: entree.typeKey || 'F',
-  } : { retour: false, statut: '', magasin: magasinAppareil || '', date: aujourdhuiFr(), marque: '', modele: '', numero: '', categorie: '', typeKey: 'F' })
+  } : { retour: retourInitial, statut: retourInitial ? 'Retour' : '', magasin: magasinAppareil || '', date: aujourdhuiFr(), marque: '', modele: '', numero: '', categorie: '', typeKey: 'F' })
   const [tailles, setTailles]   = useState(() => modif ? versCarte(entree.sizes) : {})
   const [retirer, setRetirer]   = useState(false)                 // mode « − » : toucher une pointure retire une paire
   const [panneau, setPanneau]   = useState(modif ? null : 'marque') // 'marque' | 'modele' | 'details' | null

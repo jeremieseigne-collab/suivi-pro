@@ -45,13 +45,17 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
 
   // ── Modifications groupées (statut, date, catégorie, magasin, saison), avec « Annuler » qui remet les valeurs d'avant ──
   async function modifierLot(champ, valeur, message, ids) {
-    const lignes = choisies().filter(e => !ids || ids.includes(e.id)); if (!lignes.length) return
+    const toutes = choisies().filter(e => !ids || ids.includes(e.id)); if (!toutes.length) return
+    // Plan C, étape 3 : une réception rattachée à une commande garde sa date, son magasin et sa saison (corrigée une par une)
+    const gardees = ['date', 'magasinId', 'season'].includes(champ) ? toutes.filter(e => e.commandeId) : []
+    const lignes = toutes.filter(e => !gardees.includes(e))
+    if (!lignes.length) { setFeuille(null); setModif(null); onToast({ texte: `${pluriel(gardees.length, 'réception')} rattachée${gardees.length > 1 ? 's' : ''} à une commande : à corriger une par une (« Modifier »).` }); onFin(); return }
     const avant = lignes.map(e => [e.id, e[champ] ?? ''])
     setFeuille(null); setModif(null)
     let echecs = 0
     for (const e of lignes) { try { await db.entrees.update(e.id, { [champ]: valeur }) } catch { echecs++ } }
     onToast(echecs ? { texte: `${lignes.length - echecs} entrée(s) modifiée(s), ${echecs} en échec : vérifie la connexion.` }
-      : { texte: `${message} — ${pluriel(lignes.length, 'entrée')}`,
+      : { texte: `${message} — ${pluriel(lignes.length, 'entrée')}${gardees.length ? ` (${pluriel(gardees.length, 'réception')} rattachée${gardees.length > 1 ? 's' : ''} à une commande laissée${gardees.length > 1 ? 's' : ''} telle${gardees.length > 1 ? 's' : ''} quelle${gardees.length > 1 ? 's' : ''})` : ''}`,
           annuler: async () => { for (const [id, v] of avant) { try { await db.entrees.update(id, { [champ]: v }) } catch { /* ignore */ } } } })
     onFin()
   }

@@ -8,7 +8,7 @@ const FIELD_TO_DB = {
   reglements_fournisseurs: { fournisseurReelId: 'fournisseur_reel_id', magasinId: 'magasin_id', modeReglement: 'mode_reglement' },
   plans_cheques:           { fournisseurReelId: 'fournisseur_reel_id', magasinId: 'magasin_id' },
   parametres:      { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id', recuN1: 'recu_n1', objectifN: 'objectif_n', reelN: 'reel_n', prixModeles: 'prix_modeles', modelesSizes: 'modeles_sizes', modelesTypes: 'modeles_types' },
-  entrees:         { magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', typeKey: 'type_key' },
+  entrees:         { magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', typeKey: 'type_key', commandeId: 'commande_id' },
   modes_reglement: { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id', modeReglement: 'mode_reglement' },
   suivi:           { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id' },
   commandes:       { createdAt: 'created_at', clientNom: 'client_nom', clientPrenom: 'client_prenom' },

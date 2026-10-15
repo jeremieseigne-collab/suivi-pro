@@ -88,6 +88,9 @@ export default function FicheEntree({ entree: e, estDirection, pointe, onPointer
             <span>Magasin <b>{e.magasin}</b></span>
             {estDirection && pointe && <span><b style={{ color: 'var(--ok)' }}>Pointée</b></span>}
           </div>
+          {e.commandeId && <div className="encart neutre" style={{ marginTop: 10 }}>
+            Réception de la commande {e.commandeBc?.length ? 'BC ' + e.commandeBc.join(', ') : 'sans n° de BC'}{e.horsCommande ? ' — avec des paires « hors commande »' : ''}. « Modifier » corrige ses pointures et sa date ; la commande se met à jour.
+          </div>}
 
           <span className="etiquette" style={{ marginTop: 16 }}>Statut</span>
           <div className="chips" style={{ flexWrap: 'wrap' }}>
