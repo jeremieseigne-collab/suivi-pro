@@ -8,8 +8,6 @@ import Confirmation from '../components/ui/Confirmation'
 import { libelleSaison } from './csvPolaris'
 import { Jauge, StatutCommande } from './commun'
 import { fmtJour, enRetard } from './outils'
-import { useVariantes } from '../shell/essai'
-import { POINTS_4 } from './points4'
 
 const ACTIONS = { import: 'Importée', reimport: 'Réimportée', annulation: 'Reliquat annulé', retablissement: 'Reliquat rétabli', suppression: 'Supprimée' }
 const quand = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) }
@@ -60,8 +58,7 @@ function Modele({ m, estDirection, onReliquat, parTaille }) {
 export default function FicheCommande({ commande: c, lignes: toutesLignes, famille = '', marque, magasinNom, estDirection, cote, onFermer, onReimporter, onSupprimee }) {
   const receptions = useLiveQuery(() => receptionsDe(c.id), [c.id])
   const journal = useLiveQuery(() => journalDe(c.id), [c.id])
-  const v = useVariantes(POINTS_4)
-  const [voirJournal, setVoirJournal] = useState(v['r4-journal-ouvert'])
+  const [voirJournal, setVoirJournal] = useState(false)   // journal replié, un toucher pour l'ouvrir (choix du 15/10)
   const [rel, setRel] = useState(null)          // reliquat à annuler / rétablir : { sens, lignes (null = toute la commande), quoi, paires }
   const [motifRel, setMotifRel] = useState('')
   const [enCours, setEnCours] = useState(false)
@@ -143,7 +140,7 @@ export default function FicheCommande({ commande: c, lignes: toutesLignes, famil
       {famille && <div className="encart neutre" style={{ marginTop: 12 }}>Famille « {famille} » : {modeles.length} modèle{modeles.length > 1 ? 's' : ''} affiché{modeles.length > 1 ? 's' : ''} (totaux ci-dessus : toute la commande).</div>}
 
       <h3 className="groupe-titre">Modèles · {modeles.length}</h3>
-      <div className="liste bloc-marque">{modeles.map(m => <Modele key={m.cle} m={m} estDirection={estDirection} onReliquat={estDirection ? demanderReliquat : null} parTaille={v['r4-par-taille']} />)}</div>
+      <div className="liste bloc-marque">{modeles.map(m => <Modele key={m.cle} m={m} estDirection={estDirection} onReliquat={estDirection ? demanderReliquat : null} parTaille />)}</div>
 
       <h3 className="groupe-titre">Réceptions{receptions ? ` · ${receptions.length}` : ''}</h3>
       {receptions === undefined ? <div className="aide">Chargement…</div> : !receptions.length ? <div className="aide" style={{ padding: '0 4px' }}>Aucune réception pour l’instant.</div> : (
