@@ -4,8 +4,6 @@ import Icone from '../components/ui/Icone'
 import ActionsSelection from './ActionsSelection'
 import { Numero, Statut } from './Reperes'
 import { STATUTS, libelleStatut, cleDate, libelleJour, fmtEur, pluriel } from './commun'
-import { useVariantes } from '../shell/essai'
-import { POINTS_3 } from '../fournisseurs/points3'
 
 const PAR_PAGE = 50
 const FILTRES_VIDES = { societe: '', magasin: null, marque: '', categorie: '', statut: '', pointe: '' }   // magasin null = celui de l'appareil
@@ -13,7 +11,7 @@ const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCom
 
 // Liste des entrées de la saison : recherche, filtres, regroupement par jour, sélection multiple, pointage (Direction)
 export default function ListeEntrees({ rapideInitial = 'toutes', entrees, magasinAppareil, estDirection, estPointe, onPointer, onOuvrir, onToast, onModeSelection }) {
-  const mentionCommande = useVariantes(POINTS_3)['r3-mention-liste']   // plan C, étape 3 : « Commande BC … » sous une réception
+  const mentionCommande = true   // plan C, étape 3 : « Commande BC … » sous une réception (choix du 15/10)
   const [recherche, setRecherche] = useState('')
   const [rapide, setRapide]       = useState(estDirection ? rapideInitial : 'toutes')   // toutes | apointer | retours
   const [filtres, setFiltres]     = useState(FILTRES_VIDES)

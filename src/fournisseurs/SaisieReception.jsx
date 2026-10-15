@@ -6,9 +6,6 @@ import Confirmation from '../components/ui/Confirmation'
 import { useSeason } from '../context/SeasonContext'
 import { SIZE_TYPES } from '../data/sizes'
 import { aujourdhuiFr, frVersIso, isoVersFr, pluriel, formeComparaison, CATEGORIES, CAT_TO_KEY } from '../cahier/commun'
-import { useVariantes } from '../shell/essai'
-import PanneauEssai from '../shell/PanneauEssai'
-import { POINTS_3 } from './points3'
 import { commandesDeSaison, lignesDe, enregistrerReception, corrigerReception, messageErreur } from './donnees'
 import { nomModele, grilleDe, categorieDe, horsCommande } from './reception'
 import { fmtJour } from './outils'
@@ -24,7 +21,6 @@ const ordreTaille = (grille, t) => { const i = grille.indexOf(t); const n = pars
 export default function SaisieReception({ entree, entrees, magasinAppareil, onFermer, onToast, onSansCommande, onRetour }) {
   const correction = !!entree
   const { season } = useSeason()
-  const v = useVariantes(POINTS_3)
   const [etapeChoisie, setEtape] = useState(correction ? 'tailles' : 'commande')   // commande | article | tailles
   const [commandeId, setCommandeId] = useState(entree?.commandeId ?? null)
   const [rech, setRech] = useState('')
@@ -69,9 +65,11 @@ export default function SaisieReception({ entree, entrees, magasinAppareil, onFe
   const articleCorrige = useMemo(() => {
     if (!correction) return null
     const a = articles.find(x => nomModele(x.code, x.couleur) === entree.modele)
-    return a ? { ...a, numero: entree.numero || '', categorie: entree.categorie || categorieDe(a.typeKey) } : null
+    return a ? { ...a, numero: entree.numero || a.lignes.find(l => l.numero)?.numero || '', categorie: entree.categorie || categorieDe(a.typeKey) } : null
   }, [correction, articles, entree])
-  const article = articleChoisi || articleCorrige
+  const [numeroCorrige, setNumeroCorrige] = useState(null)
+  const article = articleChoisi || (articleCorrige && { ...articleCorrige, ...(numeroCorrige != null ? { numero: numeroCorrige } : {}) })
+  const changerNumero = n => (articleChoisi ? setArticle(a => ({ ...a, numero: n })) : setNumeroCorrige(n))
 
   // N° et catégorie : ceux de la dernière entrée du même modèle (comme la saisie du Cahier)
   function derniere(modele) {
@@ -80,8 +78,10 @@ export default function SaisieReception({ entree, entrees, magasinAppareil, onFe
     return best
   }
   function choisirArticle(a) {
+    // N° : celui mémorisé sur la ligne de commande, sinon celui de la dernière entrée du modèle (réassort, saisie antérieure)
     const nom = nomModele(a.code, a.couleur), der = derniere(nom), deja = dansCarton(a.cle)
-    setArticle({ ...a, numero: der?.numero || '', categorie: der?.categorie || categorieDe(a.typeKey) })
+    const numLigne = a.lignes.find(l => l.numero)?.numero
+    setArticle({ ...a, numero: deja?.numero ?? numLigne ?? der?.numero ?? '', categorie: der?.categorie || categorieDe(a.typeKey) })
     if (deja) setTailles(deja.tailles)
     else setTailles(Object.fromEntries(a.lignes.filter(l => l.reste > 0).map(l => [l.taille, l.reste])))
     setRetirer(false); setRech(''); setEtape('tailles')
@@ -136,8 +136,8 @@ export default function SaisieReception({ entree, entrees, magasinAppareil, onFe
       const ids = await enregistrerReception(commandeEff, date, liste.map(pourBase))
       const reste = (await lignesDe([commandeEff])).reduce((s, l) => s + l.reste, 0)
       onToast({ texte: `Réception enregistrée : ${pluriel(pairesCarton, 'paire')}${liste.length > 1 ? ` (${liste.length} modèles)` : ''}`,
-        ...(v['r3-annuler'] ? { annuler: async () => { for (const id of ids) await db.entrees.delete(id) } } : {}) })
-      setBilan(v['r3-recap-reste'] ? { paires: pairesCarton, reste } : null)
+        annuler: async () => { for (const id of ids) await db.entrees.delete(id) } })
+      setBilan({ paires: pairesCarton, reste })
       setCarton([]); setArticle(null); setTailles({}); setEtape('article')
     } catch (e) { setErreur(messageErreur(e)) }
     setEnvoi(false)
@@ -169,7 +169,7 @@ export default function SaisieReception({ entree, entrees, magasinAppareil, onFe
       )}
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 14 }}>
         {onRetour && <button className="lien" onClick={onRetour}>Saisir un retour</button>}
-        {v['r3-sans-commande'] && onSansCommande && <button className="lien" onClick={onSansCommande}>Entrée sans commande</button>}
+        {onSansCommande && <button className="lien" onClick={onSansCommande}>Entrée sans commande</button>}
       </div>
     </>
   )
@@ -185,7 +185,7 @@ export default function SaisieReception({ entree, entrees, magasinAppareil, onFe
           <span className="etiquette" style={{ marginTop: 0 }}>Dans ce carton</span>
           <div className="chips" style={{ flexWrap: 'wrap' }}>
             {carton.map(a => <button key={a.cle} className="chip" aria-pressed="true" onClick={() => { setArticle(a); setTailles(a.tailles); setEtape('tailles') }}>
-              {nomModele(a.code, a.couleur)} · {Object.values(a.tailles).reduce((s, x) => s + x, 0)}</button>)}
+              {nomModele(a.code, a.couleur)}{a.numero ? ` (N° ${a.numero})` : ''} · {Object.values(a.tailles).reduce((s, x) => s + x, 0)}</button>)}
           </div>
         </div>
       )}
@@ -217,7 +217,9 @@ export default function SaisieReception({ entree, entrees, magasinAppareil, onFe
   else corps = article ? (
     <>
       <div style={{ fontWeight: 600, fontSize: 16 }}>{article.libelle || article.code}{article.horsCommande && <span className="etat-mot att" style={{ marginLeft: 6 }}>hors commande</span>}</div>
-      <div className="aide" style={{ marginTop: 2 }}>{article.code}{article.couleur ? ' · ' + article.couleur : ''}{article.numero ? ' · N° ' + article.numero : ''} · {nomMarque(commande?.fournisseur_id)}</div>
+      <div className="aide" style={{ marginTop: 2 }}>{article.code}{article.couleur ? ' · ' + article.couleur : ''} · {nomMarque(commande?.fournisseur_id)}</div>
+      <label className="etiquette" style={{ marginTop: 10 }}>N° du modèle <span className="aide">(gardé pour les prochaines réceptions de ce modèle)</span>
+        <input className="champ" style={{ width: 140 }} inputMode="numeric" value={article.numero || ''} onChange={e => changerNumero(e.target.value)} aria-label="N° du modèle" placeholder="ex. 12" /></label>
       <div className="segment" role="group" aria-label="Ajouter ou retirer" style={{ marginTop: 12 }}>
         <button aria-pressed={!retirer} onClick={() => setRetirer(false)}>+ Ajouter</button>
         <button aria-pressed={retirer} onClick={() => setRetirer(true)}>− Retirer</button>
@@ -252,7 +254,6 @@ export default function SaisieReception({ entree, entrees, magasinAppareil, onFe
       <div className="feuille saisie-entree" role="dialog" aria-label={correction ? 'Corriger la réception' : 'Réception'}>
         <div className="feuille-entete"><h2>{correction ? 'Corriger la réception' : 'Réception'}</h2><button className="icone-btn" onClick={fermer} aria-label="Fermer"><Icone nom="fermer" /></button></div>
         <div className="feuille-corps">
-          <PanneauEssai points={POINTS_3} />
           {corps}
           {erreur && <div className="encart err" style={{ marginTop: 12 }}>{erreur}</div>}
         </div>
