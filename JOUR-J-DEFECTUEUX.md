@@ -21,7 +21,7 @@
 ## Marche arrière
 
 1. **Immédiate, sans toucher au code** : Vercel → projet suivi-pro → **Deployments** → le déploiement **b914345** (« Agenda… v2 », 14/10) → « … » → **Promote to Production**. Le site revient à la version d'avant en quelques secondes.
-2. **Puis, pour remettre `main` d'accord avec le site** : la branche `defectueux-retour` est **prête et poussée** (f3bcb39 = annulation de f35b475, sans réécrire l'historique ; code identique à b914345, seuls ces deux documents en plus) ; vous lancez `cd "/Users/jeremie/Projets/App suivi Pro/suivi-pro-defectueux" && git push origin defectueux-retour:main`.
+2. **Puis, pour remettre `main` d'accord avec le site** : la branche `defectueux-retour` est **prête et poussée** (annulation de f35b475, sans réécrire l'historique ; code identique à b914345, seuls ces deux documents en plus) ; vous lancez `cd "/Users/jeremie/Projets/App suivi Pro/suivi-pro-defectueux" && git push origin defectueux-retour:main`.
 
 **Données après une marche arrière** : rien n'est perdu ni faux. Les dossiers créés entre-temps gardent leur ligne « Retour » juste (pointures, nombre de paires, montant) et leur avoir au Plan ; l'ancienne version affiche le résumé « 38 ×2, 39 ×1 » comme une pointure, et son mail dirait « une paire … pointure 38 ×2, 39 ×1 » (à corriger à la main le cas échéant). Aucune restauration de la base n'est nécessaire.
 
