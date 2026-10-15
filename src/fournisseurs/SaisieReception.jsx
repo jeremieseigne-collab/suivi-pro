@@ -18,11 +18,13 @@ import './fournisseurs.css'
 // Correction (entree fournie) : un seul article, réécrit par corriger_reception. La base calcule mouvements et PHT.
 const ordreTaille = (grille, t) => { const i = grille.indexOf(t); const n = parseFloat(t); return i >= 0 ? i : 1000 + (Number.isFinite(n) ? n : 999) }
 
-export default function SaisieReception({ entree, entrees, magasinAppareil, onFermer, onToast, onSansCommande, onRetour }) {
+// commandeInitiale : ouvrir directement sur une commande (réassort, étape 6) ; onEnregistree(articles) : appelé après chaque réception enregistrée ;
+// sansReassorts : ne proposer que les commandes de saison.
+export default function SaisieReception({ entree, entrees, magasinAppareil, onFermer, onToast, onSansCommande, onRetour, commandeInitiale = null, onEnregistree, sansReassorts = false }) {
   const correction = !!entree
   const { season } = useSeason()
   const [etapeChoisie, setEtape] = useState(correction ? 'tailles' : 'commande')   // commande | article | tailles
-  const [commandeId, setCommandeId] = useState(entree?.commandeId ?? null)
+  const [commandeId, setCommandeId] = useState(entree?.commandeId ?? commandeInitiale)
   const [rech, setRech] = useState('')
   const [articleChoisi, setArticle] = useState(null)  // { code, couleur, libelle, typeKey, numero, categorie, horsCommande }
   const [tailles, setTailles] = useState(() => correction ? Object.fromEntries(Object.entries(entree.sizes || {}).filter(([, q]) => Number(q) > 0)) : {})
@@ -38,8 +40,8 @@ export default function SaisieReception({ entree, entrees, magasinAppareil, onFe
   const d = useLiveQuery(async () => {
     const [magasins, marques, commandes] = await Promise.all([db.magasins.toArray(), db.fournisseurs.toArray(), commandesDeSaison(season)])
     const mag = magasins.find(m => m.nom === magasinAppareil)
-    return { mag, marques, commandes: commandes.filter(c => c.magasin_id === mag?.id) }
-  }, [season, magasinAppareil])
+    return { mag, marques, commandes: commandes.filter(c => c.magasin_id === mag?.id && (!sansReassorts || c.type !== 'reassort' || c.id === commandeInitiale)) }
+  }, [season, magasinAppareil, sansReassorts, commandeInitiale])
   const ouvertes = useMemo(() => (d?.commandes || []).filter(c => c.reste > 0 || c.id === commandeId), [d, commandeId])
   // Une seule commande ouverte : choisie d'office
   const commandeEff = commandeId ?? (!correction && ouvertes.length === 1 ? ouvertes[0].id : null)
@@ -138,6 +140,7 @@ export default function SaisieReception({ entree, entrees, magasinAppareil, onFe
       onToast({ texte: `Réception enregistrée : ${pluriel(pairesCarton, 'paire')}${liste.length > 1 ? ` (${liste.length} modèles)` : ''}`,
         annuler: async () => { for (const id of ids) await db.entrees.delete(id) } })
       setBilan({ paires: pairesCarton, reste })
+      onEnregistree?.(liste.map(a => ({ code: a.code, couleur: a.couleur, tailles: a.tailles })))
       setCarton([]); setArticle(null); setTailles({}); setEtape('article')
     } catch (e) { setErreur(messageErreur(e)) }
     setEnvoi(false)

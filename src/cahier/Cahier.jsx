@@ -18,11 +18,14 @@ import SuiviLivraisons from './SuiviLivraisons'
 import { Toast } from './Reperes'
 import './cahier.css'
 import SaisieReception from '../fournisseurs/SaisieReception'
+import { useVariantes } from '../shell/essai'
+import { POINTS_6 } from '../reassort/points6'
 import { commandesDeSaison, entreesHorsCommande } from '../fournisseurs/donnees'
 import { suivieParCommandes } from '../fournisseurs/csvPolaris'
 
 // Cahier des entrées : onglet « Entrées » (ouvert par défaut) et « Suivi des livraisons »
 export default function Cahier() {
+  const variantes6 = useVariantes(POINTS_6)   // étape 6 : réception d'un réassort aussi depuis le Cahier (point avec / sans)
   const { season } = useSeason()
   const { magasin: magasinCourant, setMagasin } = useMagasin()
   const { estDirection } = useCompte()
@@ -104,7 +107,7 @@ export default function Cahier() {
         // Saison suivie par commandes : réception rattachée à une commande (nouvelle ou correction) — plan C, étape 3
         ? <SaisieReception key={saisie.entree?.id || 'reception'} entree={saisie.entree} entrees={entrees || []} magasinAppareil={magasinAppareil}
             onFermer={() => { setSaisie(null); if (saisie.entree) setFicheId(null) }} onToast={setToast}
-            onSansCommande={() => setSaisie({ ancienne: true })} onRetour={() => setSaisie({ ancienne: true, retour: true })} />
+            onSansCommande={() => setSaisie({ ancienne: true })} onRetour={() => setSaisie({ ancienne: true, retour: true })} sansReassorts={!variantes6['r6-cahier']} />
         : <SaisieEntree key={saisie.entree?.id || (saisie.retour ? 'retour' : 'nouvelle')} entree={saisie.entree} entrees={entrees || []} magasinAppareil={magasinAppareil}
             retourInitial={!!saisie.retour} onFermer={() => { setSaisie(null); if (saisie.entree) setFicheId(null) }} onToast={setToast} />
       )}

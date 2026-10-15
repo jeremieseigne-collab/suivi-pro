@@ -19,7 +19,7 @@ const FIELD_TO_DB = {
   planning:        { heureDebut: 'heure_debut', heureFin: 'heure_fin', createdAt: 'created_at' },
   sav:             { magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', clientNom: 'client_nom', clientTel: 'client_tel', defectueuxId: 'defectueux_id', createdAt: 'created_at', prixReparation: 'prix_reparation', enCoursAt: 'en_cours_at' },
   top_modeles:     { createdAt: 'created_at', magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', typeKey: 'type_key', stockAt: 'stock_at', archivedAt: 'archived_at', relanceAt: 'relance_at' },
-  reassorts:       { createdAt: 'created_at', topId: 'top_id', magasinId: 'magasin_id', fournisseurId: 'fournisseur_id' },
+  reassorts:       { createdAt: 'created_at', topId: 'top_id', magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', commandeId: 'commande_id', recuAvantCommande: 'recu_avant_commande', prixUnitaire: 'prix_unitaire' },
 }
 
 const FIELD_FROM_DB = {}
