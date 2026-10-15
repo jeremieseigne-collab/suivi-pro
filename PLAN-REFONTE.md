@@ -956,6 +956,23 @@ L'écran « Reçu par marque » avait été **construit et essayé** (branche `p
 - **Aucun nouvel écran, aucune entrée de menu.** Aucune modification de la base : helpers purs ajoutés à `cahier/commun.js` (`familleEntree`, `csvEntrees`, `telechargerCsv`), réutilisés par `ListeEntrees.jsx`, `SuiviLivraisons.jsx` et `ActionsSelection.jsx`.
 - Essais : `~/.suivi-pro/essais/cdp-cahier-etape5bis.mjs` (21/21 : familles du fichier et catégories, export conforme à la base pour plusieurs combinaisons de filtres, export de la sélection, Suivi des livraisons recalculé sur la famille, Hiver 2026 avec les catégories, compte magasin sans export, téléphone, mode sombre, aucune erreur console, aucune mention de « Reçu par marque »).
 
+### Étape 6 — réassorts en commandes (branche `plan-c-etape6`, 15/10)
+
+- **Saisons suivies par commandes seulement** (Été 2027 et après) ; Hiver 2026 et avant : rien ne change (vérifié).
+- **Un réassort devient une commande de réassort dès qu'il quitte « À réassortir »** (Demandé, Commandé ou En route : étapes toujours posées à la main, alertes 7 / 10 / 15 jours inchangées). « À réassortir » reste en amont (rien n'est commandé, décision du plan) ; revenir à « À réassortir » sans réception supprime la commande ; supprimer un réassort sans réception aussi.
+- **Lignes de la commande** = pointures demandées ; **prix** = celui du même modèle-coloris dans la commande de saison (même magasin d'abord), sinon le prix saisi dans « Nouveau réassort », sinon 0 € (avertissement).
+- **Réception** : « Réassort reçu » ouvre la **saisie de réception commune** (celle du Cahier) sur la commande du réassort, pointures pré-remplies avec le reste ; l'entrée du Cahier est une entrée « Réassort » rattachée (même PHT, même date). Le réassort **suit tout seul** : reçu, « En route » à la première réception, « Reçu » quand tout est là ; une réception supprimée le remet en arrière.
+- **Reprise des réassorts en cours** (dans le SQL de l'étape) : chaque réassort Demandé / Commandé / En route d'une saison suivie devient une commande ; ce qui avait déjà été reçu avant est gardé à part (`recu_avant_commande`) et la commande n'attend que le reste.
+- **Écran Réassorts quasi identique** : un repère « saison suivie par commandes » et, dans la fiche, la mention de la commande.
+- **Base** (base de test seulement) : `supabase-plan-c-etape6.sql` — 3 colonnes ajoutées à `reassorts` (`commande_id`, `recu_avant_commande`, `prix_unitaire`), 5 fonctions, 3 déclencheurs ; annulation `supabase-plan-c-etape6-annulation.sql`, **aller-retour vérifié** (Plan identique après annulation) ; sauvegarde avant : `test-2026-10-15_14h03-avant-plan-c-etape6`. Défaut trouvé par les essais et corrigé : le déclencheur de suppression était placé « avant » (la base refusait) → « après ».
+- **Plan de règlement** : identique avant / après la migration (Été 2027 et Hiver 2026) ; une réception de réassort par la commande donne **la même échéance** qu'une entrée « Réassort » faite à l'ancienne (comparé, Tamaris en virement 30 j le temps de l'essai, remis à l'identique).
+- **Points avec / sans** (panneau d'essai conservé ; ma recommandation entre crochets) :
+  1. « Prix unitaire HT » dans Nouveau réassort quand la commande de saison ne donne pas le prix [**avec** : sinon la réception est à 0 € dans le Plan].
+  2. Les paires reçues s'ajoutent au stock du top modèle [**avec** : c'est le comportement d'aujourd'hui, case cochée par défaut].
+  3. Mention de la commande et lien « Voir dans Commandes fournisseurs » dans la fiche [**avec** : utile, discret].
+  4. Réception d'un réassort aussi depuis « Entrée » du Cahier [**avec** : le carton arrive souvent avec le reste ; le réassort suit de toute façon].
+- **Essais** : `~/.suivi-pro/essais/cdp-reassorts-etape6.mjs` (**34/34** : reprise, réception commune, stock, Plan, prix saisi, étapes, réception partielle et annulée, retour à « À réassortir », suppression, 4 points « sans », Cahier, Hiver 2026 inchangé, Direction au téléphone, mode sombre, aucune erreur dans la console).
+
 ## Idées pour plus tard (non construites)
 
 | Idée | Pour quoi faire | Ce qu'il faudrait ajouter à la base |
