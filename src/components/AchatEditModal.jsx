@@ -18,7 +18,7 @@ const STRAT_COLORS = {
   '🛑 ARRÊTER':   '#fee2e2',
 }
 
-export default function AchatEditModal({ row, onClose, onSaved }) {
+export default function AchatEditModal({ row, onClose, onSaved, sansStatut }) {
   const { params } = useParams()
 
   const [form, setForm] = useState({
@@ -153,12 +153,12 @@ export default function AchatEditModal({ row, onClose, onSaved }) {
         ) : (
           <form onSubmit={handleSubmit} className="modal-body">
             <div className="form-grid">
-              <div className="form-field">
+              {!sansStatut && <div className="form-field">
                 <label>Statut</label>
                 <select value={form.statut} onChange={e => set('statut', e.target.value)}>
                   {STATUTS.map(s => <option key={s} value={s}>{s || '— Choisir —'}</option>)}
                 </select>
-              </div>
+              </div>}
               <div className="form-field">
                 <label>Magasin *</label>
                 <select value={form.magasin} onChange={e => set('magasin', e.target.value)} required>

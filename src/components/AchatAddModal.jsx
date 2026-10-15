@@ -25,7 +25,7 @@ const INITIAL = {
   strategie: '', moderegl: '',
 }
 
-export default function AchatAddModal({ onClose, onSaved }) {
+export default function AchatAddModal({ onClose, onSaved, sansStatut }) {
   const { season } = useSeason()
   const { params } = useParams()
   const [form,   setForm]   = useState(INITIAL)
@@ -132,12 +132,12 @@ export default function AchatAddModal({ onClose, onSaved }) {
         ) : (
           <form onSubmit={handleSubmit} className="modal-body">
             <div className="form-grid">
-              <div className="form-field">
+              {!sansStatut && <div className="form-field">
                 <label>Statut</label>
                 <select value={form.statut} onChange={e => set('statut', e.target.value)}>
                   {STATUTS.map(s => <option key={s} value={s}>{s || '— Choisir —'}</option>)}
                 </select>
-              </div>
+              </div>}
               <div className="form-field">
                 <label>Magasin *</label>
                 <select value={form.magasin} onChange={e => set('magasin', e.target.value)} required>
