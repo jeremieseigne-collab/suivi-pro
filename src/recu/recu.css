@@ -1,0 +1,14 @@
+/* Reçu par marque (plan C, étape 5) — classes de la charte + réglages propres à l'écran */
+.recu-saisons, .recu-magasins { flex-wrap: wrap; margin-bottom: 10px; }
+.recu-filtres { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+.recu-filtres select { width: auto; min-width: 200px; }
+.recu-repere { margin: 2px 4px 12px; }
+.ligne.recu-marque, .ligne.recu-modele { align-items: center; }
+.recu-marque .t1, .recu-marque .t2, .recu-modele .t1, .recu-modele .t2 { display: block; }
+.recu-chiffre { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; margin-left: 8px; }
+.recu-chiffre b { font-size: 17px; }
+.recu-chiffre small { display: block; font-size: 12px; color: var(--doux); }
+.recu-modeles { padding: 0 0 6px 16px; background: var(--carte-2); }
+.ligne.recu-modele { min-height: 48px; background: transparent; }
+.recu-tailles { padding: 4px 16px 12px; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); }
+@media (max-width: 640px) { .recu-filtres { grid-template-columns: 1fr; } .recu-filtres select { width: 100%; } }

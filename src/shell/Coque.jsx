@@ -33,10 +33,12 @@ const MENU_BASE = [
 ]
 // Commandes fournisseurs (plan C, étape 2) : premier groupe, juste sous « Cahier des entrées » (choix du 14/10)
 const CF = { id: 'fournisseurs', icone: 'livraison', label: 'Commandes fournisseurs' }
+// Reçu par marque (plan C, étape 5) : juste sous « Commandes fournisseurs », visible de tous les comptes (quantités seulement pour les magasins)
+const RPM = { id: 'recu', icone: 'entrees', label: 'Reçu par marque' }
 const MENU = MENU_BASE.map((g, i) => {
   if (i !== 0) return g
   const items = [...g.items]
-  items.splice(items.findIndex(it => it.id === 'cahier') + 1, 0, CF)
+  items.splice(items.findIndex(it => it.id === 'cahier') + 1, 0, CF, RPM)
   return { ...g, items }
 })
 // Onglets du téléphone (en bas, à portée du pouce) ; le reste est dans « Plus »

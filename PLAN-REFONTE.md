@@ -946,6 +946,17 @@ Rien n'est supprimé ni effacé dans les tables existantes : `fournisseurs.group
 - **Correction du 15/10** : la fenêtre « Annuler le reliquat » s'affichait coupée, à cheval sur la liste et la fiche latérale. Toutes les fenêtres de confirmation (composant commun de la charte) s'affichent désormais à la racine de la page : centrées au-dessus de tout l'écran, fond assombri. Vérifié pour Annuler le reliquat, Rétablir et Supprimer la commande : ordinateur (panneau latéral), tablette (fiche en fenêtre), téléphone.
 - **Aucune modification de la base.** Essais : `~/.suivi-pro/essais/cdp-reliquat-etape4.mjs` (35/35, dont la position des fenêtres de confirmation et aucune erreur dans la console du navigateur ; sans la correction, 6 échecs).
 
+### Étape 5 — « Reçu par marque » (branche `plan-c-etape5`, 15/10)
+
+- **Écran en lecture seule**, dans le menu sous « Commandes fournisseurs » : puces de saison (toutes les saisons), puces de magasin (Direction, avec « Tous les magasins ») ; compte magasin : son magasin, **quantités seulement** (ni montant ni export). Recherche par marque ou modèle, **filtre famille**, **export CSV** (Direction : une ligne par magasin × marque × modèle × taille, avec famille, paires, montant HT et nombre de réceptions).
+- **Liste** : une ligne par marque (paires, nombre de réceptions, dernière réception, détail par magasin quand « Tous », montant HT pour la Direction) ; en la touchant, les modèles-coloris (famille, paires, montant) ; en touchant un modèle, ses tailles.
+- **Calcul unique pour toutes les saisons** : chaque entrée du Cahier (hors retours, décision 11) découpée par taille — ce sont exactement les mouvements d'entrée d'une réception — ; montant = PHT de l'entrée réparti au prorata des paires. **Saisons passées « recréées » à l'écran** à partir des entrées existantes, **sans rien écrire en base**. Famille : celle de la ligne de commande (saisons suivies), sinon la catégorie de l'entrée.
+- **Points avec / sans** (panneau d'essai conservé ; ma recommandation entre crochets) :
+  1. Saisons suivies : les **entrées sans commande** comptent, marquées « sans commande » [**avec** : ce sont de vraies paires reçues ; sans elles, le reçu serait faux].
+  2. Les **réassorts reçus** comptent [**avec** : l'écran dit ce qui est entré ; le Suivi des livraisons et les Achats gardent leur propre règle].
+  3. Saisons passées : **filtre famille d'après la catégorie** des entrées [**avec** : Femme / Homme / Enfant suffisent pour l'historique].
+- **Aucune modification de la base**, aucun fichier du Plan de règlement ni de `db/` touché (vérifié : 0 fichier). Essais : `~/.suivi-pro/essais/cdp-recu-etape5.mjs` (**25/25** : chiffres de chaque marque comparés à un calcul fait à part depuis la base, Hiver 2026 et Été 2027, deux comptes, ordinateur et téléphone, mode sombre, export CSV, les 3 points « sans », aucune erreur dans la console).
+
 ## Idées pour plus tard (non construites)
 
 | Idée | Pour quoi faire | Ce qu'il faudrait ajouter à la base |
