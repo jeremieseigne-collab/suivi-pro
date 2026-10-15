@@ -7,7 +7,6 @@ import { buildDefectueuxMailUrl } from '../defectueux/mail'
 import { coordMarque } from '../reassort/mail'
 import { STATUTS_DEF, DEF_TERMINES, DEF_FIN, CLASSE_DEF, fmtDate, changerEtatDefectueux, cloturerSav } from './regles'
 import { useCompte } from '../context/CompteContext'
-import { nbPairesDossier } from './paires'
 
 const EtatDef = ({ s }) => <span className={`etat-mot ${CLASSE_DEF[s] || ''}`}>{s || '—'}</span>
 
@@ -36,7 +35,7 @@ function FicheDefectueux({ d, onChangerEtat, onMail, onModifier, onSupprimer, on
         <div className="feuille-corps">
           <div style={{ fontWeight: 600, fontSize: 16 }}>{d.modele || 'Sans modèle'}<Numero n={d.numero} /></div>
           <div className="resume-saisie" style={{ marginTop: 6 }}>
-            {nbPairesDossier(d.pointure) > 1 ? <span>Paires <b>{nbPairesDossier(d.pointure)} : {d.pointure}</b></span> : <span>Pointure <b>{d.pointure || '—'}</b></span>}<span>Le <b>{fmtDate(d.createdAt)}</b></span><span>Salarié <b>{d.salarie || '—'}</b></span>
+            <span>Pointure <b>{d.pointure || '—'}</b></span><span>Le <b>{fmtDate(d.createdAt)}</b></span><span>Salarié <b>{d.salarie || '—'}</b></span>
             <span>Magasin <b>{d.magasin}</b></span><span>Société <b>{d.societe || '—'}</b></span>
           </div>
           {d.note && <><span className="etiquette" style={{ marginTop: 16 }}>Note / problème</span><div className="carte" style={{ background: 'var(--carte-2)', whiteSpace: 'pre-wrap' }}>{d.note}</div></>}
