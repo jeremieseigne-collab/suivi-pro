@@ -739,7 +739,7 @@ En cours de saisie :
 **Suivi des livraisons** : pour les saisons en commandes, il est recalculé d'après les commandes (attendu = commandé − annulé, réassorts compris). Pour les saisons d'avant, rien ne change.
 
 **Ce qui serait retiré, masqué ou déplacé** (à accorder ligne par ligne, règle de la refonte) :
-- le statut posé à la main ✅ ⏳ ❌ des Achats, pour les saisons en commandes ;
+- le statut posé à la main ✅ ⏳ ❌ des Achats, pour les saisons en commandes — ✅ accordé (15/10), remplacé par le statut déduit des commandes (étape 7) ;
 - l'import « Modèles » de Réglages → Marques, remplacé par l'import des commandes (pas de correctif à part, décision 16) ; il reste utilisable pour Hiver 2026 jusqu'au 31/03/2027 ;
 - le choix libre de la saison d'une entrée rattachée à une commande ;
 
@@ -929,6 +929,13 @@ Rien n'est supprimé ni effacé dans les tables existantes : `fournisseurs.group
   - **Entrée sans commande en saison suivie** : champ « Prix unitaire HT » dans la saisie et dans « Modifier », avertissement « cette entrée sera à 0 € » s'il reste vide (comme le SAV).
   - **Actions groupées** sur une réception (date, magasin, saison) : message clair « réception rattachée à une commande : à corriger une par une », rien de modifié — vérifié à l'écran.
 - **Essais repassés** : écran (téléphone, magasin Bailly Rouffiac pour ne pas croiser votre essai en cours sur Bailly Albi et Les 2 Zèbres) **35/35** (dont N° 12 mémorisé puis proposé, « Modifier » → N° 13 sur l'entrée et la commande, prix unitaire et avertissement, actions groupées) ; API étape 1 69/69 ; Plan Été 2027 5/5 ; ancienne saisie du Cahier.
+
+### Étape 7 — écran Achats (branche `plan-c-etape7`, 15/10)
+
+- **Présentation** de la refonte (tableau sur ordinateur, lignes sur deux niveaux sur téléphone, mode sombre), **mêmes chiffres** que l'écran actuel : 11 combinaisons de filtres comparées (Hiver et Été 2026), chiffres du haut, lignes et total identiques.
+- **Saisons suivies par commandes** : commandé net (commandes de saison, commandé − annulé, au prix d'achat), reçu (réceptions rattachées), écart indicatif réel − commandé ; réassorts non compris ; écart non calculé avec un filtre catégorie.
+- **Points tranchés le 15/10 : tous « avec »** — (1) statut déduit des commandes à la place du statut ✅ ⏳ ❌ (champ retiré de la fiche d'achat pour ces saisons) ; (2) marques commandées sans ligne d'achat affichées, le crayon crée la ligne. Panneau d'essai retiré.
+- **Aucune modification de la base.** Essais : `~/.suivi-pro/essais/cdp-achats-etape7.mjs` (32/32).
 
 ## Idées pour plus tard (non construites)
 

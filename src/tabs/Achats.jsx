@@ -11,9 +11,6 @@ import { SOCIETES, getSociete } from '../data/societes'
 import { useMediaQuery, PHONE } from '../lib/useMediaQuery'
 import { suivieParCommandes } from '../fournisseurs/csvPolaris'
 import { commandesDeSaison } from '../fournisseurs/donnees'
-import PanneauEssai from '../shell/PanneauEssai'
-import { useVariantes } from '../shell/essai'
-import { POINTS_7 } from '../achats/points7'
 import '../achats/achats.css'
 
 const STRAT_COLORS = {
@@ -78,8 +75,7 @@ export default function Achats() {
   const { season, seasons } = useSeason()
   const telephone = useMediaQuery(PHONE)
   const suivie = suivieParCommandes(season)
-  const v = useVariantes(POINTS_7)
-  const statutDeduit = suivie && v['a7-statut']
+  const statutDeduit = suivie   // saisons suivies par commandes : statut déduit des commandes (accord du 15/10)
   const [search,    setSearch]    = useState('')
   const [societe,   setSociete]   = useState('')
   const [magasin,   setMagasin]   = useState('')
@@ -148,8 +144,8 @@ export default function Achats() {
     return { lignes, sansLigne }
   }, [season])
 
-  const avecSansLigne = v['a7-sans-ligne']
-  const rows = useMemo(() => !data ? [] : avecSansLigne ? [...data.lignes, ...data.sansLigne] : data.lignes, [data, avecSansLigne])
+  // Marques commandées sans ligne d'achat affichées avec leur commandé net (accord du 15/10)
+  const rows = useMemo(() => !data ? [] : [...data.lignes, ...data.sansLigne], [data])
 
   // Lignes filtrées par société/magasin/stratégie/recherche (sans le filtre catégorie)
   const baseRows = useMemo(() => rows.filter(r => {
@@ -236,8 +232,6 @@ export default function Achats() {
       {editRow  && <AchatEditModal row={editRow} sansStatut={statutDeduit} onClose={() => setEditRow(null)} onSaved={() => setEditRow(null)} />}
       {showAdd  && <AchatAddModal sansStatut={statutDeduit} onClose={() => setShowAdd(false)} onSaved={() => setShowAdd(false)} />}
       {showImport && <AchatImportModal season={season} onClose={() => setShowImport(false)} onDone={() => setShowImport(false)} />}
-
-      {suivie && <PanneauEssai points={POINTS_7} />}
 
       <div className="achats-haut">
         <div className="achats-chiffres">
