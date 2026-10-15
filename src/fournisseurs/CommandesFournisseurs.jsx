@@ -10,10 +10,13 @@ import { useMediaQuery, TABLET } from '../lib/useMediaQuery'
 import { PageShell } from '../shell/EnTete'
 import { ouvrirAvec } from '../shell/navigation'
 import { Toast } from '../cahier/Reperes'
-import { commandesDeSaison, lignesDe } from './donnees'
+import { commandesDeSaison, lignesDe, dernieresReceptions } from './donnees'
 import { suivieParCommandes, libelleSaison, forme } from './csvPolaris'
 import { Jauge, StatutCommande } from './commun'
-import { fmtJour, enRetard } from './outils'
+import { fmtJour, enRetard, traine, repereCommande, joursDepuis } from './outils'
+import PanneauEssai from '../shell/PanneauEssai'
+import { useVariantes } from '../shell/essai'
+import { POINTS_4 } from './points4'
 import FicheCommande from './FicheCommande'
 import { FenetreImport, FenetreReimport } from './ImportCommande'
 import '../cahier/cahier.css'
@@ -28,7 +31,9 @@ export default function CommandesFournisseurs() {
   const { season, seasons, setSeason, addSeason } = useSeason()
   const grand = !useMediaQuery(TABLET)
   const [magasinId, setMagasinId] = useState(() => (estDirection ? '' : magasinAppareil?.id ?? ''))
-  const [filtre, setFiltre] = useState('tous')        // tous | recevoir | partielles | soldees | retard | hors
+  const [filtre, setFiltre] = useState('tous')        // tous | recevoir | partielles | soldees | retard | traine | hors
+  const [jours, setJours] = useState(30)             // commandes qui traînent : sans nouvelle depuis plus de N jours
+  const v = useVariantes(POINTS_4)
   const [rech, setRech] = useState('')
   const [ficheId, setFicheId] = useState(null)
   const [importer, setImporter] = useState(false)
@@ -41,7 +46,9 @@ export default function CommandesFournisseurs() {
 
   const donnees = useLiveQuery(async () => {
     const commandes = await commandesDeSaison(season)
-    return { commandes, lignes: commandes.length ? await lignesDe(commandes.map(c => c.id)) : [] }
+    if (!commandes.length) return { commandes, lignes: [], derniers: {} }
+    const [lignes, derniers] = await Promise.all([lignesDe(commandes.map(c => c.id)), dernieresReceptions(season)])
+    return { commandes, lignes, derniers }
   }, [season])
   const fournisseurs = useLiveQuery(() => db.fournisseurs.orderBy('nom').toArray(), [])
   const magasins = useLiveQuery(() => db.magasins.orderBy('nom').toArray(), [])
@@ -59,6 +66,8 @@ export default function CommandesFournisseurs() {
   const duMagasin = useMemo(() => (donnees?.commandes || []).filter(c => (!magasinId || c.magasin_id === Number(magasinId))
     && (!frId || (fournisseurs || []).find(f => f.id === c.fournisseur_id)?.fournisseurReelId === Number(frId))), [donnees, magasinId, frId, fournisseurs])
   const retards = duMagasin.filter(enRetard)
+  const voitTraine = estDirection || v['r4-traine-magasin']
+  const trainent = voitTraine ? duMagasin.filter(c => traine(c, donnees?.derniers?.[c.id], jours)) : []
   const visibles = useMemo(() => {
     const q = forme(rech)
     return duMagasin.filter(c => {
@@ -66,6 +75,7 @@ export default function CommandesFournisseurs() {
       if (filtre === 'partielles' && !(c.qte_recue > 0 && c.reste > 0)) return false
       if (filtre === 'soldees' && c.reste > 0) return false
       if (filtre === 'retard' && !enRetard(c)) return false
+      if (filtre === 'traine' && !traine(c, donnees?.derniers?.[c.id], jours)) return false
       if (filtre === 'hors' && !(c.lignes_hors_commande > 0)) return false
       if (famille && !(lignesPar[c.id] || []).some(l => l.famille === famille)) return false
       if (q) {
@@ -76,7 +86,7 @@ export default function CommandesFournisseurs() {
       }
       return true
     }).sort((a, b) => b.id - a.id)
-  }, [duMagasin, filtre, rech, lignesPar, fournisseurs, frs, famille])
+  }, [duMagasin, filtre, rech, lignesPar, fournisseurs, frs, famille, donnees, jours])
 
   if (donnees === undefined || fournisseurs === undefined || magasins === undefined || frs === undefined) return <PageShell title="Commandes fournisseurs"><LoadingState /></PageShell>
 
@@ -105,6 +115,7 @@ export default function CommandesFournisseurs() {
             {estDirection ? ' · ' + fmtEur(c.montant_net) : ''}</span>
           <span className="ligne-jauge"><Jauge p={p} /><span className="t2" style={{ margin: 0 }}>{c.qte_recue} / {c.qte_commandee} paires{c.reste ? ` · reste ${c.reste}` : ''}</span></span>
           {c.livraison_prevue && c.reste > 0 && <span className={`t2${retard ? ' etat-mot att' : ''}`}>Livraison prévue {fmtJour(c.livraison_prevue)}{retard ? ' · dépassée' : ''}</span>}
+          {voitTraine && traine(c, donnees.derniers?.[c.id], jours) && <span className="t2 etat-mot att">Reste {c.reste} paire{c.reste > 1 ? 's' : ''} · {donnees.derniers?.[c.id] ? `dernière réception le ${fmtJour(donnees.derniers[c.id])}` : 'aucune réception'} · rien depuis {joursDepuis(repereCommande(c, donnees.derniers?.[c.id]))} jours</span>}
           {estDirection && c.lignes_hors_commande > 0 && <span className="t2 etat-mot att">{c.lignes_hors_commande} article{c.lignes_hors_commande > 1 ? 's' : ''} hors commande</span>}
         </span>
         <StatutCommande c={c} />
@@ -139,6 +150,7 @@ export default function CommandesFournisseurs() {
   return (
     <PageShell title="Commandes fournisseurs"
       rightExtra={estDirection && <button className="btn btn-prim seulement-grand" onClick={() => setImporter(true)}><Icone nom="ajout" taille={20} />Importer une commande</button>}>
+      {suivieParCommandes(season) && <PanneauEssai points={POINTS_4} />}
       {!suivieParCommandes(season) && (
         <div className="encart neutre" style={{ marginBottom: 12 }}>Les commandes fournisseurs sont suivies à partir d’Été 2027. {libelleSaison(season)} reste dans Achats et le Cahier, comme aujourd’hui.</div>
       )}
@@ -171,6 +183,7 @@ export default function CommandesFournisseurs() {
         {chip('partielles', 'Partielles', duMagasin.filter(c => c.qte_recue > 0 && c.reste > 0).length)}
         {chip('soldees', 'Reçues en totalité', duMagasin.filter(c => c.reste === 0).length)}
         {retards.length > 0 && chip('retard', 'Livraison dépassée', retards.length)}
+        {(trainent.length > 0 || filtre === 'traine') && chip('traine', `Rien depuis ${jours} j`, trainent.length)}
         {estDirection && chip('hors', 'Hors commande', duMagasin.filter(c => c.lignes_hors_commande > 0).length)}
       </div>
       <div className="sous-info">{libelleSaison(season)} · {duMagasin.length} commande{duMagasin.length > 1 ? 's' : ''} · {tot.recu.toLocaleString('fr-FR')} / {tot.cmd.toLocaleString('fr-FR')} paires reçues · reste {tot.reste.toLocaleString('fr-FR')}</div>
@@ -185,6 +198,19 @@ export default function CommandesFournisseurs() {
         <button className="encart att cf-encart" onClick={() => setFiltre('retard')}>
           <Icone nom="horloge" taille={18} />{retards.length} commande{retards.length > 1 ? 's ont' : ' a'} dépassé la livraison prévue — voir
         </button>
+      )}
+
+      {trainent.length > 0 && filtre !== 'traine' && (
+        <button className="encart att cf-encart" onClick={() => setFiltre('traine')}>
+          <Icone nom="horloge" taille={18} />{trainent.length} commande{trainent.length > 1 ? 's' : ''} de saison avec un reste à livrer ({trainent.reduce((s, c) => s + c.reste, 0)} paires), sans réception depuis plus de {jours} jours — voir
+        </button>
+      )}
+      {filtre === 'traine' && (
+        <div className="cf-traine-jours">
+          <span className="aide">Reste à livrer, rien reçu (ni livraison prévue) depuis plus de</span>
+          {[15, 30, 60, 90].map(n => <button key={n} className="chip" aria-pressed={jours === n} onClick={() => setJours(n)}>{n} jours</button>)}
+          {estDirection && <span className="aide">Rien n'est annulé tout seul : ouvre la commande pour « Annuler le reliquat ».</span>}
+        </div>
       )}
 
       <div className={grand && fiche ? 'cf-grille' : undefined}>

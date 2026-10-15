@@ -937,6 +937,14 @@ Rien n'est supprimé ni effacé dans les tables existantes : `fournisseurs.group
 - **Points tranchés le 15/10 : tous « avec »** — (1) statut déduit des commandes à la place du statut ✅ ⏳ ❌ (champ retiré de la fiche d'achat pour ces saisons) ; (2) marques commandées sans ligne d'achat affichées, le crayon crée la ligne. Panneau d'essai retiré.
 - **Aucune modification de la base.** Essais : `~/.suivi-pro/essais/cdp-achats-etape7.mjs` (32/32).
 
+### Étape 4 — reliquat (branche `plan-c-etape4`, 15/10)
+
+- **Annuler / Rétablir le reliquat** (Direction, motif obligatoire, noté au journal) : dans la fiche d'une commande, sur toute la commande, sur un modèle-coloris (dans son détail) et taille par taille. La confirmation rappelle que les réceptions faites et le Plan de règlement ne bougent pas (corriger le réel achat dans Achats si besoin). Compte magasin : ni bouton ni montant ; la base refuse (« Réservé à la Direction »).
+- **Journal** : chaque annulation ou rétablissement avec le motif, l'auteur, le nombre de paires et les articles (les appels d'un même geste regroupés).
+- **Commandes qui traînent** : commandes de saison avec un reste à livrer, sans nouvelle depuis plus de N jours (repère = la plus récente de : dernière réception, livraison prévue, date de commande). Encart en haut de la liste + filtre « Rien depuis N j » (15 / 30 / 60 / 90 jours, 30 par défaut) ; la carte dit le reste, la dernière réception et depuis combien de jours. **Aucune annulation automatique.**
+- **Points avec / sans** (panneau d'essai, saisons suivies par commandes) : (1) journal déplié d'office ; (2) encart aussi pour les comptes magasin (quantités seulement) ; (3) annuler / rétablir taille par taille.
+- **Aucune modification de la base.** Essais : `~/.suivi-pro/essais/cdp-reliquat-etape4.mjs` (30/30, dont aucune erreur dans la console du navigateur).
+
 ## Idées pour plus tard (non construites)
 
 | Idée | Pour quoi faire | Ce qu'il faudrait ajouter à la base |

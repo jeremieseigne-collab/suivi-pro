@@ -91,3 +91,23 @@ export function messageErreur(e) {
   if (/AU_DELA_DU_RESTE|HORS_COMMANDE/.test(m)) return 'La commande a changé entre-temps (autre réception ?) : ' + m.replace(/^.*?: /, '') + '. Vérifie les quantités et réenregistre.'
   return m || 'Erreur inattendue.'
 }
+
+// Annuler / rétablir le reliquat (Direction, motif obligatoire ; la base contrôle les deux) : toute la commande (ligneIds = [null])
+// ou certaines lignes (un appel par ligne, chacun noté au journal). Renvoie le nombre de lignes touchées.
+export async function annulerRetablirReliquat(commandeId, sens, motif, ligneIds = [null]) {
+  let n = 0
+  for (const id of ligneIds) n += verif(await supabase.rpc('annuler_retablir_reliquat', { p_commande_id: commandeId, p_sens: sens, p_motif: motif, p_ligne_id: id })) || 0
+  return n
+}
+
+// Date (AAAA-MM-JJ) de la dernière réception de chaque commande d'une saison : { commande_id: date }
+export async function dernieresReceptions(season) {
+  const rows = await fetchAll(() => supabase.from('entrees').select('id,commande_id,date').eq('season', season).not('commande_id', 'is', null).order('id'))
+  const out = {}
+  for (const e of rows) {
+    const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(e.date || ''); if (!m) continue
+    const iso = `${m[3]}-${m[2]}-${m[1]}`
+    if (!out[e.commande_id] || iso > out[e.commande_id]) out[e.commande_id] = iso
+  }
+  return out
+}
