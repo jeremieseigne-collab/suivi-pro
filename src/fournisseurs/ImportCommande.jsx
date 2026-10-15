@@ -71,7 +71,7 @@ function Refusees({ refusees }) {
 // Saisie de plusieurs n° de BC (texte libre)
 function NumerosBC({ valeurs, onChange }) {
   const [texte, setTexte] = useState('')
-  const ajouter = () => { const t = texte.trim(); if (t && !valeurs.includes(t)) onChange([...valeurs, t]); setTexte('') }
+  const ajouter = () => { const t = texte.trim().replace(/\s+/g, ' '); if (t && !valeurs.some(v => forme(v) === forme(t))) onChange([...valeurs, t]); setTexte('') }
   return (
     <div>
       <div style={{ display: 'flex', gap: 8 }}>
@@ -127,7 +127,8 @@ export function FenetreImport({ fournisseurs, fournisseursReels = [], magasins, 
   const existantes = useMemo(() => {
     if (!r || r.erreur || !fid || cmdMarque.fid !== fid || !bc.length) return []
     const mags = Object.keys(r.parMagasin).map(Number)
-    return cmdMarque.liste.filter(c => c.season === r.saison && mags.includes(c.magasin_id) && (c.numeros_bc || []).some(n => bc.includes(n)))
+    const tapes = new Set(bc.map(forme))   // n° de BC comparés sans espaces, majuscules ni ponctuation
+    return cmdMarque.liste.filter(c => c.season === r.saison && mags.includes(c.magasin_id) && (c.numeros_bc || []).some(n => tapes.has(forme(n))))
   }, [r, fid, cmdMarque, bc])
 
   const ok = r && !r.erreur

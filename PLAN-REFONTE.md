@@ -608,7 +608,7 @@ La **société** se déduit du magasin.
 **Statut d'une commande de saison** : **déduit**, jamais posé à la main.
 - « Commandée » : rien n'est reçu.
 - « Partiellement reçue ».
-- « Soldée » : le reste vaut 0, par réception ou par annulation. Elle est affichée « soldée, reliquat annulé » si une annulation y a contribué.
+- « Reçue en totalité » : le reste vaut 0, par réception ou par annulation. Elle est affichée « reçue en totalité, reliquat annulé » si une annulation y a contribué.
 
 **Réimport** (décision 5, Direction seulement) :
 1. On choisit la commande, par son n° de BC ou dans une liste. Suivi Pro relit le fichier avec les mêmes règles.
@@ -631,7 +631,7 @@ Règles du réimport :
 - Il s'applique **sur toute la commande** (chaque ligne : quantité annulée = reste à livrer) **ou article par article**.
 - « **Rétablir** » remet à 0 la quantité annulée, sur la commande ou sur un article, **avec motif** également.
 - Les deux sens sont notés au journal.
-- **Aucune annulation automatique** : une commande ancienne non soldée est seulement signalée (encart « reste à livrer depuis plus de N jours »).
+- **Aucune annulation automatique** : une commande ancienne non reçue en totalité est seulement signalée (encart « reste à livrer depuis plus de N jours »).
 
 #### 3. Réception
 
@@ -698,7 +698,7 @@ Aucun calcul ne change : l'échéance reste déclenchée par la première récep
 
 **Commandes fournisseurs**
 - **Liste** : des cartes groupées par marque.
-  - **Puces** de saison, de magasin et de statut (« à recevoir », « partielles », « soldées »), plus le filtre **« Hors commande »** (Direction).
+  - **Puces** de saison, de magasin et de statut (« à recevoir », « partielles », « reçues en totalité »), plus le filtre **« Hors commande »** (Direction).
   - **Recherche** par n° de BC, marque ou modèle.
 - **Carte d'une commande** :
   - marque, magasin, n° de BC, date ;
@@ -793,7 +793,7 @@ Rien n'est supprimé ni modifié dans les tables existantes.
 | 2. Import et Commandes fournisseurs | Import du CSV Polaris (fenêtre avec n° de BC, dates, type ; contrôle de l'en-tête ; aperçu ; refus listés), **réimport** avec récapitulatif, écran **Commandes fournisseurs** en lecture (liste, recherche par n° de BC, détail, grilles, journal) ; correspondance des magasins dans Réglages → Magasins | Direction : un nouvel écran « Commandes fournisseurs » où importer les CSV d'Été 2027 et suivre ce qui est commandé ; magasins : le même écran en lecture, sans prix | 2 jours |
 | 2 bis. Fournisseurs et marques | Fournisseur (une ou plusieurs marques) ; Plan de règlement, modes et plans chèques au fournisseur (calcul inchangé) ; contacts au fournisseur avec héritage ; écran Réglages → Fournisseurs et marques ; import et Commandes fournisseurs adaptés (détail plus bas) | Direction : Réglages → Fournisseurs et marques ; Commandes fournisseurs groupées par fournisseur ; Répertoire : contacts du fournisseur | 5,5 jours |
 | 3. Réception rattachée | La saisie du Cahier pour les saisons en commandes (commande, modèle-coloris, grille pré-remplie, plusieurs modèles par carton), hors commande avec confirmation et mention, mouvements, reste à livrer, Suivi des livraisons recalculé ; comparaison du Plan de règlement avant et après | Tous : une saisie du Cahier qui part de la commande pour Été 2027 (inchangée pour Hiver 2026) ; les commandes se remplissent au fil des cartons ; Direction : filtre « Hors commande » | 2 jours |
-| 4. Reliquat | Annuler / rétablir, sur la commande ou par article, motif dans les deux sens, journal ; encart des commandes anciennes non soldées | Direction : boutons « Annuler le reliquat » et « Rétablir » dans le détail d'une commande, encart des commandes qui traînent | 0,5 jour |
+| 4. Reliquat | Annuler / rétablir, sur la commande ou par article, motif dans les deux sens, journal ; encart des commandes anciennes non reçues en totalité | Direction : boutons « Annuler le reliquat » et « Rétablir » dans le détail d'une commande, encart des commandes qui traînent | 0,5 jour |
 | 5. Reçu par marque | Écran en lecture seule par saison, marque et magasin (quantités pour les magasins, montants pour la Direction), mouvements recréés pour les saisons passées, export CSV | Tous : « Reçu par marque » dans le menu, sous « Commandes fournisseurs » | 1 jour |
 | 6. Réassorts en commandes | Un réassort devient une commande de type réassort (Demandé → Commandé → En route à la main, alertes inchangées), réception par la même saisie, reprise des réassorts en cours | Tous : l'écran Réassorts quasi identique ; la réception d'un réassort passe par la saisie du Cahier | 1,5 à 2 jours |
 | 7. Achats | L'écran Achats au style de la refonte : commandé net, reçu, écart indicatif avec le réel achat ; retraits accordés (statut ✅ ⏳ ❌ pour les saisons en commandes) | Direction : l'écran Achats redessiné, avec l'écart réel / commandé | 1 à 1,5 jour |
@@ -813,12 +813,22 @@ Rien n'est supprimé ni modifié dans les tables existantes.
 - Scripts d'essai : `~/.suivi-pro/essais/essais-plan-c.mjs` et `entree-ordinaire.mjs` (hors du projet ; module `pg` à installer dans un dossier de travail).
 
 **Étape 2 — ✅ construite et essayée en local sur la base de test (14/10), branche `plan-c-etape2`** (aucune modification de la base : elle utilise les fonctions de l'étape 1).
-- **Écran « Commandes fournisseurs »** (`src/fournisseurs/`), dans le premier groupe du menu, ouvert aux comptes magasin (quantités seulement) et Direction : puces magasin et statut (À recevoir, Partielles, Soldées, Livraison dépassée, Hors commande pour la Direction), recherche par n° de BC, marque, modèle, couleur, gencode ; fiche : statut, n° BC, dates, jauge, modèles-coloris dépliables (grille des tailles reçu / commandé / annulé), réceptions, journal ; à côté de la liste sur ordinateur, en feuille sur téléphone. Saisons d'avant Été 2027 : encart « suivies à partir d'Été 2027 ».
+- **Écran « Commandes fournisseurs »** (`src/fournisseurs/`), dans le premier groupe du menu, ouvert aux comptes magasin (quantités seulement) et Direction : puces magasin et statut (À recevoir, Partielles, Reçue en totalités, Livraison dépassée, Hors commande pour la Direction), recherche par n° de BC, marque, modèle, couleur, gencode ; fiche : statut, n° BC, dates, jauge, modèles-coloris dépliables (grille des tailles reçu / commandé / annulé), réceptions, journal ; à côté de la liste sur ordinateur, en feuille sur téléphone. Saisons d'avant Été 2027 : encart « suivies à partir d'Été 2027 ».
 - **Importer une commande** (Direction) : fichier Polaris strict (en-tête contrôlé, détail des écarts), magasins par la table de correspondance, collection → saison (refus avant Été 2027), un fichier = une marque, une commande par magasin, lignes non reprises listées, même article deux fois additionné (deux prix → refus), marque proposée ou à créer, n° de BC multiples, date de commande, livraison prévue, type (réassort proposé d'après le nom du fichier), aperçu « articles, paires, € » ; n° de BC déjà importé → réimport proposé au lieu d'un doublon. Lecture vérifiée sur les 62 fichiers H26 : 5 622 lignes reprises, 5 lignes sans Code Modèle signalées.
 - **Réimporter** (Direction, depuis la fiche) : aperçu des changements (ajouts, quantités, prix pour les réceptions suivantes, retraits, demandé sous le reçu) sans rien modifier, puis « Valider le réimport ».
 - **Réglages → Magasins** : correspondance des magasins des fichiers (ajouter, changer, retirer). **Garde-fous** : une marque, un magasin ou une saison qui ont des commandes fournisseurs ne se suppriment ni ne se fusionnent (message clair au lieu d'un refus de la base).
 - **Points tranchés le 14/10 : tous « avec »** — (1) menu juste sous « Cahier des entrées » ; (2) liste groupée par marque ; (3) barre reçu / commandé sur chaque commande ; (4) Direction : montant sur la carte ; (5) encart « livraison prévue dépassée ». Panneau d'essai retiré (essais repassés : 42/42).
 - **Essais** (`~/.suivi-pro/essais/cdp-fournisseurs-etape2.mjs`, `cdp-gardefous-etape2.mjs`) : **45/45** à l'écran (refus H26, import Sebago, Clarks 2 magasins, réassort, fiche, réimport aperçu puis validé, n° de BC déjà importé, filtres, recherche, 5 points sans, compte magasin sans prix ni import, téléphone sans défilement de côté) et **6/6** garde-fous ; mode clair et sombre relevés. **Rien d'autre n'a bougé** : accueil, Cahier, Suivi, Achats, Plan de règlement identiques à avant l'étape 1 (hors la ligne de menu ajoutée), Cahier créer / corriger / supprimer repassé. Fichiers d'essai E27 (copies de vrais H26, collection changée) : `~/.suivi-pro/essais/fichiers-commande-E27/`. Base de test nettoyée après les essais.
+
+
+**Compléments de l'étape 2 (15/10, base de test ; production : rien)** — `supabase-plan-c-complements.sql` (annulation : `-annulation.sql`), sauvegarde avant : `test-2026-10-15_10h57-avant-complements-etape2` :
+- **Supprimer une commande importée** : Direction, avec confirmation et motif facultatif ; seulement sans réception rattachée (sinon le bouton est grisé et l'écran renvoie à « Annuler le reliquat ») ; la suppression est **notée au journal** (marque, magasin, saison, n° de BC, fichier, paires, montant, motif) — fonction `supprimer_commande`, action « suppression » ajoutée au journal.
+- **N° de BC** comparés sans espaces, majuscules ni ponctuation : « essai bc seb 2 » retrouve « ESSAI-BC-SEB-2 » et propose le réimport.
+- **« Soldée » devient « Reçue en totalité »** partout (vue de la base, statut, filtre « Reçues en totalité ») ; quand une annulation a fermé la commande : « Reçue, reliquat annulé ».
+- **Filtre « Hors commande » vide** : une phrase explique ce qu'il montre (articles absents de la commande ou reçus en plus du reste, à régulariser).
+- **Filtre par famille** : la colonne Famille du fichier est déjà gardée pour chaque article (donc par modèle, `achats_lignes.famille`) ; Commandes fournisseurs propose « Toutes les familles » / une famille (les commandes qui en contiennent ; dans la fiche, seuls ses modèles, totaux de la commande inchangés). **À prévoir pour l'écran « Reçu par marque »** (étape 5) : la famille d'une entrée se lit par sa ligne de commande (`mouvements_stock.ligne_id` → `achats_lignes.famille`). La saison est portée par la commande.
+- **Essais** : API étape 1 69/69 (dont suppression : magasin refusé, commande avec réceptions refusée, journal), écran étape 2 48/48 (n° de BC retapé autrement, famille, « Hors commande » vide, suppression avec motif), écran étape 2 bis 46/46, API étape 2 bis 37/37, garde-fous 6/6. Commandes d'essai retirées de la base de test.
+- **Points avec / sans de l'étape 2 bis tranchés le 15/10** : tous « avec », sauf « passer une marque en contacts propres » : **Direction seulement**. Panneau d'essai retiré.
 
 #### Étape 2 bis — Fournisseurs et marques (étude du 14/10 ; ✅ accord écrit et réponses du 14/10 ; **construite et essayée sur la base de test**, branche `plan-c-etape2bis`)
 
@@ -920,6 +930,7 @@ Rien n'est supprimé ni effacé dans les tables existantes : `fournisseurs.group
 | **Numéros de facture partagés (et registre des factures)** | Voir « Plans préparés — B » | Voir « Plans préparés — B » |
 | **Partie Achat : commandes, réceptions, entrées** | Voir « Plans préparés — C » | Voir « Plans préparés — C » |
 | **Prix d'achat et montants réservés à la Direction, dans la base** (plan C, décision 9) | Aujourd'hui (et dans le plan C) seul l'écran masque les prix et montants aux comptes magasin ; un compte magasin qui interrogerait la base les lirait (Achats, lignes de commande fournisseurs, PHT des entrées) | Séparer les colonnes de prix dans des tables ou des vues lisibles par la Direction seulement, et faire calculer le PHT des réceptions par la base (fonction `enregistrer_reception`) ; à rapprocher de « Prix des entrées réservés à la Direction » et de la limite « Budgets d'achat lisibles » (`SUIVI.md`). À construire et tester sur la base de test, avec accord écrit |
+| **Tags libres par modèle** (plan C, 15/10) | Classer les modèles par des étiquettes à soi (ex. « vitrine », « fin de série »), en plus de la famille du fichier, pour filtrer Commandes fournisseurs et « Reçu par marque » | Une **table dédiée** (modèle — marque, Code Modèle, Couleur — × tag), lisible par tous, modifiable selon des droits à définir ; à construire et tester sur la base de test, **avec accord écrit** |
 | **Repère « validé dans Polaris »** (plan C, décision 12) | Savoir quelles réceptions ont été saisies dans Polaris, sans le noter à la main (le « Pointé » actuel veut dire « facture ou avoir reçu et rapproché » et ne change pas) | Rien à saisir : le repère viendrait d'un **export Polaris** (réceptions ou stock par article) importé et rapproché des réceptions de Suivi Pro (Code Modèle + Couleur + Taille, ou gencode). Format de l'export à étudier ; même source possible que les sorties du stock |
 
 ---

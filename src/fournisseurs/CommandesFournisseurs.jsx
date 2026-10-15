@@ -9,9 +9,6 @@ import { useSeason } from '../context/SeasonContext'
 import { useMediaQuery, TABLET } from '../lib/useMediaQuery'
 import { PageShell } from '../shell/EnTete'
 import { ouvrirAvec } from '../shell/navigation'
-import { useVariantes } from '../shell/essai'
-import PanneauEssai from '../shell/PanneauEssai'
-import { POINTS_2BIS } from './points2bis'
 import { Toast } from '../cahier/Reperes'
 import { commandesDeSaison, lignesDe } from './donnees'
 import { suivieParCommandes, libelleSaison, forme } from './csvPolaris'
@@ -38,8 +35,8 @@ export default function CommandesFournisseurs() {
   const [reimport, setReimport] = useState(null)
   const [toast, setToast] = useState(null)
   const [frId, setFrId] = useState('')               // filtre fournisseur
+  const [famille, setFamille] = useState('')         // filtre famille (colonne Famille du fichier, par modèle)
   const [aVerifier, setAVerifier] = useState(null)   // marque créée à l'import : fournisseur à vérifier
-  const v2 = useVariantes(POINTS_2BIS)
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 6000); return () => clearTimeout(t) }, [toast])
 
   const donnees = useLiveQuery(async () => {
@@ -70,6 +67,7 @@ export default function CommandesFournisseurs() {
       if (filtre === 'soldees' && c.reste > 0) return false
       if (filtre === 'retard' && !enRetard(c)) return false
       if (filtre === 'hors' && !(c.lignes_hors_commande > 0)) return false
+      if (famille && !(lignesPar[c.id] || []).some(l => l.famille === famille)) return false
       if (q) {
         const marque = (fournisseurs || []).find(f => f.id === c.fournisseur_id)
         const fr = (frs || []).find(x => x.id === marque?.fournisseurReelId)
@@ -78,7 +76,7 @@ export default function CommandesFournisseurs() {
       }
       return true
     }).sort((a, b) => b.id - a.id)
-  }, [duMagasin, filtre, rech, lignesPar, fournisseurs, frs])
+  }, [duMagasin, filtre, rech, lignesPar, fournisseurs, frs, famille])
 
   if (donnees === undefined || fournisseurs === undefined || magasins === undefined || frs === undefined) return <PageShell title="Commandes fournisseurs"><LoadingState /></PageShell>
 
@@ -115,14 +113,15 @@ export default function CommandesFournisseurs() {
   }
 
   let liste
-  if (!visibles.length) liste = <div className="vide">{duMagasin.length ? 'Aucune commande ne correspond.' : estDirection ? 'Aucune commande pour cette saison — touche « Importer une commande ».' : 'Aucune commande pour cette saison.'}</div>
+  if (!visibles.length && filtre === 'hors') liste = <div className="vide">Aucune commande avec des articles « hors commande ».<br />Ce filtre montre les commandes où une réception a apporté un article absent de la commande, ou plus de paires que le reste à livrer — à régulariser (prix, réimport).</div>
+  else if (!visibles.length) liste = <div className="vide">{duMagasin.length ? 'Aucune commande ne correspond.' : estDirection ? 'Aucune commande pour cette saison — touche « Importer une commande ».' : 'Aucune commande pour cette saison.'}</div>
   else {
     // Par fournisseur, puis par marque (sous-titre de marque : quand le fournisseur a plusieurs marques ou un autre nom)
     const groupes = {}
     visibles.forEach(c => { const fr = nomFr(c.fournisseur_id); ((groupes[fr] ||= {})[nomMarque(c.fournisseur_id)] ||= []).push(c) })
     liste = Object.keys(groupes).sort((a, b) => a.localeCompare(b, 'fr')).map(fr => {
       const marques = Object.keys(groupes[fr]).sort((a, b) => a.localeCompare(b, 'fr'))
-      const sousTitres = !v2['cf-niveau-marque'] || marques.length > 1 || marques[0] !== fr
+      const sousTitres = marques.length > 1 || marques[0] !== fr
       return (
         <section key={fr}><h2 className="groupe-titre">{fr}</h2>
           {marques.map(m => <div key={m}>{sousTitres && <div className="cf-sous-titre">{m}</div>}<div className="liste">{groupes[fr][m].map(carte)}</div></div>)}
@@ -133,13 +132,13 @@ export default function CommandesFournisseurs() {
 
   const ficheEl = fiche && (
     <FicheCommande key={fiche.id} commande={fiche} lignes={lignesPar[fiche.id] || []} marque={nomMarque(fiche.fournisseur_id)} magasinNom={nomMagasin(fiche.magasin_id)}
-      estDirection={estDirection} cote={grand} onFermer={() => setFicheId(null)} onReimporter={c => setReimport(c)} />
+      estDirection={estDirection} cote={grand} famille={famille} onFermer={() => setFicheId(null)} onReimporter={c => setReimport(c)}
+      onSupprimee={c => { setFicheId(null); setToast({ texte: `Commande ${nomMarque(c.fournisseur_id)} · ${nomMagasin(c.magasin_id)} supprimée (notée au journal)` }) }} />
   )
 
   return (
     <PageShell title="Commandes fournisseurs"
       rightExtra={estDirection && <button className="btn btn-prim seulement-grand" onClick={() => setImporter(true)}><Icone nom="ajout" taille={20} />Importer une commande</button>}>
-      <PanneauEssai points={POINTS_2BIS} />
       {!suivieParCommandes(season) && (
         <div className="encart neutre" style={{ marginBottom: 12 }}>Les commandes fournisseurs sont suivies à partir d’Été 2027. {libelleSaison(season)} reste dans Achats et le Cahier, comme aujourd’hui.</div>
       )}
@@ -153,18 +152,24 @@ export default function CommandesFournisseurs() {
       </div>
       {(() => {
         const avecCommandes = [...new Set((donnees.commandes || []).map(c => frDeMarque(c.fournisseur_id)?.id).filter(Boolean))]
-        return avecCommandes.length > 1 && (
+        const familles = [...new Set(duMagasin.flatMap(c => (lignesPar[c.id] || []).map(l => l.famille)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }))
+        return <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{avecCommandes.length > 1 && (
           <select className="champ" style={{ width: 'auto', minWidth: 220, marginTop: 10 }} value={frId} onChange={e => setFrId(e.target.value)} aria-label="Fournisseur">
             <option value="">Tous les fournisseurs</option>
             {avecCommandes.map(id => frs.find(x => x.id === id)).sort((a, b) => a.nom.localeCompare(b.nom, 'fr')).map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
           </select>
-        )
+        )}{familles.length > 1 && (
+          <select className="champ" style={{ width: 'auto', minWidth: 200, marginTop: 10 }} value={famille} onChange={e => setFamille(e.target.value)} aria-label="Famille">
+            <option value="">Toutes les familles</option>
+            {familles.map(f => <option key={f} value={f}>{f}</option>)}
+          </select>
+        )}</div>
       })()}
       <div className="chips" style={{ margin: '10px 0 0', flexWrap: 'wrap' }}>
         {chip('tous', 'Toutes', duMagasin.length)}
         {chip('recevoir', 'À recevoir', duMagasin.filter(c => c.qte_recue === 0 && c.reste > 0).length)}
         {chip('partielles', 'Partielles', duMagasin.filter(c => c.qte_recue > 0 && c.reste > 0).length)}
-        {chip('soldees', 'Soldées', duMagasin.filter(c => c.reste === 0).length)}
+        {chip('soldees', 'Reçues en totalité', duMagasin.filter(c => c.reste === 0).length)}
         {retards.length > 0 && chip('retard', 'Livraison dépassée', retards.length)}
         {estDirection && chip('hors', 'Hors commande', duMagasin.filter(c => c.lignes_hors_commande > 0).length)}
       </div>

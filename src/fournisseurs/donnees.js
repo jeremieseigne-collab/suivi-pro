@@ -57,6 +57,11 @@ export async function reimporterCommande(commandeId, lignes, essai, infos = {}) 
   return verif(await supabase.rpc('reimporter_commande', { p_commande_id: commandeId, p_lignes: lignes, p_infos: infos, p_essai: essai }))
 }
 
+// Supprimer une commande importée (Direction, sans réception ; notée au journal, motif facultatif)
+export async function supprimerCommande(commandeId, motif = '') {
+  return verif(await supabase.rpc('supprimer_commande', { p_commande_id: commandeId, p_motif: motif }))
+}
+
 // Message d'erreur de la base → texte lisible
 export function messageErreur(e) {
   const m = String(e?.message || e || '')

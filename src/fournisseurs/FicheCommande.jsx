@@ -3,12 +3,13 @@ import { useLiveQuery } from '../lib/useLiveQuery'
 import Icone from '../components/ui/Icone'
 import { fmtEur } from '../components/shared'
 import { SIZE_TYPES } from '../data/sizes'
-import { receptionsDe, journalDe } from './donnees'
+import { receptionsDe, journalDe, supprimerCommande, messageErreur } from './donnees'
+import Confirmation from '../components/ui/Confirmation'
 import { libelleSaison } from './csvPolaris'
 import { Jauge, StatutCommande } from './commun'
 import { fmtJour, enRetard } from './outils'
 
-const ACTIONS = { import: 'Importée', reimport: 'Réimportée', annulation: 'Reliquat annulé', retablissement: 'Reliquat rétabli' }
+const ACTIONS = { import: 'Importée', reimport: 'Réimportée', annulation: 'Reliquat annulé', retablissement: 'Reliquat rétabli', suppression: 'Supprimée' }
 const quand = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) }
 
 // Ordre des tailles : celui des grilles connues, sinon numérique puis alphabétique
@@ -45,10 +46,18 @@ function Modele({ m, estDirection }) {
   )
 }
 
-export default function FicheCommande({ commande: c, lignes, marque, magasinNom, estDirection, cote, onFermer, onReimporter }) {
+export default function FicheCommande({ commande: c, lignes: toutesLignes, famille = '', marque, magasinNom, estDirection, cote, onFermer, onReimporter, onSupprimee }) {
   const receptions = useLiveQuery(() => receptionsDe(c.id), [c.id])
   const journal = useLiveQuery(() => journalDe(c.id), [c.id])
   const [voirJournal, setVoirJournal] = useState(false)
+  const [aSupprimer, setASupprimer] = useState(false)
+  const [motif, setMotif] = useState('')
+  const [erreur, setErreur] = useState('')
+  const lignes = useMemo(() => famille ? toutesLignes.filter(l => l.famille === famille) : toutesLignes, [toutesLignes, famille])
+  async function supprimer() {
+    setASupprimer(false); setErreur('')
+    try { await supprimerCommande(c.id, motif); onSupprimee?.(c) } catch (e) { setErreur(messageErreur(e)) }
+  }
 
   // Lignes regroupées par modèle-coloris, dans l'ordre du fichier
   const modeles = useMemo(() => {
@@ -84,7 +93,12 @@ export default function FicheCommande({ commande: c, lignes, marque, magasinNom,
       </div>
       {estDirection && <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
         <button className="btn" onClick={() => onReimporter(c)}><Icone nom="reassort" taille={18} />Réimporter</button>
+        <button className="btn btn-danger" disabled={receptions === undefined || receptions.length > 0} onClick={() => { setMotif(''); setASupprimer(true) }}
+          title={receptions?.length ? 'Des réceptions sont rattachées : passe par « Annuler le reliquat »' : undefined}><Icone nom="corbeille" taille={18} />Supprimer la commande</button>
       </div>}
+      {estDirection && receptions?.length > 0 && <div className="aide" style={{ marginTop: 6 }}>Suppression impossible : {receptions.length} réception{receptions.length > 1 ? 's sont rattachées' : ' est rattachée'}. Pour ne plus attendre le reste, passe par « Annuler le reliquat ».</div>}
+      {erreur && <div className="encart err" style={{ marginTop: 10 }}>{erreur}</div>}
+      {famille && <div className="encart neutre" style={{ marginTop: 12 }}>Famille « {famille} » : {modeles.length} modèle{modeles.length > 1 ? 's' : ''} affiché{modeles.length > 1 ? 's' : ''} (totaux ci-dessus : toute la commande).</div>}
 
       <h3 className="groupe-titre">Modèles · {modeles.length}</h3>
       <div className="liste bloc-marque">{modeles.map(m => <Modele key={m.cle} m={m} estDirection={estDirection} />)}</div>
@@ -111,11 +125,18 @@ export default function FicheCommande({ commande: c, lignes, marque, magasinNom,
     </>
   )
 
+  const confirmation = aSupprimer && (
+    <Confirmation danger titre="Supprimer cette commande ?" confirmer="Supprimer" onAnnuler={() => setASupprimer(false)} onConfirmer={supprimer}
+      texte={`${marque} · ${magasinNom} · ${c.qte_commandee} paires${(c.numeros_bc || []).length ? ' · BC ' + c.numeros_bc.join(', ') : ''}. La commande disparaît ; la suppression reste notée au journal.`}>
+      <label className="etiquette">Motif (facultatif)<input className="champ" value={motif} onChange={e => setMotif(e.target.value)} placeholder="ex. importée en double" /></label>
+    </Confirmation>
+  )
   const titre = `${marque} · ${magasinNom}`
   if (cote) return (
     <aside className="carte cf-cote" aria-label={titre}>
       <div className="feuille-entete" style={{ padding: 0, marginBottom: 10 }}><h2>{titre}</h2><button className="icone-btn" onClick={onFermer} aria-label="Fermer"><Icone nom="fermer" /></button></div>
       {contenu}
+      {confirmation}
     </aside>
   )
   return (
@@ -125,6 +146,7 @@ export default function FicheCommande({ commande: c, lignes, marque, magasinNom,
         <div className="feuille-entete"><h2>{titre}</h2><button className="icone-btn" onClick={onFermer} aria-label="Fermer"><Icone nom="fermer" /></button></div>
         <div className="feuille-corps">{contenu}</div>
       </div>
+      {confirmation}
     </>
   )
 }

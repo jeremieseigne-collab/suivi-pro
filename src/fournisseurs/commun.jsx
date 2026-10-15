@@ -6,8 +6,9 @@ export function Jauge({ p, hauteur = 6 }) {
 }
 
 // Statut déduit par la base (vue achats_commandes_etat), écrit en mot de couleur (le point est réservé aux entrées)
-const CLASSE = { 'Commandée': '', 'Partiellement reçue': 'info', 'Soldée': 'ok', 'Reçu': 'ok', 'Demandé': 'att', 'Commandé': '', 'En route': 'info' }
+const CLASSE = { 'Commandée': '', 'Partiellement reçue': 'info', 'Reçue en totalité': 'ok', 'Reçu': 'ok', 'Demandé': 'att', 'Commandé': '', 'En route': 'info' }
 export function StatutCommande({ c }) {
-  const annule = c.statut === 'Soldée' && c.qte_annulee > 0
-  return <span className={`etat-mot ${CLASSE[c.statut] ?? ''}`}>{annule ? 'Soldée, reliquat annulé' : c.statut}</span>
+  // Rien ne reste à livrer, mais une partie a été annulée : « Reçue, reliquat annulé » (plutôt que « Reçue en totalité »)
+  const annule = c.statut === 'Reçue en totalité' && c.qte_annulee > 0
+  return <span className={`etat-mot ${CLASSE[c.statut] ?? ''}`}>{annule ? 'Reçue, reliquat annulé' : c.statut}</span>
 }

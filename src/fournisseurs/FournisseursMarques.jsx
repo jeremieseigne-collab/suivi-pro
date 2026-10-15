@@ -7,13 +7,10 @@ import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { useSeason } from '../context/SeasonContext'
 import { aller } from '../shell/navigation'
-import PanneauEssai from '../shell/PanneauEssai'
-import { useVariantes } from '../shell/essai'
 import { Toast } from '../cahier/Reperes'
 import { nomPropre, formeComparaison, marquesSemblables } from '../cahier/commun'
 import { DEFAULT_DELAIS, DEFAULT_NB_CHEQUE } from '../data/reglement'
 import ChequePlanModal from '../reglement/ChequePlanModal'
-import { POINTS_2BIS } from './points2bis'
 import { libelleSaison } from './csvPolaris'
 import '../cahier/cahier.css'
 import './fournisseurs.css'
@@ -286,7 +283,6 @@ function FicheFournisseur({ fr, marques, frs, magasins, regl, plans, season, onF
 
 export default function FournisseursMarques() {
   const { season } = useSeason()
-  const v = useVariantes(POINTS_2BIS)
   const [rech, setRech] = useState('')
   const [ficheId, setFicheId] = useState(null)
   const [nouvelle, setNouvelle] = useState(false)
@@ -321,7 +317,7 @@ export default function FournisseursMarques() {
       <span className="txt">
         <span className="t1">{f.nom}{!marques.length && <span className="etat-mot att" style={{ marginLeft: 6 }}>sans marque</span>}</span>
         <span className="t2">{marques.length ? marques.map(m => m.nom).join(', ') : '—'}</span>
-        {v['fm-mode-liste'] && <span className="t2">{d.magasins.map(m => `${m.nom} : ${texteMode(d.regl.find(r => r.fournisseurReelId === f.id && r.magasinId === m.id))}`).join(' · ')}</span>}
+        {<span className="t2">{d.magasins.map(m => `${m.nom} : ${texteMode(d.regl.find(r => r.fournisseurReelId === f.id && r.magasinId === m.id))}`).join(' · ')}</span>}
       </span>
       <Icone nom="chevron" taille={18} style={{ color: 'var(--discret)' }} />
     </button>
@@ -329,22 +325,21 @@ export default function FournisseursMarques() {
   const avec = vue.liste.filter(x => x.marques.length), sans = vue.liste.filter(x => !x.marques.length)
   return (
     <div className="fournisseurs-marques">
-      <PanneauEssai points={POINTS_2BIS} />
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
         <div className="recherche" style={{ flex: '1 1 260px', margin: 0 }}><Icone nom="cherche" taille={20} style={{ color: 'var(--discret)' }} />
           <input className="champ" placeholder="Fournisseur ou marque…" value={rech} onChange={e => setRech(e.target.value)} aria-label="Rechercher" /></div>
         <button className="btn btn-prim" onClick={() => setNouvelle(true)}><Icone nom="ajout" taille={20} />Ajouter une marque</button>
       </div>
       <div className="sous-info">{d.frs.length} fournisseurs · {d.marques.length} marques · règlement (mode, conditions, plan chèque) dans la fiche du fournisseur</div>
-      {v['fm-homonymes'] && vue.proches.length > 0 && (
+      {vue.proches.length > 0 && (
         <div className="encart att" style={{ marginTop: 10, flexDirection: 'column', gap: 4 }}>
           <b>Noms proches à vérifier</b>{vue.proches.map(p => <span key={p}>• {p}</span>)}
         </div>
       )}
-      {!vue.liste.length ? <div className="vide">Aucun fournisseur ne correspond.</div> : v['fm-sans-marque-a-part'] ? <>
+      {!vue.liste.length ? <div className="vide">Aucun fournisseur ne correspond.</div> : <>
         <div className="liste" style={{ marginTop: 10 }}>{avec.map(carte)}</div>
         {sans.length > 0 && <><h3 className="groupe-titre">Sans marque · {sans.length}</h3><div className="liste">{sans.map(carte)}</div></>}
-      </> : <div className="liste" style={{ marginTop: 10 }}>{vue.liste.map(carte)}</div>}
+      </>}
       {fiche && <FicheFournisseur key={fiche.id} fr={fiche} marques={d.marques} frs={d.frs} magasins={d.magasins} regl={d.regl} plans={d.plans} season={season}
         onToast={setToast} onFermer={() => setFicheId(null)} />}
       {nouvelle && <NouvelleMarque marques={d.marques} frs={d.frs} onFermer={() => setNouvelle(false)}

@@ -10,9 +10,6 @@ import { PageShell } from '../shell/EnTete'
 import { Toast } from '../cahier/Reperes'
 import { ChoixMarque } from '../savdef/Champs'
 import Confirmation from '../components/ui/Confirmation'
-import PanneauEssai from '../shell/PanneauEssai'
-import { useVariantes } from '../shell/essai'
-import { POINTS_2BIS } from '../fournisseurs/points2bis'
 import { CLES_SOCIETE } from '../fournisseurs/contactsRegle'
 import { enregistrerContacts } from '../fournisseurs/contactsEcriture'
 import '../cahier/cahier.css'
@@ -179,7 +176,6 @@ export default function Repertoire() {
   const { estDirection } = useCompte()
   const fournisseurs = useLiveQuery(() => db.fournisseurs.orderBy('nom').toArray(), [])
   const frs = useLiveQuery(() => db.fournisseursReels.toArray(), [])
-  const v2 = useVariantes(POINTS_2BIS)
   const frDe = f => (frs || []).find(x => x.id === f.fournisseurReelId)
   const magasins = useLiveQuery(() => db.magasins.orderBy('nom').toArray(), [])
   const { magasin: magasinCourant } = useMagasin()
@@ -205,7 +201,6 @@ export default function Repertoire() {
     const magNom = (magasins.find(m => m.id === mId) || {}).nom || ''
     const fiche = ficheId && fournisseurs.find(f => f.id === ficheId)
     return <>
-      <PanneauEssai points={POINTS_2BIS} />
       <div className="chips" style={{ marginBottom: 10 }}>
         {magasins.map(m => <button key={m.id} className="chip" aria-pressed={m.id === mId} onClick={() => choisirMag(m.id)}><Icone nom="magasin" taille={16} />{m.nom}</button>)}
       </div>
@@ -222,7 +217,7 @@ export default function Repertoire() {
                 <div key={f.id} className="ligne ligne-entree ligne-marque">
                   <button className="zone-ouvrir" onClick={() => setFicheId(f.id)}>
                     <span className="txt"><span className="t1">{f.nom}</span>
-                      {v2['r-fournisseur-ligne'] && fr && fr.nom !== f.nom && <span className="t2">Fournisseur : {fr.nom}</span>}
+                      {fr && fr.nom !== f.nom && <span className="t2">Fournisseur : {fr.nom}</span>}
                       <span className="t2">{[contact, valeur(f, mId, 'telephone', fr) && fmtTel(valeur(f, mId, 'telephone', fr))].filter(Boolean).join(' · ') || 'Commercial non renseigné'}</span>
                       <span className="t2">{mail ? `SAV : ${mail}` : 'Mail SAV non renseigné'}</span></span>
                   </button>
@@ -236,7 +231,7 @@ export default function Repertoire() {
       <div style={{ height: 72 }} className="seulement-petit" aria-hidden="true" />
       <button className="btn btn-prim action-flottante" onClick={() => setNouvelle(true)}><Icone nom="ajout" taille={20} />Marque</button>
       {fiche && <FicheMarque f={fiche} fr={frDe(fiche)} nbMarquesFr={fournisseurs.filter(x => x.fournisseurReelId === fiche.fournisseurReelId).length} magId={mId} magNom={magNom}
-        peutBasculer={estDirection || v2['r-contacts-propres-tous']} onToast={setToast} onFermer={() => setFicheId(null)} />}
+        peutBasculer={estDirection}   /* « contacts propres » : Direction seulement (choix du 15/10) */ onToast={setToast} onFermer={() => setFicheId(null)} />}
       {nouvelle && <NouvelleMarque fournisseurs={fournisseurs} gardeFou onFermer={() => setNouvelle(false)}
         onCree={(id, nom) => { setNouvelle(false); setToast({ texte: `Marque « ${nom} »` }); setFicheId(id) }} />}
       {importer && <RepertoireImportModal onClose={() => setImporter(false)} onDone={() => setImporter(false)} />}
