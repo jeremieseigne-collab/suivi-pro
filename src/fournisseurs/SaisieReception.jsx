@@ -12,6 +12,8 @@ import { POINTS_3 } from './points3'
 import { commandesDeSaison, lignesDe, enregistrerReception, corrigerReception, messageErreur } from './donnees'
 import { nomModele, grilleDe, categorieDe, horsCommande } from './reception'
 import { fmtJour } from './outils'
+import '../cahier/cahier.css'
+import './fournisseurs.css'
 
 // Saisie d'une réception (plan C, étape 3) pour une saison suivie par commandes (Été 2027 et après) :
 // 1. la commande (choisie d'office s'il n'y en a qu'une d'ouverte pour la marque), 2. le modèle-coloris,
@@ -177,7 +179,7 @@ export default function SaisieReception({ entree, entrees, magasinAppareil, onFe
         <span style={{ flex: 1 }}><b>{nomMarque(commande?.fournisseur_id)}</b>{(commande?.numeros_bc || []).length ? ' · BC ' + commande.numeros_bc.join(', ') : ''} · reste {pluriel(commande?.reste || 0, 'paire')}</span>
         {!correction && ouvertes.length > 1 && <button className="lien" onClick={() => { setCommandeId(null); setCarton([]); setEtape('commande') }}>Changer</button>}
       </div>
-      {bilan && <div className="encart ok-teinte" style={{ marginTop: 10, background: 'var(--ok-teinte)', color: 'var(--ok)' }}>Enregistrée : {pluriel(bilan.paires, 'paire')}. Reste à livrer pour cette commande : <b style={{ marginLeft: 4 }}>{pluriel(bilan.reste, 'paire')}</b>.</div>}
+      {bilan && <div className="encart" style={{ display: 'block', marginTop: 10, background: 'var(--ok-teinte)', color: 'var(--ok)' }}>Enregistrée : {pluriel(bilan.paires, 'paire')}. Reste à livrer pour cette commande : <b>{pluriel(bilan.reste, 'paire')}</b>.</div>}
       {carton.length > 0 && (
         <div style={{ marginTop: 12 }}>
           <span className="etiquette" style={{ marginTop: 0 }}>Dans ce carton</span>
