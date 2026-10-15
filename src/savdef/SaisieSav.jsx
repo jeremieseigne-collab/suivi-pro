@@ -8,13 +8,15 @@ import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { buildSavRetourMailUrl } from '../sav/mail'
 import { coordMarque } from '../reassort/mail'
-import { ChoixSalarie, ChoixMarque, ChoixModele, ChoixPointure, EtapesMail } from './Champs'
-import { TYPES_SAV, avecMarque, aujourdhuiFr, prixUnitaire, infosModele, marquerMailSav } from './regles'
+import { ChoixSalarie, ChoixMarque, ChoixModele, ChoixPointure, ChoixPaires, EtapesMail } from './Champs'
+import { TYPES_SAV, avecMarque, aujourdhuiFr, prixUnitaire, infosModele, marquerMailSav, majRetourPaires } from './regles'
+import { nbPaires, resumePaires, lirePaires, sizesRetour } from './paires'
 import { useCompte } from '../context/CompteContext'
 
 // Création et modification d'un dossier SAV (retour client, mise à la forme, réparation).
-// Données enregistrées identiques à l'outil actuel : à la création d'un retour ou d'une réparation, une entrée « Retour » (−1)
-// et un défectueux « À traiter » sont créés et liés ; puis on propose le mail au SAV de la marque.
+// À la création d'un retour ou d'une réparation, une entrée « Retour » et un défectueux « À traiter » sont créés et liés ; puis on propose
+// le mail au SAV de la marque. Retour client : une ou plusieurs paires (une seule ligne « Retour », −1 par paire, modifiable tant que
+// le défectueux lié est « À traiter ») ; réparation : une paire, comme avant.
 export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
   const modif = !!sav?.id
   const { season } = useSeason()
@@ -32,6 +34,9 @@ export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
   }))
   const [facturation, setFacturation] = useState(sav?.facturation ?? 'offert')
   const [prix, setPrix] = useState(sav?.prixReparation ? String(sav.prixReparation) : '')
+  const [paires, setPaires] = useState(() => lirePaires(sav?.pointure))   // retour client : { pointure: nombre de paires }
+  const defLie = useLiveQuery(() => modif && sav.defectueuxId ? db.defectueux.get(sav.defectueuxId) : Promise.resolve(null), [modif, sav?.defectueuxId])
+  const pairesModifiables = !modif || !sav.defectueuxId || defLie?.statut === 'À traiter'
   const [prixManuel, setPrixManuel] = useState('')   // prix unitaire HT tapé, proposé seulement quand le prix calculé est 0 €
   const [infos, setInfos] = useState({ tailles: [], typeKey: 'F', categorie: '' })
   const [erreur, setErreur] = useState('')
@@ -39,7 +44,7 @@ export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
   const [etape, setEtape] = useState('saisie')   // 'saisie' | 'mail' | 'attente'
   const [cree, setCree] = useState(null)         // { savId, defectueuxId, fournisseur, societe }
   const [confirmFermer, setConfirmFermer] = useState(false)
-  const [initial] = useState(() => JSON.stringify([type, f, facturation, prix]))
+  const [initial] = useState(() => JSON.stringify([type, f, facturation, prix, paires]))
   const deja = useRef({})                        // enregistrement « en chaîne » : ce qui est déjà créé n'est pas recréé si on réessaie (I9)
   const set = (k, v) => setF(x => ({ ...x, [k]: v }))
 
@@ -72,7 +77,7 @@ export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
     if (!arr.includes(nom)) await db.fournisseurs.update(fournisseur.id, { modelesBySeason: { ...ex, [season]: [...arr, nom] } })
   }
 
-  const commencee = modif ? JSON.stringify([type, f, facturation, prix]) !== initial : !!(f.clientNom || f.modele || f.probleme || f.note || f.marque)
+  const commencee = modif ? JSON.stringify([type, f, facturation, prix, paires]) !== initial : !!(f.clientNom || f.modele || f.probleme || f.note || f.marque)
   const fermer = () => { if (etape === 'saisie' && commencee && !enCours) setConfirmFermer(true); else onFermer() }
 
   async function enregistrer() {
@@ -83,10 +88,17 @@ export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
     setEnCours(true); setErreur('')
     const magasinId = Number(f.magasinId), fournisseurId = avecMarque(type) ? Number(f.fournisseurId) : null
     const prixRep = type === 'reparation' && facturation === 'payant' ? parseFloat(String(prix).replace(',', '.')) || null : null
+    const retour = type === 'retour'
+    const pointure = retour ? (pairesModifiables ? resumePaires(paires) : sav.pointure) : f.pointure
+    const n = retour ? nbPaires(paires) || 1 : 1
     try {
       if (modif) {
+        if (retour && pairesModifiables && pointure !== (sav.pointure || '') && defLie) {
+          await db.defectueux.update(defLie.id, { pointure })
+          await majRetourPaires(defLie.entreeId, paires)
+        }
         await db.sav.update(sav.id, {
-          magasinId, salarie: f.salarie, clientNom: f.clientNom, clientTel: f.clientTel, fournisseurId, modele: f.modele, pointure: f.pointure, marque: f.marque,
+          magasinId, salarie: f.salarie, clientNom: f.clientNom, clientTel: f.clientTel, fournisseurId, modele: f.modele, pointure, marque: f.marque,
           probleme: f.probleme, note: f.note, statut: sav.statut, decision: sav.decision ?? '',
           facturation: type === 'reparation' ? facturation : null, prixReparation: prixRep, enCoursAt: type === 'forme' ? (sav.enCoursAt ?? null) : null,
         })
@@ -99,12 +111,12 @@ export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
           const unit = tape > 0 ? tape : await prixUnitaire(fournisseurId, magasinId, season, f.modele)
           deja.current.entreeId = await db.entrees.add({
             statut: 'Retour', magasinId, fournisseurId, date: aujourdhuiFr(), modele: f.modele, numero: '', categorie: infos.categorie || '', typeKey: infos.typeKey || 'F',
-            total: -1, pht: unit > 0 ? -Math.round(unit * 100) / 100 : 0, sizes: f.pointure ? { [f.pointure]: -1 } : {}, season,
+            total: -n, pht: unit > 0 ? -Math.round(unit * n * 100) / 100 : 0, sizes: retour ? sizesRetour(paires) : f.pointure ? { [f.pointure]: -1 } : {}, season,
           })
         }
         if (!deja.current.defectueuxId) {
           const note = `${type === 'retour' ? 'Retour client' : 'Réparation'} — ${f.clientNom}${f.clientTel ? ` (${f.clientTel})` : ''} : ${f.probleme}`
-          deja.current.defectueuxId = await db.defectueux.add({ magasinId, fournisseurId, salarie: f.salarie, modele: f.modele, numero: '', pointure: f.pointure, note, statut: 'À traiter', season, entreeId: deja.current.entreeId })
+          deja.current.defectueuxId = await db.defectueux.add({ magasinId, fournisseurId, salarie: f.salarie, modele: f.modele, numero: '', pointure, note, statut: 'À traiter', season, entreeId: deja.current.entreeId })
         }
         defectueuxId = deja.current.defectueuxId
       }
@@ -112,7 +124,7 @@ export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
       let attente = false
       if (type === 'forme') attente = (await db.sav.toArray()).some(s => s.type === 'forme' && s.magasinId === magasinId && s.statut !== 'Clôturé' && s.enCoursAt)
       const savId = deja.current.savId || await db.sav.add({
-        type, magasinId, salarie: f.salarie, clientNom: f.clientNom, clientTel: f.clientTel, fournisseurId, modele: f.modele, pointure: f.pointure, marque: f.marque,
+        type, magasinId, salarie: f.salarie, clientNom: f.clientNom, clientTel: f.clientTel, fournisseurId, modele: f.modele, pointure, marque: f.marque,
         probleme: f.probleme, note: f.note, statut: '', decision: '', defectueuxId, season,
         facturation: type === 'reparation' ? facturation : null, prixReparation: prixRep, enCoursAt: type === 'forme' && !attente ? new Date().toISOString() : null,
       })
@@ -128,7 +140,7 @@ export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
   }
 
   const urlMail = email => buildSavRetourMailUrl({
-    modele: f.modele, pointure: f.pointure, probleme: f.probleme, salarie: f.salarie, societe: cree?.societe || societe || '',
+    modele: f.modele, pointure: type === 'retour' ? resumePaires(paires) : f.pointure, probleme: f.probleme, salarie: f.salarie, societe: cree?.societe || societe || '',
     email, numeroClient: coordMarque(cree?.fournisseur || fournisseur, Number(f.magasinId), 'numeroClient'),
   })
   function envoyer(email) {
@@ -191,12 +203,20 @@ export default function SaisieSav({ sav, magasinAppareil, onFermer, onToast }) {
                 {magasin && <div className="aide" style={{ margin: '14px 0 0' }}>Société : <b style={{ color: 'var(--texte)' }}>{societe || '—'}</b></div>}
                 <span className="etiquette">Marque</span>
                 <ChoixMarque fournisseurs={fournisseurs || []} valeurId={f.fournisseurId} onErreur={setErreur}
-                  onChoisir={id => setF(x => ({ ...x, fournisseurId: id, modele: x.fournisseurId === id ? x.modele : '', pointure: x.fournisseurId === id ? x.pointure : '' }))} />
+                  onChoisir={id => { if (String(id) !== String(f.fournisseurId)) setPaires({}); setF(x => ({ ...x, fournisseurId: id, modele: x.fournisseurId === id ? x.modele : '', pointure: x.fournisseurId === id ? x.pointure : '' })) }} />
                 <span className="etiquette">Modèle</span>
                 <ChoixModele key={'m' + f.fournisseurId} modeles={modeles} valeur={f.modele} desactive={!f.fournisseurId}
-                  onChoisir={m => setF(x => ({ ...x, modele: m, pointure: x.modele === m ? x.pointure : '' }))} onAjouter={ajouterModele} />
-                <span className="etiquette">Pointure</span>
-                <ChoixPointure key={'p' + f.modele} tailles={infos.tailles} valeur={f.pointure} onChange={v => set('pointure', v)} desactive={!f.modele} />
+                  onChoisir={m => { if (m !== f.modele) setPaires({}); setF(x => ({ ...x, modele: m, pointure: x.modele === m ? x.pointure : '' })) }} onAjouter={ajouterModele} />
+                {type === 'retour' ? <>
+                  <span className="etiquette">Paires rapportées</span>
+                  {pairesModifiables
+                    ? <ChoixPaires key={'p' + f.modele} tailles={infos.tailles} valeur={paires} onChange={setPaires} desactive={!f.modele} />
+                    : <><div className="champ valeur">{sav.pointure || '—'}</div>
+                      <div className="aide" style={{ marginTop: 4 }}>Les paires ne se modifient plus une fois le mail envoyé à la marque. Pour ajuster l'avoir, utilise « Corriger le prix » sur l'entrée « Retour » du Cahier.</div></>}
+                </> : <>
+                  <span className="etiquette">Pointure</span>
+                  <ChoixPointure key={'p' + f.modele} tailles={infos.tailles} valeur={f.pointure} onChange={v => set('pointure', v)} desactive={!f.modele} />
+                </>}
                 {prixCalcule === 0 && <>
                   {!(parseFloat(String(prixManuel).replace(',', '.')) > 0) && <div className="encart att" style={{ marginTop: 12 }}>Prix à 0 € : aucun avoir n'apparaîtra dans le Plan de règlement. Saisis le prix si tu le connais.</div>}
                   <label className="etiquette">Prix unitaire HT (€, facultatif)

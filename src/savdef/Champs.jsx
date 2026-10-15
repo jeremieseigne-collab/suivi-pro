@@ -4,6 +4,7 @@ import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { nomPropre, formeComparaison, marquesSemblables } from '../cahier/commun'
 import { coordMarque, enregistrerEmailMagasin } from '../reassort/mail'
+import { nbPaires, resumePaires } from './paires'
 
 // Champs partagés des saisies SAV et défectueux (charte de la refonte)
 
@@ -133,6 +134,46 @@ export function ChoixPointure({ tailles, valeur, onChange, libre = true, desacti
       </div>
       {!liste.length && !libre && <div className="aide" style={{ marginTop: 4 }}>Aucune pointure reçue pour ce modèle.</div>}
       {saisie && <input className="champ" style={{ marginTop: 8 }} autoFocus inputMode="decimal" value={valeur} onChange={e => onChange(e.target.value)} placeholder="Ex. 42" />}
+    </>
+  )
+}
+
+// Paires (défectueux, retour client) : un toucher = une paire de plus dans la pointure ; « − » en retire une.
+// valeur = { pointure: nombre de paires } ; « Autre pointure » pour taper une pointure si libre est permis
+export function ChoixPaires({ tailles, valeur, onChange, libre = true, desactive }) {
+  const [autre, setAutre] = useState('')
+  const [saisie, setSaisie] = useState(false)
+  if (desactive) return <div className="champ valeur" style={{ color: 'var(--discret)' }}>Choisis d'abord le modèle</div>
+  const choisies = Object.keys(valeur).filter(p => valeur[p] > 0).sort((a, b) => (parseFloat(a) || 0) - (parseFloat(b) || 0) || a.localeCompare(b))
+  const liste = [...tailles, ...choisies.filter(p => !tailles.includes(p))]
+  const ajouter = (p, n = 1) => { const q = (valeur[p] || 0) + n; const v = { ...valeur }; if (q > 0) v[p] = q; else delete v[p]; onChange(v) }
+  const n = nbPaires(valeur)
+  function valider() {
+    const p = autre.trim().replace(',', '.')
+    if (p) ajouter(p)
+    setAutre(''); setSaisie(false)
+  }
+  return (
+    <>
+      {liste.length > 0 && <div className="pointures">
+        {liste.map(t => {
+          const q = valeur[t] || 0
+          return <button key={t} type="button" className={`pt retour${q ? ' plein' : ''}`} onClick={() => ajouter(t)} aria-label={`Pointure ${t}${q ? ', ' + q + ' paire(s)' : ''}`}>
+            {t}<small> </small>{q > 0 && <span className="qte">{q}</span>}
+          </button>
+        })}
+      </div>}
+      {!liste.length && !libre && <div className="aide" style={{ marginTop: 4 }}>Aucune pointure reçue pour ce modèle.</div>}
+      {saisie && <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+        <input className="champ" autoFocus inputMode="decimal" value={autre} onChange={e => setAutre(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') valider() }} placeholder="Ex. 42" />
+        <button type="button" className="btn" onClick={valider}>Ajouter</button>
+      </div>}
+      <div className="liens-pointures">
+        {choisies.map(p => <button key={p} type="button" className="lien" onClick={() => ajouter(p, -1)} aria-label={`Retirer une paire en ${p}`}>− {p}</button>)}
+        {n > 0 && <button type="button" className="lien" onClick={() => onChange({})}>Vider</button>}
+        {libre && !saisie && <button type="button" className="lien" onClick={() => setSaisie(true)}>Autre pointure</button>}
+      </div>
+      {n > 0 && <div className="aide" style={{ marginTop: 6 }}><b style={{ color: 'var(--texte)' }}>{n} paire{n > 1 ? 's' : ''}</b>{n > 1 ? ` : ${resumePaires(valeur)}` : ''}</div>}
     </>
   )
 }
