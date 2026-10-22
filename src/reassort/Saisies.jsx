@@ -157,7 +157,7 @@ export function SaisieStock({ top, onFermer, onToast }) {
 }
 
 // ─── Nouveau réassort / modification (quantités proposées = stock mini − stock − déjà en commande) ───
-export function SaisieReassort({ top, reassort, proposition = {}, enCommande = {}, magasinNom, onFermer, onToast, suivie = false, avecPrix = true }) {
+export function SaisieReassort({ top, reassort, proposition = {}, enCommande = {}, magasinNom, onFermer, onToast, suivie = false }) {
   const modif = !!reassort?.id
   const { season } = useSeason()
   const salaries = useLiveQuery(() => db.salaries.orderBy('nom').toArray(), [])
@@ -188,7 +188,7 @@ export function SaisieReassort({ top, reassort, proposition = {}, enCommande = {
     setEnCours(true); setErreur('')
     try {
       const sizes = {}; Object.entries(qtes).forEach(([s, v]) => { if (num(v) > 0) sizes[s] = num(v) })
-      const prixUnitaire = suivie && avecPrix && prixCommande == null ? (parseFloat(String(prix).replace(',', '.')) || null) : (reassort?.prixUnitaire ?? null)
+      const prixUnitaire = suivie && prixCommande == null ? (parseFloat(String(prix).replace(',', '.')) || null) : (reassort?.prixUnitaire ?? null)
       if (modif) await db.reassorts.update(reassort.id, { sizes, par, note, ...(suivie ? { prixUnitaire } : {}) })
       else await db.reassorts.add({ topId: top.id, magasinId: top.magasinId, fournisseurId: top.fournisseurId, modele: top.modele, season: top.season || season, statut: etape, sizes, recu: {}, receptions: [], par, note, etapes: { [etape]: new Date().toISOString() }, ...(suivie ? { prixUnitaire } : {}) })
       onToast?.({ texte: modif ? 'Réassort modifié' : `Réassort lancé : ${total} paire${total > 1 ? 's' : ''}` }); onFermer()
@@ -222,7 +222,7 @@ export function SaisieReassort({ top, reassort, proposition = {}, enCommande = {
         </>}
         {suivie && (prixCommande != null
           ? <div className="aide" style={{ marginTop: 12 }}>Prix repris de la commande de saison : <b>{prixCommande.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</b> la paire.</div>
-          : prixCommande === null && avecPrix && <>
+          : prixCommande === null && <>
             {!(parseFloat(String(prix).replace(',', '.')) > 0) && <div className="encart att" style={{ marginTop: 12 }}>Ce modèle n’est pas dans la commande de saison : sans prix, la réception sera à 0 € dans le Cahier et le Plan de règlement.</div>}
             <label className="etiquette">Prix unitaire HT (€, facultatif)<input className="champ" inputMode="decimal" value={prix} onChange={e => setPrix(e.target.value)} placeholder="Ex. 42,50" /></label>
           </>)}

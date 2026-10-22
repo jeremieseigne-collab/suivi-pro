@@ -12,9 +12,6 @@ import { PageShell, BoutonMagasin } from '../shell/EnTete'
 import { aller } from '../shell/navigation'
 import SaisieReceptionCommande from '../fournisseurs/SaisieReception'
 import { suivieParCommandes } from '../fournisseurs/csvPolaris'
-import PanneauEssai from '../shell/PanneauEssai'
-import { useVariantes } from '../shell/essai'
-import { POINTS_6 } from './points6'
 import { Numero } from '../cahier/Reperes'
 import { Toast } from '../cahier/Reperes'
 import { buildReassortMailUrl, coordMarque } from './mail'
@@ -147,7 +144,6 @@ function FicheTop({ t, act, onFermer, lienCommande }) {
 export default function Reassort() {
   const { season } = useSeason()
   const { magasin, setMagasin } = useMagasin()
-  const v = useVariantes(POINTS_6)
   const suivie = suivieParCommandes(season)   // étape 6 : réassorts en commandes pour les saisons suivies par commandes
   const [vue, setVue] = useState('magasin')
   const [rech, setRech] = useState('')
@@ -279,7 +275,6 @@ export default function Reassort() {
         {vue === 'magasin' && <button className="btn btn-prim seulement-grand" onClick={() => setSaisie({ type: 'top' })}><Icone nom="ajout" taille={20} />Nouveau top modèle</button>}
       </>}
       tabs={[['magasin', magasin.nom], ['tous', 'Tous magasins']].map(([id, l]) => <button key={id} aria-pressed={vue === id} onClick={() => setVue(id)}>{l}</button>)}>
-      {suivie && <PanneauEssai points={POINTS_6} />}
       {data === undefined ? <LoadingState /> : vue === 'magasin' ? <>
         <div className="recherche"><Icone nom="cherche" taille={20} style={{ color: 'var(--discret)' }} />
           <input className="champ" placeholder="Marque, modèle, N°, note…" value={rech} onChange={e => setRech(e.target.value)} aria-label="Rechercher" /></div>
@@ -341,15 +336,15 @@ export default function Reassort() {
         )}
       </>}
 
-      {fiche && !saisie && <FicheTop t={fiche} act={act} onFermer={() => setFicheId(null)} lienCommande={suivie && v['r6-lien']} />}
+      {fiche && !saisie && <FicheTop t={fiche} act={act} onFermer={() => setFicheId(null)} lienCommande={suivie} />}
       {saisie?.type === 'top' && <SaisieTop top={saisie.top} magasinId={magasin.id} onFermer={() => setSaisie(null)} onToast={setToast} />}
       {saisie?.type === 'stock' && <SaisieStock top={saisie.top} onFermer={() => setSaisie(null)} onToast={setToast} />}
-      {saisie?.type === 'reassort' && <SaisieReassort top={saisie.top} reassort={saisie.reassort} proposition={saisie.top.prop} enCommande={saisie.top.enCommande} magasinNom={magasin.nom} suivie={suivie} avecPrix={v['r6-prix']} onFermer={() => setSaisie(null)} onToast={setToast} />}
+      {saisie?.type === 'reassort' && <SaisieReassort top={saisie.top} reassort={saisie.reassort} proposition={saisie.top.prop} enCommande={saisie.top.enCommande} magasinNom={magasin.nom} suivie={suivie} onFermer={() => setSaisie(null)} onToast={setToast} />}
       {saisie?.type === 'reception-commande' && <SaisieReceptionCommande magasinAppareil={saisie.top.magasinNom} entrees={[]} commandeInitiale={saisie.reassort.commandeId}
         onFermer={() => setSaisie(null)} onToast={setToast}
         onEnregistree={async articles => {
           // Comme aujourd'hui (case « Ajouter ces paires au stock du top modèle » cochée par défaut) : le stock du top modèle suit la réception
-          if (!v['r6-stock'] || !saisie.top?.id) return
+          if (!saisie.top?.id) return
           const top = await db.topModeles.get(saisie.top.id), stock = { ...(top?.stock || {}) }
           articles.forEach(a => Object.entries(a.tailles || {}).forEach(([s, n]) => { stock[s] = (Number(stock[s]) || 0) + (Number(n) || 0) }))
           await db.topModeles.update(saisie.top.id, { stock, stockAt: new Date().toISOString() })

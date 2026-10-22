@@ -966,7 +966,7 @@ L'écran « Reçu par marque » avait été **construit et essayé** (branche `p
 - **Écran Réassorts quasi identique** : un repère « saison suivie par commandes » et, dans la fiche, la mention de la commande.
 - **Base** (base de test seulement) : `supabase-plan-c-etape6.sql` — 3 colonnes ajoutées à `reassorts` (`commande_id`, `recu_avant_commande`, `prix_unitaire`), 5 fonctions, 3 déclencheurs ; annulation `supabase-plan-c-etape6-annulation.sql`, **aller-retour vérifié** (Plan identique après annulation) ; sauvegarde avant : `test-2026-10-15_14h03-avant-plan-c-etape6`. Défaut trouvé par les essais et corrigé : le déclencheur de suppression était placé « avant » (la base refusait) → « après ».
 - **Plan de règlement** : identique avant / après la migration (Été 2027 et Hiver 2026) ; une réception de réassort par la commande donne **la même échéance** qu'une entrée « Réassort » faite à l'ancienne (comparé, Tamaris en virement 30 j le temps de l'essai, remis à l'identique).
-- **Points avec / sans** (panneau d'essai conservé ; ma recommandation entre crochets) :
+- **Points tranchés le 22/10 : tous « avec »** (panneau d'essai retiré ; ma recommandation d'alors entre crochets) :
   1. « Prix unitaire HT » dans Nouveau réassort quand la commande de saison ne donne pas le prix [**avec** : sinon la réception est à 0 € dans le Plan].
   2. Les paires reçues s'ajoutent au stock du top modèle [**avec** : c'est le comportement d'aujourd'hui, case cochée par défaut].
   3. Mention de la commande et lien « Voir dans Commandes fournisseurs » dans la fiche [**avec** : utile, discret].

@@ -20,7 +20,7 @@ Pour passer d'un compte à l'autre : menu → Se déconnecter, puis se reconnect
 
 **Données de test présentes** : vos commandes d'essai d'Été 2027 (Clarks, Sebago, birkenstock, Tamariss — magasins Les 2 Zèbres et Bailly Albi) et la commande de réassort n° 65. Mes données d'essai ont toutes été retirées.
 
-**Panneau « Essai local — points à trancher (avec / sans) »** : en haut de « Top modèles & réassorts » (Été 2027). Chaque point est affiché « avec » par défaut ; touchez « Sans » pour voir l'autre version. Le choix est mémorisé sur l'appareil.
+**Panneau d'essai « avec / sans »** : retiré partout (tous les points tranchés, dernier le 22/10). Ce que vous voyez est la version définitive.
 
 ---
 
@@ -77,7 +77,7 @@ Marche arrière (si besoin) : Vercel → Deployments → **b914345** → Promote
 3. Revenir à la fiche : « → En route » ; puis **« Réassort reçu »** : la **saisie de réception commune** s'ouvre sur la commande du réassort, pointures pré-remplies → « Enregistrer la réception » → le réassort passe à **« Reçu »**, le stock du top augmente, le Cahier montre une entrée « Réassort ».
 4. Variante : réception partielle depuis le **Cahier** (« Entrée » → la commande de réassort) → le réassort reste « En route » avec le reçu à jour.
 5. Revenir à « À réassortir » sans réception : la commande disparaît. Hiver 2026 : tout est comme aujourd'hui.
-6. **Panneau d'essai** : 4 points (§ 3).
+6. Les 4 comportements tranchés « avec » : prix demandé si absent de la commande de saison, stock suivi, mention de la commande dans la fiche, réception possible depuis « Entrée » du Cahier.
 
 ### G. Défectueux sur plusieurs paires — déjà en ligne (§ 1)
 Le plan C ne contient pas encore cette nouveauté (voir § 4, fusion avec `main`).
@@ -86,12 +86,10 @@ Le plan C ne contient pas encore cette nouveauté (voir § 4, fusion avec `main`
 
 ## 3. Points en attente de vos choix
 
+> Les 4 points de l'étape 6 sont tranchés le 22/10 (tous « avec ») ; plus aucun panneau d'essai.
+
 | Étape | Point | Ma recommandation |
 |---|---|---|
-| 6 | **Prix unitaire HT** dans Nouveau réassort quand la commande de saison ne le donne pas | **Avec** (sinon réception à 0 € au Plan) |
-| 6 | Paires reçues **ajoutées au stock** du top modèle | **Avec** (comportement d'aujourd'hui) |
-| 6 | **Mention de la commande** et lien dans la fiche du top | **Avec** |
-| 6 | Réception d'un réassort aussi **depuis le Cahier** | **Avec** |
 | 4 | Fenêtre « Annuler le reliquat » : **à vérifier dans votre navigateur** (correction faite, non reproduite dans Chrome d'essai) | — |
 | Vercel | **Aperçus de branches publics et branchés sur la base de production** (chaque branche poussée crée une adresse `…vercel.app` qui lit et écrit la vraie base, sans protection) | (a) variables *Preview* → base de test, **et/ou** (b) Deployment Protection → « Vercel Authentication » pour les aperçus. À faire par vous dans Vercel |
 | Agenda | Anciennes adresses publiques Google des 3 calendriers encore lisibles (`JOUR-J-AGENDA.md`, étape e) | Renouveler les 3 liens iCloud publiés (option décrite dans le document) |
@@ -106,7 +104,7 @@ Le plan C ne contient pas encore cette nouveauté (voir § 4, fusion avec `main`
 | `dev` | d8e1205 | ancien point de synchronisation (14/10) | en retard : ne contient ni les défectueux ni le plan C |
 | `defectueux-multi-paires` | 11b8e1e | = `main` | en ligne |
 | `defectueux-retour` | 6ddbbc3 | marche arrière prête (code = b914345) | à garder quelques jours |
-| `plan-c-etape1` → `etape2` → `etape2bis` → `etape3` → `etape7` → `etape4` → `etape5` → `etape6` | 7e4dd41 → 476ca93 → 86d4b6b → f00a64b → b63eb73 → 6ebb65e → 0d80bc9 → **a4ac8ba** | chaque étape part de la précédente ; **`plan-c-etape6` contient tout le plan C** | base de test seulement ; points 5 et 6 à trancher |
+| `plan-c-etape1` → `etape2` → `etape2bis` → `etape3` → `etape7` → `etape4` → `etape5bis` → `etape6` | 7e4dd41 → 476ca93 → 86d4b6b → f00a64b → b63eb73 → 6ebb65e → 057b3d8 → **dernier commit de `plan-c-etape6`** | chaque étape part de la précédente ; **`plan-c-etape6` contient tout le plan C** | base de test seulement ; points 5 et 6 à trancher |
 
 **Base de test** : SQL appliqués dans l'ordre `supabase-plan-c.sql`, `-complements.sql`, `-2bis.sql`, `-etape3.sql`, `-etape6.sql` (chacun avec son fichier d'annulation, aller-retour vérifié). Sauvegardes avant chaque étape dans `~/Sauvegardes/suivi-pro/test-…`.
 
@@ -116,7 +114,7 @@ Le plan C ne contient pas encore cette nouveauté (voir § 4, fusion avec `main`
 
 ## 5. Ce qui restera avant la mise en production du plan C (rien n'est commencé)
 
-1. **Vos choix** (§ 3), puis retrait du panneau d'essai (étape 6), essais repassés.
+1. ✅ Points de l'étape 6 tranchés et panneau retiré (22/10). Reste : **votre vérification d'ensemble à l'écran**.
 2. **Réunir le plan C et la version en ligne** : fusionner `main` dans `plan-c-etape6`. Un seul conflit prévu, simple : `src/savdef/Champs.jsx` (lignes d'import : la grille des paires des défectueux d'un côté, l'enregistrement des contacts du plan C de l'autre). Puis repasser tous les essais (défectueux compris : leur mail lit les contacts du plan C).
 3. **Remettre `dev` à jour** (il a deux jours de retard) avec votre accord.
 4. **Migration de la base de production** (votre accord écrit et votre commande, comme toujours) :
