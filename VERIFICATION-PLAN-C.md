@@ -1,4 +1,6 @@
-# Grande vérification du plan C — récapitulatif (15/10/2026)
+# Grande vérification du plan C — récapitulatif (15/10/2026, mis à jour le 22/10)
+
+> **22/10** : l'étape 5 « Reçu par marque » est **abandonnée** (doublon du Cahier) ; ses deux apports (filtre famille, export CSV) sont dans le Cahier (**étape 5 bis**). L'étape 6 a été reconstruite sur l'étape 5 bis.
 
 > Pour votre retour. Tout se passe sur la **base de test** ; rien du plan C n'est en production.
 > Seule mise en ligne du jour : **défectueux sur plusieurs paires** (b914345 → 11b8e1e, 13 h 51), vérifiée.
@@ -7,7 +9,7 @@
 
 ## 0. Avant de commencer
 
-**Adresse unique pour tout le plan C : http://localhost:5178** (branche `plan-c-etape6`, qui contient les étapes 1, 2, 2 bis, 3, 7, 4, 5 et 6 dans cet ordre). Si la page ne répond pas, demandez-moi de relancer le serveur (`suivi-pro-etape6`, `npx vite --port 5178`).
+**Adresse unique pour tout le plan C : http://localhost:5178** (branche `plan-c-etape6`, qui contient les étapes 1, 2, 2 bis, 3, 7, 4, 5 bis et 6 dans cet ordre). Si la page ne répond pas, demandez-moi de relancer le serveur (`suivi-pro-etape6`, `npx vite --port 5178`).
 
 **Comptes de la base de test** (mots de passe dans `~/.suivi-pro/comptes-base-de-test.txt`) :
 - **Direction** : ligne `direction` du fichier ;
@@ -18,7 +20,7 @@ Pour passer d'un compte à l'autre : menu → Se déconnecter, puis se reconnect
 
 **Données de test présentes** : vos commandes d'essai d'Été 2027 (Clarks, Sebago, birkenstock, Tamariss — magasins Les 2 Zèbres et Bailly Albi) et la commande de réassort n° 65. Mes données d'essai ont toutes été retirées.
 
-**Panneau « Essai local — points à trancher (avec / sans) »** : en haut de « Reçu par marque » et de « Top modèles & réassorts » (Été 2027). Chaque point est affiché « avec » par défaut ; touchez « Sans » pour voir l'autre version. Le choix est mémorisé sur l'appareil.
+**Panneau « Essai local — points à trancher (avec / sans) »** : en haut de « Top modèles & réassorts » (Été 2027). Chaque point est affiché « avec » par défaut ; touchez « Sans » pour voir l'autre version. Le choix est mémorisé sur l'appareil.
 
 ---
 
@@ -61,12 +63,13 @@ Marche arrière (si besoin) : Vercel → Deployments → **b914345** → Promote
 2. Ouvrir une commande avec un reste (ex. Clarks · Les 2 Zèbres) : **Annuler le reliquat (N)** → motif obligatoire → la fenêtre est **centrée au-dessus de tout l'écran** (correction du jour, à vérifier dans votre navigateur, Safari compris) → journal. Puis **Rétablir**. Dans un modèle : « Annuler le reliquat du modèle », et taille par taille.
 3. Compte albi : l'encart est visible (quantités), aucun bouton d'annulation.
 
-### E. Reçu par marque (étape 5) — deux comptes
-1. Menu → **Reçu par marque** (sous Commandes fournisseurs).
-2. Direction : puces de saison (Été 2027, Hiver 2026, Été 2026…), « Tous les magasins » ou un magasin ; marque → modèles → tailles ; montants HT ; filtre famille ; **Exporter CSV** (s'ouvre dans Excel).
-3. Hiver 2026 : reçu recalculé depuis le Cahier (aucune écriture).
-4. Compte albi : son magasin seulement, quantités seulement, pas d'export.
-5. **Panneau d'essai** : 3 points (§ 3).
+### E. Famille et export dans le Cahier (étape 5 bis) — deux comptes
+1. **Cahier des entrées** → onglet « Entrées » → **Filtres** → « Famille » (Été 2027 : familles du fichier de commande, ex. « 11 Femme » ; entrées sans commande : leur catégorie). Combiner avec la recherche et les autres filtres.
+2. Direction : **Exporter CSV** (à côté de « Filtres ») → le fichier contient exactement les entrées affichées (toutes, pas seulement la page), avec famille, paires, PHT et commande. L'export de la sélection (« Sélectionner » → « Plus ») a le même format.
+3. Onglet **Suivi des livraisons** → liste « Famille » (si au moins deux familles) : chaque marque ne garde que les modèles de la famille, les chiffres du haut sont recalculés.
+4. Hiver 2026 : familles = catégories des entrées.
+5. Compte albi : filtre famille oui, pas d'export.
+6. Il n'y a plus d'écran « Reçu par marque » dans le menu.
 
 ### F. Réassorts en commandes (étape 6) — compte albi, Été 2027
 1. **Top modèles & réassorts** → « Nouveau top modèle » (une marque et un modèle d'une de vos commandes d'Été 2027, ex. Clarks · un modèle de la commande) → « Lancer un réassort » : si le modèle est dans la commande de saison, « Prix repris de la commande de saison : … » ; sinon champ « Prix unitaire HT ». Étape **« Commandé »** → « Lancer le réassort ».
@@ -85,9 +88,6 @@ Le plan C ne contient pas encore cette nouveauté (voir § 4, fusion avec `main`
 
 | Étape | Point | Ma recommandation |
 |---|---|---|
-| 5 | Saisons suivies : les **entrées sans commande** comptent dans le reçu, marquées « sans commande » | **Avec** (ce sont de vraies paires reçues) |
-| 5 | Les **réassorts reçus** comptent dans le reçu | **Avec** (l'écran dit ce qui est entré) |
-| 5 | Saisons passées : **filtre famille** d'après la catégorie des entrées | **Avec** |
 | 6 | **Prix unitaire HT** dans Nouveau réassort quand la commande de saison ne le donne pas | **Avec** (sinon réception à 0 € au Plan) |
 | 6 | Paires reçues **ajoutées au stock** du top modèle | **Avec** (comportement d'aujourd'hui) |
 | 6 | **Mention de la commande** et lien dans la fiche du top | **Avec** |
@@ -116,7 +116,7 @@ Le plan C ne contient pas encore cette nouveauté (voir § 4, fusion avec `main`
 
 ## 5. Ce qui restera avant la mise en production du plan C (rien n'est commencé)
 
-1. **Vos choix** (§ 3), puis retrait des panneaux d'essai (étapes 5 et 6), essais repassés.
+1. **Vos choix** (§ 3), puis retrait du panneau d'essai (étape 6), essais repassés.
 2. **Réunir le plan C et la version en ligne** : fusionner `main` dans `plan-c-etape6`. Un seul conflit prévu, simple : `src/savdef/Champs.jsx` (lignes d'import : la grille des paires des défectueux d'un côté, l'enregistrement des contacts du plan C de l'autre). Puis repasser tous les essais (défectueux compris : leur mail lit les contacts du plan C).
 3. **Remettre `dev` à jour** (il a deux jours de retard) avec votre accord.
 4. **Migration de la base de production** (votre accord écrit et votre commande, comme toujours) :
@@ -124,5 +124,5 @@ Le plan C ne contient pas encore cette nouveauté (voir § 4, fusion avec `main`
    - **répétition générale sur une copie de la production** restaurée dans la base de test : SQL dans l'ordre `supabase-plan-c.sql` → `-complements.sql` → `-2bis.sql` (dont la conversion des groupes de marques en fournisseurs et la reprise des modes de règlement et plans chèques) → `-etape3.sql` → `-etape6.sql` ; puis **comparaison ligne par ligne du Plan de règlement** avant / après sur cette copie (déjà faite pour 2 bis : 2 281 échéances identiques ; à refaire avec tout le plan C), contrôle des contacts (5 252 lectures identiques pour 2 bis), du Cahier, des Achats ;
    - remplir la table de correspondance des magasins (les 3 correspondances décidées) ;
    - mise en ligne coordonnée : SQL appliqué en production **puis** code envoyé (`git push` lancé par vous), dans la même fenêtre, hors des heures d'ouverture ; vérifications en lecture seule ; marche arrière prête (fichiers d'annulation + promotion de l'ancien déploiement).
-5. **Message aux équipes** du plan C (réceptions rattachées, Reçu par marque, réassorts en commandes ; cohabitation Hiver 2026 jusqu'au 31/03/2027).
+5. **Message aux équipes** du plan C (réceptions rattachées, filtre famille du Cahier, réassorts en commandes ; cohabitation Hiver 2026 jusqu'au 31/03/2027).
 6. **Échéance** : étapes 1 à 3 en ligne **avant fin janvier 2027** (premières commandes d'Été 2027).
