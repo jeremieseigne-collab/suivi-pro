@@ -1,5 +1,6 @@
 // Règles communes de SAV & défectueux (mêmes données et mêmes enchaînements que l'outil actuel)
 import { db } from '../db'
+import { nbPaires, sizesRetour } from './paires'
 
 export const TYPES_SAV = [['retour', 'Retour client'], ['forme', 'Mise à la forme'], ['reparation', 'Réparation']]
 export const libelleType = t => (TYPES_SAV.find(([v]) => v === t) || [t, t])[1]
@@ -103,4 +104,14 @@ export async function infosModele(fournisseurId, modele) {
   }
   const top = o => Object.entries(o).sort((a, b) => b[1] - a[1])[0]?.[0] || ''
   return { tailles: [...t].sort((a, b) => (parseFloat(a) || 0) - (parseFloat(b) || 0) || a.localeCompare(b)), typeKey: tk || 'F', categorie: top(cats), numero: top(nums) }
+}
+
+// Paires modifiées tant que le défectueux est « À traiter » : la ligne « Retour » liée suit (pointures, nombre de paires,
+// PHT au même prix unitaire). Ensuite, l'avoir se corrige par « Corriger le prix » dans le Cahier.
+export async function majRetourPaires(entreeId, paires) {
+  const e = entreeId ? await db.entrees.get(entreeId) : null
+  if (!e || e.statut !== 'Retour') return
+  const n = nbPaires(paires) || 1
+  const unit = Number(e.total) ? Math.abs(Number(e.pht) || 0) / Math.abs(Number(e.total)) : 0
+  await db.entrees.update(entreeId, { sizes: sizesRetour(paires), total: -n, pht: unit > 0 ? -Math.round(unit * n * 100) / 100 : 0 })
 }
