@@ -55,7 +55,7 @@ function Modele({ m, estDirection, onReliquat, parTaille }) {
   )
 }
 
-export default function FicheCommande({ commande: c, lignes: toutesLignes, famille = '', marque, magasinNom, estDirection, cote, onFermer, onReimporter, onSupprimee }) {
+export default function FicheCommande({ commande: c, lignes: toutesLignes, famille = '', marque, magasinNom, estDirection, cote, onFermer, onReimporter, onSupprimee, sansLigneAchat = false, onCreerLigne }) {
   const receptions = useLiveQuery(() => receptionsDe(c.id), [c.id])
   const journal = useLiveQuery(() => journalDe(c.id), [c.id])
   const [voirJournal, setVoirJournal] = useState(false)   // journal replié, un toucher pour l'ouvrir (choix du 15/10)
@@ -133,6 +133,10 @@ export default function FicheCommande({ commande: c, lignes: toutesLignes, famil
         {c.qte_annulee > 0 && <button className="btn" onClick={() => demanderReliquat('retablir', null, 'toute la commande')}>Rétablir ({c.qte_annulee})</button>}
         <button className="btn btn-danger" disabled={receptions === undefined || receptions.length > 0} onClick={() => { setMotif(''); setASupprimer(true) }}
           title={receptions?.length ? 'Des réceptions sont rattachées : passe par « Annuler le reliquat »' : undefined}><Icone nom="corbeille" taille={18} />Supprimer la commande</button>
+      </div>}
+      {estDirection && sansLigneAchat && <div className="encart att" style={{ marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span style={{ flex: 1, minWidth: 200 }}>Pas de ligne d’achat pour {marque} · {magasinNom} en {libelleSaison(c.season)} : cette commande n’est pas dans le budget d’Achats.</span>
+        <button className="btn petit" onClick={onCreerLigne}>Créer la ligne d’achat</button>
       </div>}
       {estDirection && receptions?.length > 0 && <div className="aide" style={{ marginTop: 6 }}>Suppression impossible : {receptions.length} réception{receptions.length > 1 ? 's sont rattachées' : ' est rattachée'}. Pour ne plus attendre le reste, passe par « Annuler le reliquat ».</div>}
       {erreur && <div className="encart err" style={{ marginTop: 10 }}>{erreur}</div>}

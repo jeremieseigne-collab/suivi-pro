@@ -1,5 +1,7 @@
 # Grande vérification du plan C — récapitulatif (15/10/2026, mis à jour le 22/10)
 
+> **22/10 (2e mise à jour)** : réassorts — la commande naît à « Commandé » (plus à « Demandé ») ; **Achats = outil d'aide à l'achat** (étape 7 bis : colonnes simplifiées, « Décision », Évolution, Reste à engager, **Reçu N-1 calculé ou saisi**, garde-fou déplacé dans Commandes fournisseurs). **Adresse de la version complète : http://localhost:5179** (branche `plan-c-etape7bis`).
+
 > **22/10** : l'étape 5 « Reçu par marque » est **abandonnée** (doublon du Cahier) ; ses deux apports (filtre famille, export CSV) sont dans le Cahier (**étape 5 bis**). L'étape 6 a été reconstruite sur l'étape 5 bis.
 
 > Pour votre retour. Tout se passe sur la **base de test** ; rien du plan C n'est en production.
@@ -9,7 +11,7 @@
 
 ## 0. Avant de commencer
 
-**Adresse unique pour tout le plan C : http://localhost:5178** (branche `plan-c-etape6`, qui contient les étapes 1, 2, 2 bis, 3, 7, 4, 5 bis et 6 dans cet ordre). Si la page ne répond pas, demandez-moi de relancer le serveur (`suivi-pro-etape6`, `npx vite --port 5178`).
+**Adresse pour tout le plan C : http://localhost:5179** (branche `plan-c-etape7bis`, qui contient les étapes 1, 2, 2 bis, 3, 7, 4, 5 bis, 6 et 7 bis dans cet ordre ; l'ancienne adresse 5178 est la version d'avant le 22/10). Si la page ne répond pas, demandez-moi de relancer le serveur (`suivi-pro-etape6`, `npx vite --port 5178`).
 
 **Comptes de la base de test** (mots de passe dans `~/.suivi-pro/comptes-base-de-test.txt`) :
 - **Direction** : ligne `direction` du fichier ;
@@ -54,9 +56,11 @@ Marche arrière (si besoin) : Vercel → Deployments → **b914345** → Promote
 4. **Suivi des livraisons** d'Été 2027 : attendu d'après les commandes.
 5. Hiver 2026 : la saisie « Entrée » est l'ancienne, inchangée.
 
-### C. Achats (étape 7) — compte Direction
+### C. Achats, outil d'aide à l'achat (étapes 7 et 7 bis) — compte Direction
 1. Hiver 2026 : mêmes chiffres qu'avant (tableau sur ordinateur, lignes sur deux niveaux au téléphone) ; filtres, stratégies, catégories, répartition, mode discret, détail par univers.
-2. Été 2027 : colonnes **Commandé net**, **Reçu**, **Écart** ; statut déduit des commandes ; marques commandées sans ligne d'achat (le crayon crée la ligne).
+2. Colonnes : **Décision** (✅ ⏳ ❌ saisi à la main), Magasin, Fournisseur, **Reçu N-1**, Objectif N, Réel achat N, **Évolution** (Réel / Reçu N-1), **Reste à engager** (Objectif − Réel), Quantité, PM, Stratégie. Plus de commandé net ni d'écart.
+3. **Reçu N-1** (Été 2027 lit Été 2026) : montant calculé d'après le Cahier, avec « N entrées sans prix : chiffre sous-estimé » quand il y en a ; vos montants déjà saisis restent affichés avec le mot « saisi » et « calculé : X € » dessous ; **« ↺ Utiliser le calcul »** / **« ↻ Reprendre mon montant »** d'un toucher ; dans le crayon, choix « Calculé / Saisi ». Hiver 2026 : pas de calcul possible (pas d'Hiver 2025), vos montants sont gardés.
+4. Commandes fournisseurs (Direction) : encart **« N commandes sans ligne d'achat dans Achats »**, puce « Sans ligne d'achat », bouton **« Créer la ligne d'achat »** dans la fiche (avec « Annuler »). Compte albi : rien de tout cela.
 
 ### D. Reliquat (étape 4) — compte Direction, Été 2027
 1. Commandes fournisseurs : encart **« commandes de saison avec un reste à livrer, sans réception depuis plus de 30 jours »** (filtre « Rien depuis N j », 15 / 30 / 60 / 90).
@@ -104,22 +108,22 @@ Le plan C ne contient pas encore cette nouveauté (voir § 4, fusion avec `main`
 | `dev` | d8e1205 | ancien point de synchronisation (14/10) | en retard : ne contient ni les défectueux ni le plan C |
 | `defectueux-multi-paires` | 11b8e1e | = `main` | en ligne |
 | `defectueux-retour` | 6ddbbc3 | marche arrière prête (code = b914345) | à garder quelques jours |
-| `plan-c-etape1` → `etape2` → `etape2bis` → `etape3` → `etape7` → `etape4` → `etape5bis` → `etape6` | 7e4dd41 → 476ca93 → 86d4b6b → f00a64b → b63eb73 → 6ebb65e → 057b3d8 → **dernier commit de `plan-c-etape6`** | chaque étape part de la précédente ; **`plan-c-etape6` contient tout le plan C** | base de test seulement ; points 5 et 6 à trancher |
+| `plan-c-etape1` → `etape2` → `etape2bis` → `etape3` → `etape7` → `etape4` → `etape5bis` → `etape6` → `etape7bis` | 7e4dd41 → 476ca93 → 86d4b6b → f00a64b → b63eb73 → 6ebb65e → 057b3d8 → f44e53a → **dernier commit de `plan-c-etape7bis`** | chaque étape part de la précédente ; **`plan-c-etape7bis` contient tout le plan C** | base de test seulement ; plus aucun point en attente de votre choix |
 
-**Base de test** : SQL appliqués dans l'ordre `supabase-plan-c.sql`, `-complements.sql`, `-2bis.sql`, `-etape3.sql`, `-etape6.sql` (chacun avec son fichier d'annulation, aller-retour vérifié). Sauvegardes avant chaque étape dans `~/Sauvegardes/suivi-pro/test-…`.
+**Base de test** : SQL appliqués dans l'ordre `supabase-plan-c.sql`, `-complements.sql`, `-2bis.sql`, `-etape3.sql`, `-etape6.sql`, `-etape7bis.sql` (chacun avec son fichier d'annulation, vérifié ; celui de 7 bis dans une transaction annulée, sans toucher la base). Sauvegardes avant chaque étape dans `~/Sauvegardes/suivi-pro/test-…`.
 
-**Essais repassés aujourd'hui sur le code de l'étape 6** : étape 3 35/35, étape 4 35/35, étape 5 25/25, étape 6 34/34, base étape 1 69/69, base étape 2 bis 37/37. Plan de règlement identique avant / après l'étape 6 (Été 2027, Hiver 2026).
+**Essais sur le code de l'étape 7 bis (22/10)** : Achats 7 bis 42/42, étape 6 37/37, étape 5 bis 21/21, étape 3 35/35, étape 4 35/35, base étape 1 69/69 ; avant : base étape 2 bis 37/37. Plan de règlement identique avant / après l'étape 6 (Été 2027, Hiver 2026) ; l'étape 7 bis ne touche pas au Plan.
 
 ---
 
 ## 5. Ce qui restera avant la mise en production du plan C (rien n'est commencé)
 
 1. ✅ Points de l'étape 6 tranchés et panneau retiré (22/10). Reste : **votre vérification d'ensemble à l'écran**.
-2. **Réunir le plan C et la version en ligne** : fusionner `main` dans `plan-c-etape6`. Un seul conflit prévu, simple : `src/savdef/Champs.jsx` (lignes d'import : la grille des paires des défectueux d'un côté, l'enregistrement des contacts du plan C de l'autre). Puis repasser tous les essais (défectueux compris : leur mail lit les contacts du plan C).
+2. **Réunir le plan C et la version en ligne** : fusionner `main` dans `plan-c-etape7bis`. Un seul conflit prévu, simple : `src/savdef/Champs.jsx` (lignes d'import : la grille des paires des défectueux d'un côté, l'enregistrement des contacts du plan C de l'autre). Puis repasser tous les essais (défectueux compris : leur mail lit les contacts du plan C).
 3. **Remettre `dev` à jour** (il a deux jours de retard) avec votre accord.
 4. **Migration de la base de production** (votre accord écrit et votre commande, comme toujours) :
    - sauvegarde fraîche de la production (le fichier `.prod-db-url.local` de l'iMac fonctionne de nouveau) ;
-   - **répétition générale sur une copie de la production** restaurée dans la base de test : SQL dans l'ordre `supabase-plan-c.sql` → `-complements.sql` → `-2bis.sql` (dont la conversion des groupes de marques en fournisseurs et la reprise des modes de règlement et plans chèques) → `-etape3.sql` → `-etape6.sql` ; puis **comparaison ligne par ligne du Plan de règlement** avant / après sur cette copie (déjà faite pour 2 bis : 2 281 échéances identiques ; à refaire avec tout le plan C), contrôle des contacts (5 252 lectures identiques pour 2 bis), du Cahier, des Achats ;
+   - **répétition générale sur une copie de la production** restaurée dans la base de test : SQL dans l'ordre `supabase-plan-c.sql` → `-complements.sql` → `-2bis.sql` (dont la conversion des groupes de marques en fournisseurs et la reprise des modes de règlement et plans chèques) → `-etape3.sql` → `-etape6.sql` → `-etape7bis.sql` (puis relancer le marquage « saisi » du Reçu N-1 juste après la mise en ligne du code, voir le plan) ; puis **comparaison ligne par ligne du Plan de règlement** avant / après sur cette copie (déjà faite pour 2 bis : 2 281 échéances identiques ; à refaire avec tout le plan C), contrôle des contacts (5 252 lectures identiques pour 2 bis), du Cahier, des Achats ;
    - remplir la table de correspondance des magasins (les 3 correspondances décidées) ;
    - mise en ligne coordonnée : SQL appliqué en production **puis** code envoyé (`git push` lancé par vous), dans la même fenêtre, hors des heures d'ouverture ; vérifications en lecture seule ; marche arrière prête (fichiers d'annulation + promotion de l'ancien déploiement).
 5. **Message aux équipes** du plan C (réceptions rattachées, filtre famille du Cahier, réassorts en commandes ; cohabitation Hiver 2026 jusqu'au 31/03/2027).

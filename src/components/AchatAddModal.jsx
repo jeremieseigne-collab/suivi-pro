@@ -25,7 +25,7 @@ const INITIAL = {
   strategie: '', moderegl: '',
 }
 
-export default function AchatAddModal({ onClose, onSaved, sansStatut }) {
+export default function AchatAddModal({ onClose, onSaved }) {
   const { season } = useSeason()
   const { params } = useParams()
   const [form,   setForm]   = useState(INITIAL)
@@ -95,7 +95,9 @@ export default function AchatAddModal({ onClose, onSaved, sansStatut }) {
         statut:        form.statut,
         fournisseurId: fournisseurRow.id,
         magasinId:     magasinRow.id,
-        recuN1:        Number(form.recuN1)    || 0,
+        // Reçu N-1 : vide = calculé d'après le Cahier de la même saison l'an dernier ; rempli = saisi (montant forcé)
+        recuN1:        form.recuN1 !== '' ? (Number(form.recuN1) || 0) : 0,
+        recuN1Saisi:   form.recuN1 !== '',
         objectifN:     Number(form.objectifN) || 0,
         reelN:         reelN,
         quantite:      quantite,
@@ -132,12 +134,12 @@ export default function AchatAddModal({ onClose, onSaved, sansStatut }) {
         ) : (
           <form onSubmit={handleSubmit} className="modal-body">
             <div className="form-grid">
-              {!sansStatut && <div className="form-field">
-                <label>Statut</label>
+              <div className="form-field">
+                <label>Décision</label>
                 <select value={form.statut} onChange={e => set('statut', e.target.value)}>
                   {STATUTS.map(s => <option key={s} value={s}>{s || '— Choisir —'}</option>)}
                 </select>
-              </div>}
+              </div>
               <div className="form-field">
                 <label>Magasin *</label>
                 <select value={form.magasin} onChange={e => set('magasin', e.target.value)} required>
@@ -166,7 +168,7 @@ export default function AchatAddModal({ onClose, onSaved, sansStatut }) {
               <div className="form-field">
                 <label>Reçu N-1 (€)</label>
                 <input type="number" step="0.01" min="0" value={form.recuN1}
-                  onChange={e => set('recuN1', e.target.value)} placeholder="0"
+                  onChange={e => set('recuN1', e.target.value)} placeholder="vide = calculé"
                   data-achat-index="0" onKeyDown={navAchat} />
               </div>
               <div className="form-field">

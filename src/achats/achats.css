@@ -74,3 +74,14 @@
 
 /* Mode sombre : teintes des stratégies (couleurs de code) gardées en transparence, texte clair */
 html[data-theme="dark"] .chip.strat, html[data-theme="dark"] .strat-mot { color: var(--texte); }
+
+/* Reçu N-1 : valeur calculée ou saisie, calcul à côté, entrées sans prix, bascule d'un toucher (étape 7 bis) */
+.achats-table td.c-n1 { vertical-align: top; min-width: 150px; }
+.n1 { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.n1-valeur { color: var(--texte); font-weight: 500; }
+.mot-n1 { margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--action-texte); background: var(--action-teinte); border-radius: 6px; padding: 0 6px; vertical-align: 1px; }
+.n1-sous { font-size: 12px; color: var(--discret); }
+.achats .n1-alerte { font-size: 12px; font-weight: 600; color: var(--att); }
+.n1-bascule { border: 0; background: none; padding: 2px 0; margin-top: 2px; font: inherit; font-size: 12px; font-weight: 600; color: var(--action-texte); cursor: pointer; }
+.n1-bascule:hover { text-decoration: underline; }
+.n1-mobile { display: flex; flex-wrap: wrap; gap: 0 8px; align-items: baseline; margin-top: 2px; }

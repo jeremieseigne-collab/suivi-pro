@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { LoadingState, fmtEur } from '../components/shared'
@@ -8,7 +8,7 @@ import { useCompte } from '../context/CompteContext'
 import { useSeason } from '../context/SeasonContext'
 import { useMediaQuery, TABLET } from '../lib/useMediaQuery'
 import { PageShell } from '../shell/EnTete'
-import { ouvrirAvec } from '../shell/navigation'
+import { ouvrirAvec, aller } from '../shell/navigation'
 import { Toast } from '../cahier/Reperes'
 import { commandesDeSaison, lignesDe, dernieresReceptions } from './donnees'
 import { suivieParCommandes, libelleSaison, forme } from './csvPolaris'
@@ -38,13 +38,16 @@ export default function CommandesFournisseurs() {
   const [frId, setFrId] = useState('')               // filtre fournisseur
   const [famille, setFamille] = useState('')         // filtre famille (colonne Famille du fichier, par modèle)
   const [aVerifier, setAVerifier] = useState(null)   // marque créée à l'import : fournisseur à vérifier
+  const [creation, setCreation] = useState(false)    // création d'une ligne d'achat en cours
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 6000); return () => clearTimeout(t) }, [toast])
 
   const donnees = useLiveQuery(async () => {
-    const commandes = await commandesDeSaison(season)
-    if (!commandes.length) return { commandes, lignes: [], derniers: {} }
+    const [commandes, params] = await Promise.all([commandesDeSaison(season), db.parametres.where('season').equals(season).toArray()])
+    // Lignes d'achat de la saison (marque × magasin) : garde-fou « commande sans ligne d'achat » (Direction)
+    const cles = new Set(params.filter(p => p.fournisseurId && p.magasinId).map(p => p.fournisseurId + '_' + p.magasinId))
+    if (!commandes.length) return { commandes, lignes: [], derniers: {}, cles }
     const [lignes, derniers] = await Promise.all([lignesDe(commandes.map(c => c.id)), dernieresReceptions(season)])
-    return { commandes, lignes, derniers }
+    return { commandes, lignes, derniers, cles }
   }, [season])
   const fournisseurs = useLiveQuery(() => db.fournisseurs.orderBy('nom').toArray(), [])
   const magasins = useLiveQuery(() => db.magasins.orderBy('nom').toArray(), [])
@@ -64,6 +67,24 @@ export default function CommandesFournisseurs() {
   const retards = duMagasin.filter(enRetard)
   // Commandes qui traînent : Direction et comptes magasin (quantités seulement), choix du 15/10
   const trainent = duMagasin.filter(c => traine(c, donnees?.derniers?.[c.id], jours))
+  // Garde-fou (Direction, déplacé de l'écran Achats le 22/10) : une commande de saison dont la marque et le magasin n'ont pas de ligne d'achat dans la saison
+  const sansLigne = useCallback(c => estDirection && !!donnees?.cles && c.type !== 'reassort' && !donnees.cles.has(c.fournisseur_id + '_' + c.magasin_id), [estDirection, donnees])
+  const sansLigneListe = duMagasin.filter(sansLigne)
+  async function creerLigneAchat(cs) {
+    if (creation) return
+    setCreation(true)
+    try {
+      const faites = []
+      for (const c of cs) {
+        const deja = await db.parametres.where({ fournisseurId: c.fournisseur_id, magasinId: c.magasin_id }).filter(p => p.season === season).first()
+        if (deja) continue
+        faites.push(await db.parametres.add({ fournisseurId: c.fournisseur_id, magasinId: c.magasin_id, season }))
+      }
+      setToast({ texte: faites.length === 1 ? `Ligne d’achat créée : ${nomMarque(cs[0].fournisseur_id)} · ${nomMagasin(cs[0].magasin_id)} — à compléter dans Achats` : `${faites.length} lignes d’achat créées — à compléter dans Achats`,
+        annuler: async () => { for (const id of faites) await db.parametres.delete(id) } })
+    } catch (e) { setToast({ texte: 'Création impossible : ' + (e.message || 'vérifie la connexion.') }) }
+    setCreation(false)
+  }
   const visibles = useMemo(() => {
     const q = forme(rech)
     return duMagasin.filter(c => {
@@ -72,6 +93,7 @@ export default function CommandesFournisseurs() {
       if (filtre === 'soldees' && c.reste > 0) return false
       if (filtre === 'retard' && !enRetard(c)) return false
       if (filtre === 'traine' && !traine(c, donnees?.derniers?.[c.id], jours)) return false
+      if (filtre === 'sansligne' && !sansLigne(c)) return false
       if (filtre === 'hors' && !(c.lignes_hors_commande > 0)) return false
       if (famille && !(lignesPar[c.id] || []).some(l => l.famille === famille)) return false
       if (q) {
@@ -82,7 +104,7 @@ export default function CommandesFournisseurs() {
       }
       return true
     }).sort((a, b) => b.id - a.id)
-  }, [duMagasin, filtre, rech, lignesPar, fournisseurs, frs, famille, donnees, jours])
+  }, [duMagasin, filtre, rech, lignesPar, fournisseurs, frs, famille, donnees, jours, sansLigne])
 
   if (donnees === undefined || fournisseurs === undefined || magasins === undefined || frs === undefined) return <PageShell title="Commandes fournisseurs"><LoadingState /></PageShell>
 
@@ -112,6 +134,7 @@ export default function CommandesFournisseurs() {
           <span className="ligne-jauge"><Jauge p={p} /><span className="t2" style={{ margin: 0 }}>{c.qte_recue} / {c.qte_commandee} paires{c.reste ? ` · reste ${c.reste}` : ''}</span></span>
           {c.livraison_prevue && c.reste > 0 && <span className={`t2${retard ? ' etat-mot att' : ''}`}>Livraison prévue {fmtJour(c.livraison_prevue)}{retard ? ' · dépassée' : ''}</span>}
           {traine(c, donnees.derniers?.[c.id], jours) && <span className="t2 etat-mot att">Reste {c.reste} paire{c.reste > 1 ? 's' : ''} · {donnees.derniers?.[c.id] ? `dernière réception le ${fmtJour(donnees.derniers[c.id])}` : 'aucune réception'} · rien depuis {joursDepuis(repereCommande(c, donnees.derniers?.[c.id]))} jours</span>}
+          {sansLigne(c) && <span className="t2 etat-mot att">Pas de ligne d’achat pour cette marque et ce magasin</span>}
           {estDirection && c.lignes_hors_commande > 0 && <span className="t2 etat-mot att">{c.lignes_hors_commande} article{c.lignes_hors_commande > 1 ? 's' : ''} hors commande</span>}
         </span>
         <StatutCommande c={c} />
@@ -140,6 +163,7 @@ export default function CommandesFournisseurs() {
   const ficheEl = fiche && (
     <FicheCommande key={fiche.id} commande={fiche} lignes={lignesPar[fiche.id] || []} marque={nomMarque(fiche.fournisseur_id)} magasinNom={nomMagasin(fiche.magasin_id)}
       estDirection={estDirection} cote={grand} famille={famille} onFermer={() => setFicheId(null)} onReimporter={c => setReimport(c)}
+      sansLigneAchat={sansLigne(fiche)} onCreerLigne={() => creerLigneAchat([fiche])}
       onSupprimee={c => { setFicheId(null); setToast({ texte: `Commande ${nomMarque(c.fournisseur_id)} · ${nomMagasin(c.magasin_id)} supprimée (notée au journal)` }) }} />
   )
 
@@ -180,6 +204,7 @@ export default function CommandesFournisseurs() {
         {retards.length > 0 && chip('retard', 'Livraison dépassée', retards.length)}
         {(trainent.length > 0 || filtre === 'traine') && chip('traine', `Rien depuis ${jours} j`, trainent.length)}
         {estDirection && chip('hors', 'Hors commande', duMagasin.filter(c => c.lignes_hors_commande > 0).length)}
+        {estDirection && (sansLigneListe.length > 0 || filtre === 'sansligne') && chip('sansligne', 'Sans ligne d’achat', sansLigneListe.length)}
       </div>
       <div className="sous-info">{libelleSaison(season)} · {duMagasin.length} commande{duMagasin.length > 1 ? 's' : ''} · {tot.recu.toLocaleString('fr-FR')} / {tot.cmd.toLocaleString('fr-FR')} paires reçues · reste {tot.reste.toLocaleString('fr-FR')}</div>
       {aVerifier && (
@@ -199,6 +224,18 @@ export default function CommandesFournisseurs() {
         <button className="encart att cf-encart" onClick={() => setFiltre('traine')}>
           <Icone nom="horloge" taille={18} />{trainent.length} commande{trainent.length > 1 ? 's' : ''} de saison avec un reste à livrer ({trainent.reduce((s, c) => s + c.reste, 0)} paires), sans réception depuis plus de {jours} jours — voir
         </button>
+      )}
+      {sansLigneListe.length > 0 && filtre !== 'sansligne' && (
+        <button className="encart att cf-encart" onClick={() => setFiltre('sansligne')}>
+          <Icone nom="achats" taille={18} />{sansLigneListe.length} commande{sansLigneListe.length > 1 ? 's' : ''} sans ligne d’achat dans Achats ({libelleSaison(season)}) : la marque et le magasin ne sont pas dans le budget — voir
+        </button>
+      )}
+      {filtre === 'sansligne' && (
+        <div className="cf-traine-jours">
+          <span className="aide">Commandes importées dont la marque et le magasin n’ont pas de ligne dans Achats pour {libelleSaison(season)}.</span>
+          {sansLigneListe.length > 0 && <button className="btn petit" disabled={creation} onClick={() => creerLigneAchat(sansLigneListe)}>Créer les {sansLigneListe.length} ligne{sansLigneListe.length > 1 ? 's' : ''} d’achat</button>}
+          <button className="btn petit" onClick={() => aller('achats')}>Ouvrir Achats</button>
+        </div>
       )}
       {filtre === 'traine' && (
         <div className="cf-traine-jours">

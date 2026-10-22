@@ -7,7 +7,7 @@ const FIELD_TO_DB = {
   fournisseurs_reels:      { contactSav: 'contact_sav', telephoneFixe: 'telephone_fixe', numeroClient: 'numero_client', coordsMagasin: 'coords_magasin', contactCompta: 'contact_compta', telCompta: 'tel_compta', emailCompta: 'email_compta', clePointage: 'cle_pointage', creeLe: 'cree_le', nbMarques: 'nb_marques' },
   reglements_fournisseurs: { fournisseurReelId: 'fournisseur_reel_id', magasinId: 'magasin_id', modeReglement: 'mode_reglement' },
   plans_cheques:           { fournisseurReelId: 'fournisseur_reel_id', magasinId: 'magasin_id' },
-  parametres:      { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id', recuN1: 'recu_n1', objectifN: 'objectif_n', reelN: 'reel_n', prixModeles: 'prix_modeles', modelesSizes: 'modeles_sizes', modelesTypes: 'modeles_types' },
+  parametres:      { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id', recuN1: 'recu_n1', recuN1Saisi: 'recu_n1_saisi', objectifN: 'objectif_n', reelN: 'reel_n', prixModeles: 'prix_modeles', modelesSizes: 'modeles_sizes', modelesTypes: 'modeles_types' },
   entrees:         { magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', typeKey: 'type_key', commandeId: 'commande_id' },
   modes_reglement: { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id', modeReglement: 'mode_reglement' },
   suivi:           { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id' },

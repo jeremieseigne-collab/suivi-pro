@@ -37,7 +37,7 @@ export default function AchatImportModal({ season, onClose, onDone }) {
       const sep = (lines[0].match(/;/g) || []).length >= (lines[0].match(/,/g) || []).length ? ';' : ','
       const header = parseCsvLine(lines[0], sep).map(norm)
       const col = {
-        statut:    findCol(header, 'statut'),
+        statut:    findCol(header, 'decision', 'statut'),
         magasin:   findCol(header, 'magasin', 'boutique'),
         fourn:     findCol(header, 'fournisseur', 'marque'),
         recuN1:    findCol(header, 'recu'),
@@ -86,7 +86,8 @@ export default function AchatImportModal({ season, onClose, onDone }) {
         if (!a.magasinId) { ignored++; continue }   // magasin non reconnu
         let f = fByNorm[norm(a.fournisseur)]
         if (!f) { const id = await db.fournisseurs.add({ nom: a.fournisseur, modelesBySeason: {} }); f = { id, nom: a.fournisseur }; fByNorm[norm(a.fournisseur)] = f }
-        const fields = { statut: a.statut, recuN1: a.recuN1, objectifN: a.objectifN, reelN: a.reelN, quantite: a.quantite, pm: a.pm, strategie: a.strategie }
+        // Reçu N-1 du fichier = montant saisi (forcé) ; sans montant dans le fichier, le calcul d'après le Cahier reste en place
+        const fields = { statut: a.statut, ...(a.recuN1 > 0 ? { recuN1: a.recuN1, recuN1Saisi: true } : {}), objectifN: a.objectifN, reelN: a.reelN, quantite: a.quantite, pm: a.pm, strategie: a.strategie }
         const existing = await db.parametres.where({ fournisseurId: f.id, magasinId: a.magasinId }).filter(p => p.season === season).first()
         if (existing) await db.parametres.update(existing.id, fields)
         else          await db.parametres.add({ fournisseurId: f.id, magasinId: a.magasinId, season, ...fields })

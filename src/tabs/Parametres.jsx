@@ -1,3 +1,4 @@
+import { fusionnerRecuN1 } from '../achats/recuN1'
 import { useState, useRef, useMemo, useEffect } from 'react'
 import { actionDemandee, effacerAction } from '../shell/navigation'
 import { useLiveQuery } from '../lib/useLiveQuery'
@@ -558,7 +559,7 @@ function SectionFournisseurs() {
           prixModeles:  fill(tp.prixModeles, sp.prixModeles),
           modelesSizes: fillSz(tp.modelesSizes, sp.modelesSizes),
           modelesTypes: fill(tp.modelesTypes, sp.modelesTypes),
-          recuN1:    tp.recuN1    || sp.recuN1    || 0,
+          ...fusionnerRecuN1(tp, sp),   // Reçu N-1 : la cible gagne ; la source ne comble que si son montant est saisi (étape 7 bis)
           objectifN: tp.objectifN || sp.objectifN || 0,
           reelN:     tp.reelN     || sp.reelN     || 0,
           quantite:  tp.quantite  || sp.quantite  || 0,

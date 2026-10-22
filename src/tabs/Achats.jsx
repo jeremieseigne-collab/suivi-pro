@@ -9,8 +9,8 @@ import AchatImportModal from '../components/AchatImportModal'
 import { useSeason } from '../context/SeasonContext'
 import { SOCIETES, getSociete } from '../data/societes'
 import { useMediaQuery, PHONE } from '../lib/useMediaQuery'
-import { suivieParCommandes } from '../fournisseurs/csvPolaris'
-import { commandesDeSaison } from '../fournisseurs/donnees'
+import { libelleSaison } from '../fournisseurs/csvPolaris'
+import { saisonPrecedente, calculerRecuN1, recuN1De, textSansPrix } from '../achats/recuN1'
 import '../achats/achats.css'
 
 const STRAT_COLORS = {
@@ -25,7 +25,8 @@ const UNIVERS = ['Femme', 'Homme', 'Enfant', 'Accessoire']
 const UNIV_COLORS = { Femme: '#ec4899', Homme: '#3b82f6', Enfant: '#10b981', Accessoire: '#f59e0b' }
 const eur = n => (Number(n) || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 const eur2 = n => (Number(n) || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 })
-const ecartTexte = n => Math.abs(n) < 0.5 ? '0 €' : (n > 0 ? '+' : '−') + eur(Math.abs(n))
+const pctTexte = x => (x > 0.0005 ? '+' : x < -0.0005 ? '−' : '') + Math.abs(Math.round(x * 100)) + ' %'
+const resteTexte = n => n < 0 ? '−' + eur(-n) : eur(n)
 
 // Montants affichés pour une ligne : total marque, ou ceux de l'univers filtré
 function rowAmounts(r, univ) {
@@ -44,38 +45,10 @@ function parseSeasonId(id) {
   return m ? { type: m[1], year: parseInt(m[2]) } : null
 }
 
-// Saisons suivies par commandes : commandé net (commandé − annulé, au prix d'achat) et reçu des commandes de saison,
-// par marque × magasin. Les réassorts restent hors du réel achat (décision 6), donc hors de cette comparaison.
-function suiviCommandes(commandes, entrees) {
-  const parCle = {}
-  const saison = commandes.filter(c => c.type !== 'reassort')
-  const ids = new Set(saison.map(c => c.id))
-  for (const c of saison) {
-    const k = c.fournisseur_id + '_' + c.magasin_id
-    const x = parCle[k] ??= { netEur: 0, netQte: 0, recuEur: 0, recuQte: 0, statuts: [], annulee: 0, fournisseurId: c.fournisseur_id, magasinId: c.magasin_id }
-    x.netEur += Number(c.montant_net) || 0
-    x.netQte += (Number(c.qte_commandee) || 0) - (Number(c.qte_annulee) || 0)
-    x.annulee += Number(c.qte_annulee) || 0
-    x.statuts.push(c.statut)
-  }
-  for (const e of entrees) {
-    if (!ids.has(e.commandeId)) continue
-    const x = parCle[e.fournisseurId + '_' + e.magasinId]
-    if (x) { x.recuEur += Number(e.pht) || 0; x.recuQte += Number(e.total) || 0 }
-  }
-  for (const x of Object.values(parCle)) {
-    x.statut = x.statuts.every(s => s === 'Reçue en totalité') ? (x.annulee > 0 ? 'Reçue, reliquat annulé' : 'Reçue en totalité')
-      : x.statuts.some(s => s !== 'Commandée') ? 'Partiellement reçue' : 'Commandée'
-  }
-  return parCle
-}
-const CLASSE_STATUT = { 'Commandée': '', 'Partiellement reçue': 'info', 'Reçue en totalité': 'ok', 'Reçue, reliquat annulé': 'ok' }
-
 export default function Achats() {
   const { season, seasons } = useSeason()
   const telephone = useMediaQuery(PHONE)
-  const suivie = suivieParCommandes(season)
-  const statutDeduit = suivie   // saisons suivies par commandes : statut déduit des commandes (accord du 15/10)
+  const saisonN1 = saisonPrecedente(season)   // Reçu N-1 : même saison l'année précédente (Été 2027 → Été 2026)
   const [search,    setSearch]    = useState('')
   const [societe,   setSociete]   = useState('')
   const [magasin,   setMagasin]   = useState('')
@@ -125,27 +98,23 @@ export default function Achats() {
   }
 
   const data = useLiveQuery(async () => {
-    const [params, magasins, fournisseurs, commandes, entrees] = await Promise.all([
+    const [params, magasins, fournisseurs, entreesN1] = await Promise.all([
       db.parametres.where('season').equals(season).toArray(),
       db.magasins.toArray(),
       db.fournisseurs.toArray(),
-      suivieParCommandes(season) ? commandesDeSaison(season) : [],
-      suivieParCommandes(season) ? db.entrees.where('season').equals(season).toArray() : [],
+      saisonPrecedente(season) ? db.entrees.where('season').equals(saisonPrecedente(season)).toArray() : [],
     ])
     const magasinMap     = Object.fromEntries(magasins.map(m => [m.id, m.nom]))
     const fournisseurMap = Object.fromEntries(fournisseurs.map(f => [f.id, f.nom]))
-    const nommer = p => ({ ...p, magasin: magasinMap[p.magasinId] || '', fournisseur: fournisseurMap[p.fournisseurId] || '', societe: getSociete(magasinMap[p.magasinId] || '') })
-    const suivi = suiviCommandes(commandes, entrees)
-    const lignes = params.filter(p => p.fournisseurId && p.magasinId).map(p => ({ ...nommer(p), cmd: suivi[p.fournisseurId + '_' + p.magasinId] || null }))
-    // Marques commandées sans ligne d'achat dans la saison (réel achat à saisir)
-    const vues = new Set(lignes.map(r => r.fournisseurId + '_' + r.magasinId))
-    const sansLigne = Object.values(suivi).filter(x => !vues.has(x.fournisseurId + '_' + x.magasinId))
-      .map(x => ({ ...nommer({ id: 'c' + x.fournisseurId + '_' + x.magasinId, fournisseurId: x.fournisseurId, magasinId: x.magasinId, season }), cmd: x, sansLigne: true }))
-    return { lignes, sansLigne }
+    const calcul = calculerRecuN1(entreesN1)
+    const lignes = params.filter(p => p.fournisseurId && p.magasinId).map(p => ({
+      ...p, magasin: magasinMap[p.magasinId] || '', fournisseur: fournisseurMap[p.fournisseurId] || '', societe: getSociete(magasinMap[p.magasinId] || ''),
+      n1: recuN1De(p, calcul),
+    }))
+    return { lignes }
   }, [season])
 
-  // Marques commandées sans ligne d'achat affichées avec leur commandé net (accord du 15/10)
-  const rows = useMemo(() => !data ? [] : [...data.lignes, ...data.sansLigne], [data])
+  const rows = useMemo(() => data ? data.lignes : [], [data])
 
   // Lignes filtrées par société/magasin/stratégie/recherche (sans le filtre catégorie)
   const baseRows = useMemo(() => rows.filter(r => {
@@ -167,30 +136,38 @@ export default function Achats() {
 
   const magasinList  = useMemo(() => uniq(rows.map(r => r.magasin)),   [rows])
   const strategies   = useMemo(() => uniq(rows.map(r => r.strategie)), [rows])
-  const totalRecuN1  = filtered.reduce((s, r) => s + (r.recuN1  || 0), 0)
+  const totalRecuN1  = filtered.reduce((s, r) => s + r.n1.valeur, 0)
   const totalObjectif = filtered.reduce((s, r) => s + (r.objectifN || 0), 0)
   const totalReel    = filtered.reduce((s, r) => s + rowAmounts(r, univFilter).reel, 0)
   const totalQte     = filtered.reduce((s, r) => s + rowAmounts(r, univFilter).qte, 0)
-  const totalNet     = filtered.reduce((s, r) => s + (r.cmd?.netEur || 0), 0)
-  const totalNetQte  = filtered.reduce((s, r) => s + (r.cmd?.netQte || 0), 0)
-  const totalRecu    = filtered.reduce((s, r) => s + (r.cmd?.recuEur || 0), 0)
-  const totalRecuQte = filtered.reduce((s, r) => s + (r.cmd?.recuQte || 0), 0)
-  const totalEcart   = filtered.reduce((s, r) => s + (r.cmd ? (r.reelN || 0) - r.cmd.netEur : 0), 0)
+  // Évolution (Réel N contre Reçu N-1) et reste à engager (Objectif − Réel) : pas calculés avec un filtre catégorie (Reçu N-1 et Objectif ne sont pas par univers)
+  const evoTotal   = !univFilter && totalRecuN1 > 0 && totalReel > 0 ? totalReel / totalRecuN1 - 1 : null
+  const resteTotal = !univFilter && totalObjectif > 0 ? totalObjectif - totalReel : null
+  const nbSansPrix = filtered.reduce((s, r) => s + (r.n1.saisi ? 0 : (r.n1.calc?.sansPrix || 0)), 0)
 
   if (data === undefined) return <LoadingState />
 
   const flou = (masque, px = 6) => masque ? { filter: `blur(${px}px)`, userSelect: 'none' } : undefined
   const basculer = r => { setExpanded(prev => { const n = new Set(prev); n.has(r.id) ? n.delete(r.id) : n.add(r.id); return n }); setSelected(r.fournisseur) }
-  // Ligne d'une marque commandée sans ligne d'achat : la ligne d'achat est créée vide, puis la fiche s'ouvre
-  async function modifier(r) {
-    if (!r.sansLigne) return setEditRow(r)
-    const id = await db.parametres.add({ fournisseurId: r.fournisseurId, magasinId: r.magasinId, season })
-    setEditRow({ ...r, id, sansLigne: false })
-  }
-  const statutDe = r => statutDeduit
-    ? (r.cmd ? <span className={`etat-mot ${CLASSE_STATUT[r.cmd.statut] ?? ''}`}>{r.cmd.statut}</span> : <span className="etat-mot discret">Sans commande</span>)
-    : r.statut
-  const ecartDe = r => !r.cmd || univFilter ? null : (r.reelN || 0) - r.cmd.netEur
+  const modifier = r => setEditRow(r)
+  const evoDe   = r => univFilter ? null : (r.n1.valeur > 0 && (r.reelN || 0) > 0 ? (r.reelN || 0) / r.n1.valeur - 1 : null)
+  const resteDe = r => univFilter || !(r.objectifN > 0) ? null : r.objectifN - (r.reelN || 0)
+  // Reçu N-1 : bascule d'un toucher entre le montant saisi et le calcul (le montant saisi est gardé de côté, rien n'est perdu)
+  const basculerN1 = (r, saisi) => db.parametres.update(r.id, { recuN1Saisi: saisi })
+  const boutonN1 = r => r.n1.saisi
+    ? <button type="button" className="n1-bascule" onClick={e => { e.stopPropagation(); basculerN1(r, false) }}>↺ Utiliser le calcul</button>
+    : r.n1.garde > 0
+      ? <button type="button" className="n1-bascule" onClick={e => { e.stopPropagation(); basculerN1(r, true) }}>↻ Reprendre mon montant ({eur(r.n1.garde)})</button>
+      : <button type="button" className="n1-bascule" onClick={e => { e.stopPropagation(); modifier(r) }}>✎ Saisir</button>
+  // Cellule Reçu N-1 : valeur, « saisi » ou « calculé », calcul à côté quand le montant est saisi, entrées sans prix
+  const celluleN1 = (r, flouN1) => (
+    <div className="n1" style={flouN1}>
+      <div className="n1-valeur">{r.n1.valeur || r.n1.saisi ? eur(r.n1.valeur) : '—'}{r.n1.saisi && <>{' '}<span className="mot-n1">saisi</span></>}</div>
+      {r.n1.saisi && <div className="n1-sous">calculé : {r.n1.calc ? eur(r.n1.calc.montant) : '—'}{r.n1.calc?.sansPrix > 0 && <span className="n1-alerte"> · {textSansPrix(r.n1.calc.sansPrix)}</span>}</div>}
+      {!r.n1.saisi && r.n1.calc?.sansPrix > 0 && <div className="n1-alerte">{textSansPrix(r.n1.calc.sansPrix)} : chiffre sous-estimé</div>}
+      {boutonN1(r)}
+    </div>
+  )
 
   const detailUnivers = r => {
     const u = r.univers
@@ -207,11 +184,7 @@ export default function Achats() {
             })}
           </tbody>
         </table>
-      ) : <span className="doux">{r.sansLigne ? 'Marque commandée sans ligne d\'achat pour ce magasin : saisis le réel achat avec le crayon.' : 'Aucun détail par univers — saisis-le avec le crayon (Réel achat par univers).'}</span>}
-      {r.cmd && <div className="achats-cmd-detail">
-        Commandé net <b>{eur(r.cmd.netEur)}</b> · {r.cmd.netQte} paire{r.cmd.netQte > 1 ? 's' : ''} — reçu <b>{eur(r.cmd.recuEur)}</b> · {r.cmd.recuQte} paire{r.cmd.recuQte > 1 ? 's' : ''}
-        {r.cmd.netEur > 0 && <> ({Math.round(r.cmd.recuEur / r.cmd.netEur * 100)} %)</>}
-      </div>}
+      ) : <span className="doux">Aucun détail par univers — saisis-le avec le crayon (Réel achat par univers).</span>}
     </>
   }
 
@@ -219,18 +192,15 @@ export default function Achats() {
     { value: eur(totalRecuN1), label: `Total Reçu N-1${magasin ? ` · ${magasin}` : ''}` },
     { value: eur(totalObjectif), label: `Total Objectif N${magasin ? ` · ${magasin}` : ''}` },
     { value: eur(totalReel), label: `Total Réel N${univFilter ? ` · ${univFilter}` : ''}${magasin ? ` · ${magasin}` : ''}` },
+    { value: evoTotal === null ? '—' : pctTexte(evoTotal), label: 'Évolution (Réel N / Reçu N-1)' },
+    { value: resteTotal === null ? '—' : resteTexte(resteTotal), label: 'Reste à engager (Objectif − Réel)', classe: resteTotal !== null && resteTotal < 0 ? 'orange' : '' },
     { value: filtered.length, label: 'Fournisseurs', clair: true },
-    ...(suivie ? [
-      { value: eur(totalNet), label: `Commandé net · ${totalNetQte} paires` },
-      { value: eur(totalRecu), label: `Reçu sur commandes · ${totalRecuQte} paires` },
-      { value: univFilter ? '—' : ecartTexte(totalEcart), label: 'Écart réel − commandé (indicatif)', classe: !univFilter && Math.abs(totalEcart) >= 0.5 ? 'orange' : '' },
-    ] : []),
   ]
 
   return (
     <div className="achats">
-      {editRow  && <AchatEditModal row={editRow} sansStatut={statutDeduit} onClose={() => setEditRow(null)} onSaved={() => setEditRow(null)} />}
-      {showAdd  && <AchatAddModal sansStatut={statutDeduit} onClose={() => setShowAdd(false)} onSaved={() => setShowAdd(false)} />}
+      {editRow  && <AchatEditModal row={editRow} recuCalc={editRow.n1?.calc ?? null} saisonN1={saisonN1 ? libelleSaison(saisonN1) : ''} onClose={() => setEditRow(null)} onSaved={() => setEditRow(null)} />}
+      {showAdd  && <AchatAddModal onClose={() => setShowAdd(false)} onSaved={() => setShowAdd(false)} />}
       {showImport && <AchatImportModal season={season} onClose={() => setShowImport(false)} onDone={() => setShowImport(false)} />}
 
       <div className="achats-haut">
@@ -245,7 +215,10 @@ export default function Achats() {
           {ghost ? 'Afficher les montants' : 'Masquer les montants'}
         </button>
       </div>
-      {suivie && <p className="aide achats-explication">Saison suivie par commandes : <b>commandé net</b> = commandes de saison importées, commandé − annulé, au prix d'achat ; <b>reçu</b> = réceptions rattachées à ces commandes ; l'<b>écart</b> compare le réel achat saisi au commandé net, à titre indicatif (le Plan de règlement reste calculé sur le réel achat). Réassorts non compris.</p>}
+      {saisonN1 && <p className="aide achats-explication">
+        <b>Reçu N-1</b> : calculé d'après les entrées du Cahier de <b>{libelleSaison(saisonN1)}</b> (réceptions et réassorts, retours exclus). « saisi » = montant forcé à la main ; « Utiliser le calcul » le remplace par le calcul (votre montant est gardé de côté).
+        {nbSansPrix > 0 && <> <span className="n1-alerte">Attention : {textSansPrix(nbSansPrix)} dans le calcul, il est sous-estimé pour ces lignes.</span></>}
+      </p>}
 
       {/* Report des marques depuis la saison précédente (même type) */}
       {data.lignes.length === 0 && prevSeason && (prevCombos?.length > 0) && (
@@ -330,15 +303,21 @@ export default function Achats() {
       ) : telephone ? (
         <div className="carte achats-lignes">
           {filtered.map(r => {
-            const masque = ghost && r.fournisseur !== selected, amt = rowAmounts(r, univFilter), ec = ecartDe(r)
+            const masque = ghost && r.fournisseur !== selected, amt = rowAmounts(r, univFilter), evo = evoDe(r), reste = resteDe(r)
             return (
               <Fragment key={r.id}>
                 <div className={`achats-ligne${r.fournisseur === selected ? ' choisie' : ''}`} onClick={() => basculer(r)}>
                   <div className="txt">
                     <div className="t1"><span className="chevron">{expanded.has(r.id) ? '▾' : '▸'}</span><b>{r.fournisseur}</b><span className="montant" style={flou(masque)}>{amt.reel ? eur(amt.reel) : '—'}</span></div>
-                    <div className="t2">{r.magasin}{(statutDeduit || r.statut) && <> · {statutDe(r)}</>}{r.strategie && <> · <span className="strat-mot" style={{ background: STRAT_COLORS[r.strategie] || '#f1f5f9', ...flou(masque) }}>{r.strategie}</span></>}</div>
-                    <div className="t3" style={flou(masque)}>N-1 {r.recuN1 ? eur(r.recuN1) : '—'} · Objectif {r.objectifN ? eur(r.objectifN) : '—'} · {amt.qte || '—'} art. · PM {amt.pm ? eur2(amt.pm) : '—'}</div>
-                    {r.cmd && <div className="t3" style={flou(masque)}>Commandé {eur(r.cmd.netEur)} · reçu {eur(r.cmd.recuEur)}{ec !== null && <> · écart <span className={Math.abs(ec) >= 0.5 ? 'ecart' : ''}>{ecartTexte(ec)}</span></>}</div>}
+                    <div className="t2">{r.magasin}{r.statut && <> · <span title="Décision">{r.statut}</span></>}{r.strategie && <> · <span className="strat-mot" style={{ background: STRAT_COLORS[r.strategie] || '#f1f5f9', ...flou(masque) }}>{r.strategie}</span></>}</div>
+                    <div className="t3" style={flou(masque)}>N-1 {r.n1.valeur ? eur(r.n1.valeur) : '—'}{r.n1.saisi ? ' (saisi)' : ''} · Objectif {r.objectifN ? eur(r.objectifN) : '—'}</div>
+                    <div className="t3" style={flou(masque)}>Évolution {evo === null ? '—' : pctTexte(evo)} · Reste à engager <span className={reste !== null && reste < 0 ? 'ecart' : ''}>{reste === null ? '—' : resteTexte(reste)}</span></div>
+                    <div className="t3" style={flou(masque)}>{amt.qte || '—'} art. · PM {amt.pm ? eur2(amt.pm) : '—'}</div>
+                    <div className="n1-mobile" style={flou(masque)}>
+                      {r.n1.saisi && <span className="t3">calculé : {r.n1.calc ? eur(r.n1.calc.montant) : '—'}</span>}
+                      {r.n1.calc?.sansPrix > 0 && <span className="n1-alerte"> {r.n1.saisi ? '· ' : ''}{textSansPrix(r.n1.calc.sansPrix)}{r.n1.saisi ? '' : ' : sous-estimé'}</span>}
+                      {boutonN1(r)}
+                    </div>
                   </div>
                   <button className="icone-btn" onClick={e => { e.stopPropagation(); modifier(r) }} aria-label={`Modifier ${r.fournisseur} · ${r.magasin}`}><Icone nom="crayon" taille={18} /></button>
                 </div>
@@ -350,7 +329,7 @@ export default function Achats() {
             <div className="txt">
               <div className="t1"><b>Total ({filtered.length})</b><span className="montant" style={flou(ghost)}>{eur(totalReel)}</span></div>
               <div className="t3" style={flou(ghost)}>N-1 {eur(totalRecuN1)} · Objectif {eur(totalObjectif)} · {totalQte.toLocaleString('fr-FR')} art.</div>
-              {suivie && <div className="t3" style={flou(ghost)}>Commandé {eur(totalNet)} · reçu {eur(totalRecu)}{!univFilter && <> · écart {ecartTexte(totalEcart)}</>}</div>}
+              <div className="t3" style={flou(ghost)}>Évolution {evoTotal === null ? '—' : pctTexte(evoTotal)} · Reste à engager {resteTotal === null ? '—' : resteTexte(resteTotal)}</div>
             </div>
           </div>
         </div>
@@ -359,11 +338,12 @@ export default function Achats() {
           <table className="achats-table">
             <thead>
               <tr>
-                <th>Statut</th><th>Magasin</th><th>Fournisseur</th>
-                <th className="c-montant">Reçu N-1</th>
+                <th title="Votre décision d'achat (✅ ⏳ ❌), saisie à la main">Décision</th><th>Magasin</th><th>Fournisseur</th>
+                <th className="c-montant" title={saisonN1 ? `Calculé d'après les entrées du Cahier de ${libelleSaison(saisonN1)} (retours exclus), ou saisi à la main` : 'Saisi à la main'}>Reçu N-1</th>
                 <th className="c-montant">Objectif N</th>
                 <th className="c-montant">Réel achat N</th>
-                {suivie && <><th className="c-montant">Commandé net</th><th className="c-montant">Reçu</th><th className="c-montant" title="Réel achat − commandé net, à titre indicatif">Écart</th></>}
+                <th className="c-montant" title="Réel achat N contre Reçu N-1, en %">Évolution</th>
+                <th className="c-montant" title="Objectif N − Réel achat N">Reste à engager</th>
                 <th className="c-montant">Quantité</th>
                 <th className="c-montant">PM</th>
                 <th>Stratégie</th>
@@ -372,27 +352,24 @@ export default function Achats() {
             </thead>
             <tbody>
               {filtered.map(r => {
-                const isSel = r.fournisseur === selected, masque = ghost && !isSel, amt = rowAmounts(r, univFilter), ec = ecartDe(r)
+                const isSel = r.fournisseur === selected, masque = ghost && !isSel, amt = rowAmounts(r, univFilter), evo = evoDe(r), reste = resteDe(r)
                 return (
                   <Fragment key={r.id}>
                     <tr className={`achats-tr${isSel ? ' choisie' : ''}`} onClick={() => basculer(r)} title="Cliquer pour déplier le détail par univers">
-                      <td className="c-statut">{statutDe(r)}</td>
+                      <td className="c-statut">{r.statut}</td>
                       <td className="c-mag">{r.magasin}</td>
                       <td><span className="chevron">{expanded.has(r.id) ? '▾' : '▸'}</span><strong>{r.fournisseur}</strong></td>
-                      <td className="c-montant doux" style={flou(masque)}>{r.recuN1 ? eur(r.recuN1) : '—'}</td>
+                      <td className="c-montant doux c-n1">{celluleN1(r, flou(masque))}</td>
                       <td className="c-montant doux" style={flou(masque)}>{r.objectifN ? eur(r.objectifN) : '—'}</td>
                       <td className="c-montant fort" style={flou(masque)}>{amt.reel ? eur(amt.reel) : '—'}</td>
-                      {suivie && <>
-                        <td className="c-montant" style={flou(masque)}>{r.cmd ? eur(r.cmd.netEur) : '—'}</td>
-                        <td className="c-montant" style={flou(masque)}>{r.cmd ? eur(r.cmd.recuEur) : '—'}</td>
-                        <td className={`c-montant${ec !== null && Math.abs(ec) >= 0.5 ? ' ecart' : ''}`} style={flou(masque)}>{ec === null ? '—' : ecartTexte(ec)}</td>
-                      </>}
+                      <td className="c-montant" style={flou(masque)}>{evo === null ? '—' : pctTexte(evo)}</td>
+                      <td className={`c-montant${reste !== null && reste < 0 ? ' ecart' : ''}`} style={flou(masque)}>{reste === null ? '—' : resteTexte(reste)}</td>
                       <td className="c-montant" style={flou(masque)}>{amt.qte || '—'}</td>
                       <td className="c-montant doux" style={flou(masque)}>{amt.pm ? eur2(amt.pm) : '—'}</td>
                       <td style={flou(masque)}><span className="strat-mot" style={{ background: STRAT_COLORS[r.strategie] || '#f1f5f9' }}>{r.strategie || '—'}</span></td>
                       <td><button className="icone-btn" onClick={e => { e.stopPropagation(); modifier(r) }} title="Modifier" aria-label={`Modifier ${r.fournisseur} · ${r.magasin}`}><Icone nom="crayon" taille={18} /></button></td>
                     </tr>
-                    {expanded.has(r.id) && <tr className="achats-detail-tr"><td colSpan={suivie ? 13 : 10} style={flou(masque)}>{detailUnivers(r)}</td></tr>}
+                    {expanded.has(r.id) && <tr className="achats-detail-tr"><td colSpan={12} style={flou(masque)}>{detailUnivers(r)}</td></tr>}
                   </Fragment>
                 )
               })}
@@ -403,11 +380,8 @@ export default function Achats() {
                 <td className="c-montant" style={flou(ghost)}>{eur(totalRecuN1)}</td>
                 <td className="c-montant" style={flou(ghost)}>{eur(totalObjectif)}</td>
                 <td className="c-montant" style={flou(ghost)}>{eur(totalReel)}</td>
-                {suivie && <>
-                  <td className="c-montant" style={flou(ghost)}>{eur(totalNet)}</td>
-                  <td className="c-montant" style={flou(ghost)}>{eur(totalRecu)}</td>
-                  <td className="c-montant" style={flou(ghost)}>{univFilter ? '—' : ecartTexte(totalEcart)}</td>
-                </>}
+                <td className="c-montant" style={flou(ghost)}>{evoTotal === null ? '—' : pctTexte(evoTotal)}</td>
+                <td className="c-montant" style={flou(ghost)}>{resteTotal === null ? '—' : resteTexte(resteTotal)}</td>
                 <td className="c-montant" style={flou(ghost)}>{totalQte.toLocaleString('fr-FR')}</td>
                 <td colSpan={3} />
               </tr>

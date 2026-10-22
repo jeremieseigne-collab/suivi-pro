@@ -664,7 +664,7 @@ Aucun calcul ne change : l'échéance reste déclenchée par la première récep
   - Départ à la première réception (hors retours) de la marque, ou du groupe, pour le magasin et la saison : **un premier carton partiel déclenche la série complète**.
   - Le montant reste le **réel achat** (Σ `reel_n` du groupe ÷ nombre de chèques), même si tout n'est pas livré.
   - Un reliquat annulé ne baisse pas les chèques tout seul : on corrige le réel achat ou on passe par un plan chèque personnalisé, comme aujourd'hui pour une livraison incomplète.
-  - L'écran Achats affiche, **à titre indicatif**, l'écart entre le réel achat saisi et le total net des commandes importées (commandé − annulé, au prix d'achat).
+  - ~~L'écran Achats affiche, à titre indicatif, l'écart entre le réel achat saisi et le total net des commandes importées.~~ **Retiré le 22/10** (étape 7 bis) : Achats est un outil d'aide à l'achat, pas un suivi de commandes.
 - **Plan chèque personnalisé** : rien.
 - **LCR, virement, prélèvement, etc.** : rien.
   - Ils sont déjà calculés **par entrée** (PHT de la réception, à sa date, plus les délais) : chaque carton partiel a sa propre série d'échéances, sur le montant réellement reçu.
@@ -727,13 +727,13 @@ En cours de saisie :
 
 **Achats** (écran pas encore retouché)
 - Il garde le budget par marque (reçu N-1, objectif, **réel achat saisi à la main**, stratégie) et passe au style de la refonte.
-- Pour les saisons en commandes, il affiche le **commandé net** et le **reçu**, avec l'**écart indicatif** entre réel achat et commandé net (décision 6).
-- Le statut posé à la main ✅ ⏳ ❌ serait remplacé par le statut déduit des commandes, pour les saisons en commandes seulement (à accorder).
+- ~~Pour les saisons en commandes, il affiche le commandé net et le reçu, avec l'écart indicatif entre réel achat et commandé net (décision 6).~~ **Retiré le 22/10** (étape 7 bis).
+- ~~Le statut posé à la main ✅ ⏳ ❌ serait remplacé par le statut déduit des commandes.~~ **Annulé le 22/10** : le ✅ ⏳ ❌ est la **décision d'achat**, il reste saisi à la main pour toutes les saisons, et la colonne s'appelle désormais **« Décision »** (étape 7 bis).
 
 **Suivi des livraisons** : pour les saisons en commandes, il est recalculé d'après les commandes (attendu = commandé − annulé, réassorts compris). Pour les saisons d'avant, rien ne change.
 
 **Ce qui serait retiré, masqué ou déplacé** (à accorder ligne par ligne, règle de la refonte) :
-- le statut posé à la main ✅ ⏳ ❌ des Achats, pour les saisons en commandes — ✅ accordé (15/10), remplacé par le statut déduit des commandes (étape 7) ;
+- ~~le statut posé à la main ✅ ⏳ ❌ des Achats, pour les saisons en commandes (accordé le 15/10, remplacé par le statut déduit des commandes)~~ — **annulé le 22/10** : il est gardé, saisi à la main, pour toutes les saisons, et renommé « Décision » (les valeurs enregistrées ne changent pas) ;
 - l'import « Modèles » de Réglages → Marques, remplacé par l'import des commandes (pas de correctif à part, décision 16) ; il reste utilisable pour Hiver 2026 jusqu'au 31/03/2027 ;
 - le choix libre de la saison d'une entrée rattachée à une commande ;
 
@@ -791,7 +791,7 @@ Rien n'est supprimé ni modifié dans les tables existantes.
 | ~~5. Reçu par marque~~ | **Abandonnée le 15/10** : l'écran faisait doublon avec le Cahier des entrées (liste des réceptions) et son onglet « Suivi des livraisons » (vue par marque). Aucun nouvel écran ; le Cahier garde ses deux onglets | — | — |
 | 5 bis. Cahier : famille et export | Filtre par **famille** dans « Entrées » et « Suivi des livraisons » (famille du fichier de commande ; saisons passées : catégorie de l'entrée, sinon grille du modèle) ; **export CSV** (Direction) dans « Entrées » : exactement les entrées affichées, filtres et recherche compris, quantités et montants | Tous : le filtre « Famille » ; Direction : « Exporter CSV » | 0,5 jour |
 | 6. Réassorts en commandes | Un réassort devient une commande de type réassort (Demandé → Commandé → En route à la main, alertes inchangées), réception par la même saisie, reprise des réassorts en cours | Tous : l'écran Réassorts quasi identique ; la réception d'un réassort passe par la saisie du Cahier | 1,5 à 2 jours |
-| 7. Achats | L'écran Achats au style de la refonte : commandé net, reçu, écart indicatif avec le réel achat ; retraits accordés (statut ✅ ⏳ ❌ pour les saisons en commandes) | Direction : l'écran Achats redessiné, avec l'écart réel / commandé | 1 à 1,5 jour |
+| 7. Achats | L'écran Achats au style de la refonte (tableau sur ordinateur, lignes sur téléphone) ; **~~commandé net, reçu, écart indicatif~~ retirés le 22/10** : outil d'aide à l'achat, voir « Étape 7 bis » | Direction : l'écran Achats redessiné | 1 à 1,5 jour |
 
 **Total** : environ **9,5 à 10,5 jours**, plus vos essais en local entre chaque étape.
 
@@ -928,7 +928,8 @@ Rien n'est supprimé ni effacé dans les tables existantes : `fournisseurs.group
 ### Étape 7 — écran Achats (branche `plan-c-etape7`, 15/10)
 
 - **Présentation** de la refonte (tableau sur ordinateur, lignes sur deux niveaux sur téléphone, mode sombre), **mêmes chiffres** que l'écran actuel : 11 combinaisons de filtres comparées (Hiver et Été 2026), chiffres du haut, lignes et total identiques.
-- **Saisons suivies par commandes** : commandé net (commandes de saison, commandé − annulé, au prix d'achat), reçu (réceptions rattachées), écart indicatif réel − commandé ; réassorts non compris ; écart non calculé avec un filtre catégorie.
+- ⚠️ **Partiellement annulé le 22/10 (étape 7 bis)** : commandé net, reçu, écart, statut déduit et marques sans ligne d'achat sont retirés de l'écran Achats ; ce qui reste : la présentation et les mêmes chiffres.
+- ~~**Saisons suivies par commandes** : commandé net (commandes de saison, commandé − annulé, au prix d'achat), reçu (réceptions rattachées), écart indicatif réel − commandé ; réassorts non compris ; écart non calculé avec un filtre catégorie.~~
 - **Points tranchés le 15/10 : tous « avec »** — (1) statut déduit des commandes à la place du statut ✅ ⏳ ❌ (champ retiré de la fiche d'achat pour ces saisons) ; (2) marques commandées sans ligne d'achat affichées, le crayon crée la ligne. Panneau d'essai retiré.
 - **Aucune modification de la base.** Essais : `~/.suivi-pro/essais/cdp-achats-etape7.mjs` (32/32).
 
@@ -972,6 +973,22 @@ L'écran « Reçu par marque » avait été **construit et essayé** (branche `p
   3. Mention de la commande et lien « Voir dans Commandes fournisseurs » dans la fiche [**avec** : utile, discret].
   4. Réception d'un réassort aussi depuis « Entrée » du Cahier [**avec** : le carton arrive souvent avec le reste ; le réassort suit de toute façon].
 - **Essais** : `~/.suivi-pro/essais/cdp-reassorts-etape6.mjs` (**34/34** : reprise, réception commune, stock, Plan, prix saisi, étapes, réception partielle et annulée, retour à « À réassortir », suppression, 4 points « sans », Cahier, Hiver 2026 inchangé, Direction au téléphone, mode sombre, aucune erreur dans la console).
+
+### Étape 7 bis — Achats, outil d'aide à l'achat (branche `plan-c-etape7bis`, à partir de `plan-c-etape6`, 22/10)
+
+**Décision du 22/10** : l'écran Achats sert **en rendez-vous fournisseur** : voir ce qui a été reçu l'an dernier, le comparer à l'objectif, décider ce qu'on commande. Ce n'est pas un tableau de suivi de commandes.
+
+- **Retiré** : « Commandé net », « Reçu sur commandes » et « Écart indicatif » (colonnes et chiffres du haut), le bloc de commandes du détail, et les **marques commandées sans ligne d'achat** (les lignes de l'écran Achats sont celles du budget saisi).
+- **Garde-fou déplacé dans Commandes fournisseurs** (Direction seulement) : une commande de saison importée dont la marque et le magasin n'ont pas de ligne d'achat dans la saison est signalée — encart « N commandes sans ligne d'achat dans Achats », puce de filtre « Sans ligne d'achat », mention sur chaque carte, et dans la fiche un encart avec le bouton **« Créer la ligne d'achat »** (ligne vide à compléter dans Achats ; le message propose « Annuler » ; « Créer les N lignes » pour toutes d'un coup). Les commandes de réassort ne sont pas concernées.
+- **« Statut » devient « Décision »** (✅ ⏳ ❌ saisi à la main, **pour toutes les saisons**) : même colonne en base, valeurs inchangées ; renommé aussi dans la fiche d'achat, la création et l'import CSV (qui accepte « Décision » comme « Statut »). **Annule** le point « statut déduit des commandes » tranché le 15/10.
+- **Deux colonnes ajoutées** : **Évolution** (Réel N contre Reçu N-1, en %) et **Reste à engager** (Objectif − Réel), avec leurs totaux (cartes du haut et pied de tableau). Pas calculées avec un filtre catégorie (Reçu N-1 et Objectif ne sont pas par univers).
+- **Reçu N-1 calculé** (au lieu d'un montant saisi à la main) : somme en euros (PHT) des entrées du Cahier de la **même saison l'année précédente**, par marque et par magasin (Été 2027 lit Été 2026, Hiver 2027 lit Hiver 2026…) ; **réceptions et réassorts comptent, retours non** ; quand des entrées N-1 sont à 0 €, le chiffre est sous-estimé et l'écran l'écrit (« 12 entrées sans prix : chiffre sous-estimé », et un avertissement en tête).
+  - **Forcer à la main** : la ligne passe en « saisi » (mot « saisi » à côté du montant, **calcul affiché dessous**, « calculé : X € ») ; **« ↺ Utiliser le calcul »** remet le calcul d'un toucher, **sans perdre** le montant saisi (gardé de côté : « ↻ Reprendre mon montant (X €) »). Dans la fiche d'achat : choix « Calculé / Saisi ». Un fichier CSV d'achats avec un Reçu N-1 > 0 le marque « saisi ». À la fusion de deux marques, la cible gagne et la source ne comble que si son montant est saisi.
+  - **Base (accord écrit du 22/10, base de test seulement)** : une colonne `parametres.recu_n1_saisi` (booléen, faux par défaut) — `supabase-plan-c-etape7bis.sql` / `-annulation.sql` (annulation vérifiée dans une transaction annulée d'office, sans toucher la base ; sauvegarde avant : `test-2026-10-22_11h57-avant-recu-n1-saisi`). **Les montants déjà saisis restent affichés tels quels** : la migration marque « saisies » toutes les lignes dont le Reçu N-1 est non nul (9 sur la base de test) ; rien n'est passé en calculé d'office.
+  - **En production (migration à venir)** : relancer ce marquage (`update parametres set recu_n1_saisi = true where recu_n1 <> 0 and not recu_n1_saisi`) **juste après la mise en ligne du code**, avant que quiconque bascule une ligne au calcul — pour rattraper une saisie faite entre la migration et le code.
+- **Ce que les vraies données ont montré** (lecture seule de la production, 22/10, Été 2027 lisant Été 2026) : sur 72 lignes d'achat, **54** auraient un Reçu N-1 calculé (18 sans aucune entrée Été 2026) ; **3 lignes faussées par des entrées à 0 €** (42 entrées : Coco & Abricot · Rouffiac 18 sur 22, Palladium · Rouffiac 17 sur 17, Sebago · Les 2 Zèbres 7 sur 7) ; sur les 54 lignes qui ont à la fois un montant saisi et un calcul, 349 142 € saisis contre 338 699 € calculés (rapport médian 1,000, mais 19 lignes à moins de 1 %, 16 plus bas et 19 plus hauts) ; plus gros écarts : Birkenstock · Albi (32 376 € saisis, 16 700 € au Cahier) et New Balance · Albi (12 430 € saisis, 20 834 € calculés). Hiver 2026 n'aura aucun calcul (pas d'entrées d'Hiver 2025 dans le Cahier).
+  - **Conclusion (utilisateur, 22/10)** : **le Reçu N-1 saisi ne vient pas du Cahier** (probablement d'ailleurs, ex. Polaris) ; le calcul sert donc de **contrôle jusqu'à Été 2028, pas de source**. **À partir d'Été 2028 il deviendra fiable**, le Cahier étant alimenté par les réceptions rattachées à des commandes (Été 2027 et après).
+- **Essais** (`~/.suivi-pro/essais/cdp-achats-etape7bis.mjs`, **42/42**) : fonctions pures (saison précédente, calcul, fusion), **mêmes montants et mêmes chiffres du haut que l'écran actuel sur 47 lignes** (Hiver 2026 et Été 2026, 8 filtres), colonnes, Décision, Évolution et Reste, Reçu N-1 calculé / saisi / bascule / fiche d'achat, totaux comparés à un calcul indépendant depuis la base, mode discret, garde-fou (encart, filtre, création, « Annuler », compte magasin), téléphone, mode sombre, aucune erreur console ; étapes 6 (37/37), 5 bis (21/21), 3 (35/35), 4 (35/35) et base étape 1 (69/69) repassées.
 
 ## Idées pour plus tard (non construites)
 
