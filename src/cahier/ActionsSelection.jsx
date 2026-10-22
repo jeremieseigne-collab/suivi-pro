@@ -134,7 +134,8 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
     for (const e of lignes) { try { await db.entrees.delete(e.id); faites.push(e) } catch { /* compté en échec */ } }
     const echecs = lignes.length - faites.length
     // Copie exacte des lignes supprimées (sans les noms ajoutés pour l'affichage), pour pouvoir les remettre
-    const copies = faites.map(e => { const brut = { ...e }; delete brut.magasin; delete brut.marque; delete brut.societe; return brut })
+    // (champs d'affichage ajoutés par Cahier.jsx : noms, société, famille et repères de commande du plan C — absents de la table)
+    const copies = faites.map(e => { const brut = { ...e }; for (const k of ['magasin', 'marque', 'societe', 'famille', 'commandeBc', 'horsCommande']) delete brut[k]; return brut })
     const remettre = async () => {
       let ko = 0
       for (const c of copies) { try { await db.entrees.put(c) } catch { ko++ } }
