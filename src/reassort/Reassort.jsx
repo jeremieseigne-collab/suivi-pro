@@ -282,7 +282,7 @@ export default function Reassort() {
           {chip('rupture', 'À réassortir', stats.rupture)}{chip('encours', 'En cours', stats.encours)}{chip('retard', 'En retard', stats.retard)}
           {chip('recu', 'Réassortis', stats.recu)}{chip('aucun', 'Sans réassort', stats.aucun)}{chip('archive', 'Archivés', stats.archive)}
         </div>
-        {suivie && <div className="aide" style={{ marginTop: 8 }}>Saison suivie par commandes : un réassort devient une commande de réassort dès qu’il est demandé ; sa réception passe par la saisie commune (comme une commande de saison).</div>}
+        {suivie && <div className="aide" style={{ marginTop: 8 }}>Saison suivie par commandes : un réassort devient une commande de réassort quand la marque a confirmé (« Commandé ») ; sa réception passe par la saisie commune (comme une commande de saison).</div>}
         <div className="sous-info">{magasin.nom} · {stats.tops} top modèle{stats.tops > 1 ? 's' : ''} · {stats.encours} réassort{stats.encours > 1 ? 's' : ''} en cours{stats.archive && filtre !== 'archive' ? ' · archivés masqués' : ''}</div>
         {!liste.length ? <div className="vide">{miens.length ? 'Aucun modèle ne correspond.' : 'Aucun top modèle pour ce magasin — touche « Nouveau top modèle ».'}</div> : (
           <div className="liste" style={{ marginTop: 10 }}>

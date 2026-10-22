@@ -76,7 +76,7 @@ Marche arrière (si besoin) : Vercel → Deployments → **b914345** → Promote
 2. Commandes fournisseurs : la **commande de réassort** apparaît (mot « réassort »).
 3. Revenir à la fiche : « → En route » ; puis **« Réassort reçu »** : la **saisie de réception commune** s'ouvre sur la commande du réassort, pointures pré-remplies → « Enregistrer la réception » → le réassort passe à **« Reçu »**, le stock du top augmente, le Cahier montre une entrée « Réassort ».
 4. Variante : réception partielle depuis le **Cahier** (« Entrée » → la commande de réassort) → le réassort reste « En route » avec le reçu à jour.
-5. Revenir à « À réassortir » sans réception : la commande disparaît. Hiver 2026 : tout est comme aujourd'hui.
+5. **Règle du 22/10** : un réassort « Demandé » (mail envoyé) n'a pas de commande ; elle naît à « → Commandé ». Revenir à « Demandé » ou « À réassortir » sans réception : la commande disparaît. Hiver 2026 : tout est comme aujourd'hui.
 6. Les 4 comportements tranchés « avec » : prix demandé si absent de la commande de saison, stock suivi, mention de la commande dans la fiche, réception possible depuis « Entrée » du Cahier.
 
 ### G. Défectueux sur plusieurs paires — déjà en ligne (§ 1)

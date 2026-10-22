@@ -226,7 +226,7 @@ export function SaisieReassort({ top, reassort, proposition = {}, enCommande = {
             {!(parseFloat(String(prix).replace(',', '.')) > 0) && <div className="encart att" style={{ marginTop: 12 }}>Ce modèle n’est pas dans la commande de saison : sans prix, la réception sera à 0 € dans le Cahier et le Plan de règlement.</div>}
             <label className="etiquette">Prix unitaire HT (€, facultatif)<input className="champ" inputMode="decimal" value={prix} onChange={e => setPrix(e.target.value)} placeholder="Ex. 42,50" /></label>
           </>)}
-        {suivie && <div className="aide" style={{ marginTop: 8 }}>Dès qu’il est demandé, le réassort devient une commande de réassort (Commandes fournisseurs) ; sa réception passe par la saisie commune.</div>}
+        {suivie && <div className="aide" style={{ marginTop: 8 }}>Quand la marque a confirmé (« Commandé »), le réassort devient une commande de réassort (Commandes fournisseurs) ; « Demandé » = mail envoyé, pas encore une commande ; sa réception passe par la saisie commune.</div>}
         <span className="etiquette">Demandé par</span>
         <ChoixSalarie valeur={par} onChange={setPar} salaries={salariesMag} />
         <label className="etiquette">Note<textarea className="champ" rows={2} value={note} onChange={e => setNote(e.target.value)} /></label>

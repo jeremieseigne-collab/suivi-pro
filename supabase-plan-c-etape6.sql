@@ -1,6 +1,7 @@
 -- Plan C, étape 6 : réassorts en commandes (BASE DE TEST seulement tant que vous n'avez pas donné la commande de mise en production).
--- Un réassort d'une saison suivie par commandes devient une commande de type « reassort » dès qu'il quitte « À réassortir »
--- (Demandé, Commandé ou En route : étapes posées à la main, décision 8). Ses réceptions passent par la saisie de réception commune
+-- Un réassort d'une saison suivie par commandes devient une commande de type « reassort » quand la marque a confirmé : « Commandé »
+-- (ou « En route »), étapes posées à la main (décision 8). « Demandé » = mail envoyé, en attente de confirmation : pas encore une commande
+-- (décision du 22/10). Ses réceptions passent par la saisie de réception commune
 -- (enregistrer_reception) ; le réassort suit tout seul (reçu, « En route », « Reçu »). Les réassorts en cours sont repris.
 -- Saisons d'avant Été 2027 : rien ne change (aucune commande créée).
 -- Annulation : supabase-plan-c-etape6-annulation.sql
@@ -36,20 +37,21 @@ begin
   v_code := btrim(split_part(coalesce(r.modele, ''), ',', 1));
   v_couleur := btrim(coalesce(nullif(substr(r.modele, length(split_part(r.modele, ',', 1)) + 2), ''), ''));
   if v_code = '' then return null; end if;
-  v_etape := case when r.statut in ('Demandé', 'Commandé', 'En route') then r.statut end;
+  v_etape := case when r.statut in ('Commandé', 'En route') then r.statut end;   -- « Demandé » : mail parti, pas encore une commande (22/10)
   v_cid := r.commande_id;
 
   if v_cid is null then
-    if v_etape is null then return null; end if;   -- « À réassortir » : rien n'est commandé ; « Reçu » d'avant : historique
+    if v_etape is null then return null; end if;   -- « À réassortir », « Demandé » : rien n'est commandé ; « Reçu » d'avant : historique
     v_avant := coalesce(r.recu, '{}');              -- reprise : ce qui a déjà été reçu avant la commande
     insert into public.achats_commandes (fournisseur_id, magasin_id, season, type, etape, etapes, date_commande, note)
     values (r.fournisseur_id, r.magasin_id, r.season, 'reassort', v_etape, coalesce(r.etapes, '{}'),
-            coalesce((r.etapes ->> 'Demandé')::date, (r.etapes ->> v_etape)::date, current_date), 'Réassort ' || r.modele)
+            coalesce((r.etapes ->> 'Commandé')::date, (r.etapes ->> v_etape)::date, current_date), 'Réassort ' || r.modele)
     returning id into v_cid;
     update public.reassorts set commande_id = v_cid, recu_avant_commande = v_avant where id = r.id;
   else
     v_avant := coalesce(r.recu_avant_commande, '{}');
-    if r.statut = 'À réassortir' and not exists (select 1 from public.entrees where commande_id = v_cid) then
+    -- retour à « Demandé » ou « À réassortir » sans réception : la commande disparaît (la marque n'a pas, ou plus, confirmé)
+    if r.statut in ('À réassortir', 'Demandé') and not exists (select 1 from public.entrees where commande_id = v_cid) then
       update public.reassorts set commande_id = null, recu_avant_commande = '{}' where id = r.id;
       delete from public.achats_commandes where id = v_cid;
       return null;
@@ -148,9 +150,10 @@ end $$;
 create trigger reassort_suit_reception after insert or delete on public.mouvements_stock
   for each row execute function public.reassort_suit_reception();
 
--- R6. Reprise des réassorts en cours (saisons suivies par commandes, déjà « Demandé », « Commandé » ou « En route »)
+-- R6. Reprise des réassorts en cours (saisons suivies par commandes, déjà « Commandé » ou « En route » ; les « Demandé » deviendront
+--     une commande quand la marque confirmera)
 select public.synchroniser_reassort(id) from public.reassorts
-  where commande_id is null and statut in ('Demandé', 'Commandé', 'En route') and public.saison_suivie_par_commandes(season);
+  where commande_id is null and statut in ('Commandé', 'En route') and public.saison_suivie_par_commandes(season);
 
 notify pgrst, 'reload schema';
 commit;
