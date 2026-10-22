@@ -12,13 +12,15 @@ import Icone from '../components/ui/Icone'
 import { PageShell, BoutonMagasin } from '../shell/EnTete'
 import { aller, actionDemandee, effacerAction } from '../shell/navigation'
 import ListeEntrees from './ListeEntrees'
+import { familleEntree } from './commun'
 import SaisieEntree from './SaisieEntree'
 import FicheEntree from './FicheEntree'
 import SuiviLivraisons from './SuiviLivraisons'
 import { Toast } from './Reperes'
 import './cahier.css'
 import SaisieReception from '../fournisseurs/SaisieReception'
-import { commandesDeSaison, entreesHorsCommande } from '../fournisseurs/donnees'
+import { lignesDe, commandesDeSaison, entreesHorsCommande } from '../fournisseurs/donnees'
+import { nomModele } from '../fournisseurs/reception'
 import { suivieParCommandes } from '../fournisseurs/csvPolaris'
 
 // Cahier des entrées : onglet « Entrées » (ouvert par défaut) et « Suivi des livraisons »
@@ -48,8 +50,11 @@ export default function Cahier() {
     // Réceptions rattachées (plan C, étape 3) : n° de BC de la commande et paires « hors commande »
     const bc = Object.fromEntries(commandes.map(c => [c.id, c.numeros_bc || []]))
     const hors = commandes.length ? await entreesHorsCommande(lignes.filter(e => e.commandeId).map(e => e.id)) : new Set()
+    // Famille (étape 5 bis) : colonne Famille du fichier de commande, par modèle-coloris ; sinon la catégorie de l'entrée
+    const familles = {}
+    if (commandes.length) for (const l of await lignesDe(commandes.map(c => c.id))) familles[l.commande_id + '|' + nomModele(l.code_modele, l.couleur)] ||= l.famille || ''
     const mag = Object.fromEntries(magasins.map(m => [m.id, m.nom])), four = Object.fromEntries(fournisseurs.map(f => [f.id, f.nom]))
-    return lignes.map(e => ({ ...e, magasin: mag[e.magasinId] || '', marque: four[e.fournisseurId] || '', societe: getSociete(mag[e.magasinId] || ''),
+    return lignes.map(e => ({ ...e, magasin: mag[e.magasinId] || '', marque: four[e.fournisseurId] || '', societe: getSociete(mag[e.magasinId] || ''), famille: familleEntree(e, familles),
       ...(e.commandeId ? { commandeBc: bc[e.commandeId] || [], horsCommande: hors.has(e.id) } : {}) }))
   }, [season])
 

@@ -4,7 +4,7 @@ import { useSeason } from '../context/SeasonContext'
 import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { Statut } from './Reperes'
-import { STATUTS, CATEGORIES, libelleStatut, pluriel, aujourdhuiFr, frVersIso, isoVersFr, cleDate } from './commun'
+import { STATUTS, CATEGORIES, libelleStatut, pluriel, aujourdhuiFr, frVersIso, isoVersFr, csvEntrees, telechargerCsv } from './commun'
 
 // Feuille du bas (au centre sur ordinateur) et ligne de menu, communes aux actions groupées
 function Feuille({ titre, onFermer, children }) {
@@ -113,17 +113,7 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
   // ── Exporter la sélection en CSV (Direction) : une ligne par entrée, lisible dans Excel ──
   function exporterCsv() {
     setFeuille(null)
-    const nombre = v => String(Math.round((Number(v) || 0) * 100) / 100).replace('.', ',')
-    const cell = v => { const s = String(v ?? ''); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s }
-    const entete = ['Date', 'Magasin', 'Société', 'Marque', 'Modèle', 'N°', 'Catégorie', 'Statut', 'Paires', 'PHT', 'Pointures', 'Pointée']
-    const lignes = choisies().sort((a, b) => cleDate(a.date).localeCompare(cleDate(b.date)) || a.id - b.id).map(e => [
-      e.date, e.magasin, e.societe, e.marque, e.modele, e.numero, e.categorie, libelleStatut(e.statut || ''), e.total || 0, nombre(e.pht),
-      Object.entries(e.sizes || {}).filter(([, q]) => Number(q)).map(([t, q]) => `${t}:${q}`).join(' '), estPointe(e) ? 'oui' : 'non'])
-    const csv = '﻿' + [entete, ...lignes].map(l => l.map(cell).join(';')).join('\r\n')
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
-    a.download = `entrees-${season}-${frVersIso(aujourdhuiFr())}.csv`
-    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000)
+    telechargerCsv(csvEntrees(choisies(), estPointe), `entrees-${season}-${frVersIso(aujourdhuiFr())}.csv`)
     onToast({ texte: `Export CSV téléchargé (${entreesN})` })
   }
 

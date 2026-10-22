@@ -542,13 +542,13 @@ Achats et Plan de règlement : même code dans l'outil en ligne, l'étape 2 et l
 | 10 | Reliquat | Annulation **sur toute la commande et article par article**. « **Rétablir** » possible. Direction seulement, **motif obligatoire dans les deux sens**. |
 | 11 | Retours fournisseurs | **Pas de sortie maintenant**. Ils restent des lignes « Retour » du Cahier et rejoindront le chantier des sorties. |
 | 12 | « Pointé » | Veut dire « **facture (ou avoir) reçue et rapprochée** », sans rapport avec Polaris. Fonctionnement **exactement inchangé**, sur les réceptions comme sur les retours. Aucun repère « validé dans Polaris » (voir « Idées pour plus tard »). |
-| 13 | Écran « Reçu par marque » | Dans le **premier groupe du menu, sous « Commandes fournisseurs »**. Visible des comptes magasin (**quantités seulement**, sans montants). |
+| 13 | ~~Écran « Reçu par marque »~~ | ~~Dans le premier groupe du menu, sous « Commandes fournisseurs ». Visible des comptes magasin (quantités seulement, sans montants).~~ **Abandonné le 15/10** (voir « Étape 5 abandonnée ») : doublon du Cahier des entrées et de son Suivi des livraisons. |
 | 14 | Données existantes | **Option B**. Été 2027 est la première saison suivie par commandes. **Hiver 2026 est clos le 31/03/2027** ; jusque-là les deux modèles cohabitent, chaque saison dans le sien. |
 | 15 | Noms | « **Commandes fournisseurs** » pour le nouvel écran. L'écran actuel devient « **Commandes clients** » partout où il est nommé. |
 | 16 | Réglages → Marques | Sebago est réglé. **On ne corrige pas l'ancien filtre à part** : l'import des commandes (étape 2) le remplace. |
 
 **Complément du 14/10 (validation du plan)** :
-- **Nom du nouvel écran : « Reçu par marque »** (menu et plan). L'onglet du bas du téléphone « **Entrées** » reste le **Cahier**, sans changement.
+- ~~**Nom du nouvel écran : « Reçu par marque »** (menu et plan).~~ (écran abandonné le 15/10) L'onglet du bas du téléphone « **Entrées** » reste le **Cahier**, sans changement.
 - **Réimport** : lecture confirmée, un nouveau prix ne s'applique qu'aux réceptions suivantes.
 - **Ordre retenu : 1, 2, 3, puis 7, puis 4, 5, 6.** Les étapes 1 à 3 en ligne **avant fin janvier 2027**.
 - **Nom de l'écran actuel.** Il s'appelle déjà « Commandes clients » dans le menu et dans son titre ; il reste à relever les autres mentions (messages, mails, accueil) au moment de construire.
@@ -675,15 +675,12 @@ Aucun calcul ne change : l'échéance reste déclenchée par la première récep
   - Il affiche le réel achat saisi. Une commande importée alors que le réel achat est à 0 n'y apparaît pas : c'est l'écart affiché dans Achats qui le signale.
 - **Avoirs et pointage** : rien.
 
-#### 5. Mouvements de stock et écran « Reçu par marque »
+#### 5. Mouvements de stock (~~et écran « Reçu par marque »~~, abandonné le 15/10)
 
 - **Table `mouvements_stock`** : date, magasin, marque, saison, Code Modèle, Couleur, Taille, gencode, quantité (positive), type (`entree` / `sortie` / `correction`), réception (id de l'entrée), ligne de commande, « hors commande », créé par, créé le.
 - **Seules les réceptions l'alimentent** pour l'instant (type `entree`, par `enregistrer_reception`). Personne ne peut y écrire directement.
 - Les retours fournisseurs n'y entrent pas (décision 11).
-- **Écran « Reçu par marque »**, en lecture seule : ce qui a été reçu, par marque et par magasin, pour la saison choisie.
-  - Il n'est **pas appelé « Stock »** tant que les sorties n'existent pas.
-  - Il se trouve dans le premier groupe du menu, sous « Commandes fournisseurs ».
-  - Il est visible des comptes magasin, **quantités seulement** (décision 13).
+- ~~**Écran « Reçu par marque »**, en lecture seule : ce qui a été reçu, par marque et par magasin, pour la saison choisie.~~ **Abandonné le 15/10** : le Cahier des entrées est déjà la liste des réceptions, et son onglet « Suivi des livraisons » la vue par marque. Ses deux apports utiles (filtre famille, export CSV) vont dans le Cahier (étape 5 bis).
 - **Pour alimenter les sorties plus tard** (à ne pas concevoir maintenant) :
   - un export régulier des ventes de Polaris (par article et par magasin), importé en CSV, dont le format est à étudier dans la documentation Polaris (`SynologyDrive-Ressources/Polaris/`) ;
   - un identifiant d'article commun : gencode s'il devient fiable, sinon Code Modèle + Couleur + Taille exportés à l'identique ;
@@ -694,7 +691,7 @@ Aucun calcul ne change : l'échéance reste déclenchée par la première récep
 
 #### 6. Écrans (style de la refonte, téléphone d'abord)
 
-**Menu (premier groupe)** : … Cahier des entrées, **Commandes fournisseurs**, **Reçu par marque**, Top modèles & réassorts, **Commandes clients** … L'emplacement exact de « Commandes fournisseurs » dans le groupe est à valider à l'écran.
+**Menu (premier groupe)** : … Cahier des entrées, **Commandes fournisseurs**, ~~Reçu par marque~~ (abandonné le 15/10), Top modèles & réassorts, **Commandes clients** … L'emplacement exact de « Commandes fournisseurs » dans le groupe est à valider à l'écran.
 
 **Commandes fournisseurs**
 - **Liste** : des cartes groupées par marque.
@@ -726,10 +723,7 @@ En cours de saisie :
 - la liste du Cahier ne change pas : mention de la commande et, s'il y a lieu, « hors commande » ;
 - pour les saisons d'avant Été 2027, la saisie reste celle d'aujourd'hui (cohabitation, point 8), avec un repère « saison suivie par commandes » pour les autres.
 
-**Reçu par marque** (lecture seule)
-- **Choix** : saison (puces), magasin (puces, « Tous » pour la Direction).
-- **Liste** : une ligne par marque avec les paires reçues, le nombre de réceptions, la dernière réception, et le montant pour la Direction seulement. En la touchant, on voit les modèles-coloris, puis les tailles.
-- **Fichier CSV** : export réservé à la Direction.
+~~**Reçu par marque** (lecture seule) : choix de saison et de magasin, une ligne par marque, modèles puis tailles, export CSV Direction.~~ **Abandonné le 15/10** : le Cahier (onglets « Entrées » et « Suivi des livraisons ») reçoit le filtre par famille et l'export CSV (étape 5 bis).
 
 **Achats** (écran pas encore retouché)
 - Il garde le budget par marque (reçu N-1, objectif, **réel achat saisi à la main**, stratégie) et passe au style de la refonte.
@@ -756,7 +750,7 @@ En cours de saisie :
 | Pointer une réception ou un retour | Non (inchangé) | Oui (inchangé) |
 | Écrire directement dans les mouvements | Non (la base l'interdit à tous) | Non |
 | Table de correspondance des magasins | Lecture | Lecture et modification |
-| Reçu par marque | Oui, son magasin (quantités seulement) | Oui (avec montants) |
+| ~~Reçu par marque~~ (abandonné) — Cahier : filtre famille / export CSV des entrées affichées | Filtre famille : oui ; export : non | Oui (export avec montants) |
 
 Comme aujourd'hui pour les Achats, les prix restent **lisibles par la base** pour un compte magasin : seul l'écran les masque (décision 9).
 
@@ -769,7 +763,7 @@ Comme aujourd'hui pour les Achats, les prix restent **lisibles par la base** pou
   - les saisons d'avant Été 2027 deviennent de l'historique consultable ;
   - l'ancien chemin de saisie peut être retiré (avec accord) ;
   - l'import « Modèles » de Réglages → Marques aussi.
-- **L'écran « Reçu par marque »** peut montrer les saisons passées en recréant les mouvements à partir des entrées existantes (sans commande, sans lien à une ligne).
+- ~~L'écran « Reçu par marque » peut montrer les saisons passées en recréant les mouvements à partir des entrées existantes.~~ (écran abandonné le 15/10 ; pour les saisons passées, la famille d'une entrée se déduit de sa catégorie dans le Cahier.)
 
 **Risques gardés en tête** :
 - deux façons de saisir pendant quelques mois, d'où un repère clair à l'écran et un message aux équipes ;
@@ -794,7 +788,8 @@ Rien n'est supprimé ni modifié dans les tables existantes.
 | 2 bis. Fournisseurs et marques | Fournisseur (une ou plusieurs marques) ; Plan de règlement, modes et plans chèques au fournisseur (calcul inchangé) ; contacts au fournisseur avec héritage ; écran Réglages → Fournisseurs et marques ; import et Commandes fournisseurs adaptés (détail plus bas) | Direction : Réglages → Fournisseurs et marques ; Commandes fournisseurs groupées par fournisseur ; Répertoire : contacts du fournisseur | 5,5 jours |
 | 3. Réception rattachée | La saisie du Cahier pour les saisons en commandes (commande, modèle-coloris, grille pré-remplie, plusieurs modèles par carton), hors commande avec confirmation et mention, mouvements, reste à livrer, Suivi des livraisons recalculé ; comparaison du Plan de règlement avant et après | Tous : une saisie du Cahier qui part de la commande pour Été 2027 (inchangée pour Hiver 2026) ; les commandes se remplissent au fil des cartons ; Direction : filtre « Hors commande » | 2 jours |
 | 4. Reliquat | Annuler / rétablir, sur la commande ou par article, motif dans les deux sens, journal ; encart des commandes anciennes non reçues en totalité | Direction : boutons « Annuler le reliquat » et « Rétablir » dans le détail d'une commande, encart des commandes qui traînent | 0,5 jour |
-| 5. Reçu par marque | Écran en lecture seule par saison, marque et magasin (quantités pour les magasins, montants pour la Direction), mouvements recréés pour les saisons passées, export CSV | Tous : « Reçu par marque » dans le menu, sous « Commandes fournisseurs » | 1 jour |
+| ~~5. Reçu par marque~~ | **Abandonnée le 15/10** : l'écran faisait doublon avec le Cahier des entrées (liste des réceptions) et son onglet « Suivi des livraisons » (vue par marque). Aucun nouvel écran ; le Cahier garde ses deux onglets | — | — |
+| 5 bis. Cahier : famille et export | Filtre par **famille** dans « Entrées » et « Suivi des livraisons » (famille du fichier de commande ; saisons passées : catégorie de l'entrée, sinon grille du modèle) ; **export CSV** (Direction) dans « Entrées » : exactement les entrées affichées, filtres et recherche compris, quantités et montants | Tous : le filtre « Famille » ; Direction : « Exporter CSV » | 0,5 jour |
 | 6. Réassorts en commandes | Un réassort devient une commande de type réassort (Demandé → Commandé → En route à la main, alertes inchangées), réception par la même saisie, reprise des réassorts en cours | Tous : l'écran Réassorts quasi identique ; la réception d'un réassort passe par la saisie du Cahier | 1,5 à 2 jours |
 | 7. Achats | L'écran Achats au style de la refonte : commandé net, reçu, écart indicatif avec le réel achat ; retraits accordés (statut ✅ ⏳ ❌ pour les saisons en commandes) | Direction : l'écran Achats redessiné, avec l'écart réel / commandé | 1 à 1,5 jour |
 
@@ -826,7 +821,7 @@ Rien n'est supprimé ni modifié dans les tables existantes.
 - **N° de BC** comparés sans espaces, majuscules ni ponctuation : « essai bc seb 2 » retrouve « ESSAI-BC-SEB-2 » et propose le réimport.
 - **« Soldée » devient « Reçue en totalité »** partout (vue de la base, statut, filtre « Reçues en totalité ») ; quand une annulation a fermé la commande : « Reçue, reliquat annulé ».
 - **Filtre « Hors commande » vide** : une phrase explique ce qu'il montre (articles absents de la commande ou reçus en plus du reste, à régulariser).
-- **Filtre par famille** : la colonne Famille du fichier est déjà gardée pour chaque article (donc par modèle, `achats_lignes.famille`) ; Commandes fournisseurs propose « Toutes les familles » / une famille (les commandes qui en contiennent ; dans la fiche, seuls ses modèles, totaux de la commande inchangés). **À prévoir pour l'écran « Reçu par marque »** (étape 5) : la famille d'une entrée se lit par sa ligne de commande (`mouvements_stock.ligne_id` → `achats_lignes.famille`). La saison est portée par la commande.
+- **Filtre par famille** : la colonne Famille du fichier est déjà gardée pour chaque article (donc par modèle, `achats_lignes.famille`) ; Commandes fournisseurs propose « Toutes les familles » / une famille (les commandes qui en contiennent ; dans la fiche, seuls ses modèles, totaux de la commande inchangés). ~~À prévoir pour l'écran « Reçu par marque » (étape 5)~~ : fait dans le Cahier des entrées (étape 5 bis, « Étape 5 abandonnée » plus bas) : la famille d'une entrée se lit par sa ligne de commande (`achats_lignes.famille`), sinon sa catégorie. La saison est portée par la commande.
 - **Essais** : API étape 1 69/69 (dont suppression : magasin refusé, commande avec réceptions refusée, journal), écran étape 2 48/48 (n° de BC retapé autrement, famille, « Hors commande » vide, suppression avec motif), écran étape 2 bis 46/46, API étape 2 bis 37/37, garde-fous 6/6. Commandes d'essai retirées de la base de test.
 - **Points avec / sans de l'étape 2 bis tranchés le 15/10** : tous « avec », sauf « passer une marque en contacts propres » : **Direction seulement**. Panneau d'essai retiré.
 
@@ -946,6 +941,21 @@ Rien n'est supprimé ni effacé dans les tables existantes : `fournisseurs.group
 - **Correction du 15/10** : la fenêtre « Annuler le reliquat » s'affichait coupée, à cheval sur la liste et la fiche latérale. Toutes les fenêtres de confirmation (composant commun de la charte) s'affichent désormais à la racine de la page : centrées au-dessus de tout l'écran, fond assombri. Vérifié pour Annuler le reliquat, Rétablir et Supprimer la commande : ordinateur (panneau latéral), tablette (fiche en fenêtre), téléphone.
 - **Aucune modification de la base.** Essais : `~/.suivi-pro/essais/cdp-reliquat-etape4.mjs` (35/35, dont la position des fenêtres de confirmation et aucune erreur dans la console du navigateur ; sans la correction, 6 échecs).
 
+### Étape 5 abandonnée (15/10)
+
+L'écran « Reçu par marque » avait été **construit et essayé** (branche `plan-c-etape5`, 25/25) : lecture seule, une ligne par marque avec les paires reçues, dépliable en modèles-coloris puis en tailles, choix de saison et de magasin, export CSV pour la Direction, saisons passées recréées à l'écran depuis les entrées.
+
+**Décision du 15/10 : abandonné.** Il faisait doublon avec deux écrans déjà existants : le **Cahier des entrées** (onglet « Entrées ») est déjà la liste des réceptions, et son onglet **« Suivi des livraisons »** est déjà la vue par marque (reçu / attendu, modèles et tailles dépliables). Un troisième écran pour la même information n'ajoutait rien.
+
+**Conséquence** : la branche `plan-c-etape5` et l'écran `recu/RecuParMarque.jsx` sont supprimés. Les deux apports utiles de l'étape sont repris dans le Cahier (étape 5 bis, ci-dessous) ; le reste (une troisième vue, le menu, l'export sans filtre) ne l'était pas.
+
+### Étape 5 bis — famille et export dans le Cahier (branche `plan-c-etape5bis`, à partir de `plan-c-etape4`, 15/10)
+
+- **Filtre par famille**, dans les deux onglets du Cahier (« Entrées » et « Suivi des livraisons ») : famille de la ligne de commande (colonne Famille du fichier, saisons suivies par commandes) ; pour une entrée sans commande ou une saison d'avant, la catégorie de l'entrée (ou, dans le Suivi, la catégorie la plus fréquente de ses entrées, sinon la famille déduite de la grille). N'apparaît que s'il y a au moins deux familles.
+- **Export CSV** (Direction seulement, bouton « Exporter CSV » dans l'onglet « Entrées ») : exporte **exactement ce qui est affiché** — filtres, famille et recherche compris — pas seulement la page visible. Colonnes : Date, Magasin, Société, Marque, Modèle, N°, Catégorie, Famille, Statut, Paires, PHT, Pointures, Commande (BC, hors commande), Pointée. L'export de la sélection (actions groupées, « Plus ») garde le même format.
+- **Aucun nouvel écran, aucune entrée de menu.** Aucune modification de la base : helpers purs ajoutés à `cahier/commun.js` (`familleEntree`, `csvEntrees`, `telechargerCsv`), réutilisés par `ListeEntrees.jsx`, `SuiviLivraisons.jsx` et `ActionsSelection.jsx`.
+- Essais : `~/.suivi-pro/essais/cdp-cahier-etape5bis.mjs` (21/21 : familles du fichier et catégories, export conforme à la base pour plusieurs combinaisons de filtres, export de la sélection, Suivi des livraisons recalculé sur la famille, Hiver 2026 avec les catégories, compte magasin sans export, téléphone, mode sombre, aucune erreur console, aucune mention de « Reçu par marque »).
+
 ## Idées pour plus tard (non construites)
 
 | Idée | Pour quoi faire | Ce qu'il faudrait ajouter à la base |
@@ -961,7 +971,7 @@ Rien n'est supprimé ni effacé dans les tables existantes : `fournisseurs.group
 | **Numéros de facture partagés (et registre des factures)** | Voir « Plans préparés — B » | Voir « Plans préparés — B » |
 | **Partie Achat : commandes, réceptions, entrées** | Voir « Plans préparés — C » | Voir « Plans préparés — C » |
 | **Prix d'achat et montants réservés à la Direction, dans la base** (plan C, décision 9) | Aujourd'hui (et dans le plan C) seul l'écran masque les prix et montants aux comptes magasin ; un compte magasin qui interrogerait la base les lirait (Achats, lignes de commande fournisseurs, PHT des entrées) | Séparer les colonnes de prix dans des tables ou des vues lisibles par la Direction seulement, et faire calculer le PHT des réceptions par la base (fonction `enregistrer_reception`) ; à rapprocher de « Prix des entrées réservés à la Direction » et de la limite « Budgets d'achat lisibles » (`SUIVI.md`). À construire et tester sur la base de test, avec accord écrit |
-| **Tags libres par modèle** (plan C, 15/10) | Classer les modèles par des étiquettes à soi (ex. « vitrine », « fin de série »), en plus de la famille du fichier, pour filtrer Commandes fournisseurs et « Reçu par marque » | Une **table dédiée** (modèle — marque, Code Modèle, Couleur — × tag), lisible par tous, modifiable selon des droits à définir ; à construire et tester sur la base de test, **avec accord écrit** |
+| **Tags libres par modèle** (plan C, 15/10) | Classer les modèles par des étiquettes à soi (ex. « vitrine », « fin de série »), en plus de la famille du fichier, pour filtrer Commandes fournisseurs et le Cahier des entrées | Une **table dédiée** (modèle — marque, Code Modèle, Couleur — × tag), lisible par tous, modifiable selon des droits à définir ; à construire et tester sur la base de test, **avec accord écrit** |
 | **Repère « validé dans Polaris »** (plan C, décision 12) | Savoir quelles réceptions ont été saisies dans Polaris, sans le noter à la main (le « Pointé » actuel veut dire « facture ou avoir reçu et rapproché » et ne change pas) | Rien à saisir : le repère viendrait d'un **export Polaris** (réceptions ou stock par article) importé et rapproché des réceptions de Suivi Pro (Code Modèle + Couleur + Taille, ou gencode). Format de l'export à étudier ; même source possible que les sorties du stock |
 
 ---
