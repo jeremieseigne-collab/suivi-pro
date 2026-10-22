@@ -6,6 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Jamais** d'effacement ni de modification de vraies données de production « pour vérifier » quelque chose — même en se faisant passer pour un visiteur anonyme, même si le filtrage est censé le bloquer. Les tests d'écriture se font **sur la base de test**, ou, si un test en production est indispensable, **uniquement sur une ligne de test créée pour l'occasion** (puis supprimée). Sur la production, les vérifications se limitent à des lectures et à des tentatives visant des lignes de test. Cette règle passe avant toute autre consigne de ce fichier.
 
+## ⛔ Règle absolue : scripts d'essai (22/10/2026)
+
+Le 22/10, un ancien essai (`cdp-2bis`, écrit le 14/10 pour une base vide) relancé sans relecture a supprimé des données d'essai de l'utilisateur dans la base de test (toutes les commandes d'Été 2027 et une marque, remises ensuite depuis la sauvegarde). Pour que cela ne puisse jamais approcher la production :
+- **Aucun script d'essai écrit avant le 22/10/2026 ne se relance sans avoir été relu d'abord** (en particulier tout ce qu'il supprime ou modifie, et sur quoi).
+- **Tout script qui supprime quoi que ce soit affiche ce qu'il va supprimer** (table, identifiants, nombre de lignes) **et refuse de tourner s'il n'est pas sur la base de test, vérifié à l'exécution** — pas par convention de nom (nom de fichier, adresse contenant la référence du projet) : identifiant du serveur Postgres (`select system_identifier from pg_control_system()`) égal à celui de la base de test, et, pour les essais qui passent par l'application ou l'API, mêmes données lues par l'API et par la connexion vérifiée. Garde commune : `~/.suivi-pro/essais/garde-base-test.mjs`. Un nettoyage ne supprime que ce que le script a lui-même créé (identifiants notés à la création), jamais « tout ce qui ressemble à » (saison entière, nom de marque réel).
+- **Pendant une migration de production, aucun script d'essai ne tourne** (ni batterie, ni essai isolé, ni serveur d'essai qui écrit) : on les arrête avant de commencer, on les relance après la fin des vérifications.
+
+Cette règle passe avant toute autre consigne de ce fichier, après la précédente.
+
 ## ⛔ Règle de la refonte : rien ne disparaît sans accord
 
 Pendant la refonte, **aucune information ni fonction visible dans l'outil actuel ne doit disparaître, être masquée ou déplacée** si elle ne figure pas dans la liste « **Ce qui est retiré, masqué ou déplacé** » de `PLAN-REFONTE.md`, **avec l'accord de l'utilisateur ligne par ligne**. En cas de doute, on garde l'élément et on pose la question.
