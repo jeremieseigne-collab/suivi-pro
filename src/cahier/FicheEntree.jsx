@@ -145,7 +145,7 @@ export default function FicheEntree({ entree: e, estDirection, pointe, onPointer
       )}
       {confirmSuppr && (
         <Confirmation danger titre="Supprimer cette entrée ?"
-          texte={`${e.marque} · ${e.modele || 'sans modèle'} · ${pluriel(e.total || 0, 'paire')} du ${e.date}. Cette suppression est définitive.`}
+          texte={`${e.marque} · ${e.modele || 'sans modèle'} · ${pluriel(e.total || 0, 'paire')} du ${e.date}. ${e.commandeId ? 'Réception rattachée à une commande : ses paires seront retirées de la commande (le reste à recevoir remonte d\'autant) et du stock suivi. ' : ''}Cette suppression est définitive.`}
           confirmer="Supprimer" onAnnuler={() => setConfirmSuppr(false)} onConfirmer={supprimer} />
       )}
     </>
