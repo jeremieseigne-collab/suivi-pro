@@ -1,10 +1,11 @@
 -- Annulation des compléments de l'étape 2 (supabase-plan-c-complements.sql). Une seule transaction.
--- ⚠️ Échoue si le journal contient déjà des lignes « suppression » (les retirer d'abord, ou garder les compléments).
+-- Les lignes « suppression » déjà au journal sont gardées : l'ancienne contrainte est remise « not valid » (elle vaut pour les nouvelles
+-- lignes ; la fonction qui écrivait « suppression » est retirée juste avant). Corrigé le 23/10 : la version d'avant échouait dans ce cas.
 begin;
 drop function if exists public.supprimer_commande(bigint, text);
 alter table public.achats_journal drop constraint achats_journal_action_check;
 alter table public.achats_journal add constraint achats_journal_action_check
-  check (action in ('import', 'reimport', 'annulation', 'retablissement'));
+  check (action in ('import', 'reimport', 'annulation', 'retablissement')) not valid;
 create or replace view public.achats_commandes_etat with (security_invoker = true) as
 select c.*,
        coalesce(s.commandee, 0) as qte_commandee, coalesce(s.recue, 0) as qte_recue, coalesce(s.annulee, 0) as qte_annulee,
