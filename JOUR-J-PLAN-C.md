@@ -6,7 +6,7 @@
 > `supabase-plan-c.sql` → `supabase-plan-c-2bis.sql` → `supabase-plan-c-complements.sql` → `supabase-plan-c-etape3.sql` → `supabase-plan-c-etape6.sql` → `supabase-plan-c-etape7bis.sql`.
 > Ils **ajoutent** (tables, colonnes, fonctions, déclencheurs, règles d'accès, temps réel) ; aucune donnée existante n'est effacée. Trois écritures voulues : fournisseurs créés à partir des marques et de leurs groupes (dans de nouvelles tables), réassorts « Commandé / En route » d'Été 2027 et après repris en commandes (aucun aujourd'hui), Reçu N-1 déjà tapés marqués « saisi ».
 > **Répétition générale du 23/10 sur une copie de la production** : voir le dernier chapitre.
-> **Moment** : magasins fermés (soir après 20 h ou dimanche), avec **45 minutes** devant vous. Personne ne saisit pendant ce temps (le message aux équipes le demande).
+> **Date : vendredi 23 octobre 2026, à partir de 19 h 30**, magasins fermés, avec **45 minutes** devant vous. Personne ne saisit pendant ce temps (le message aux équipes, envoyé avant 19 h 30, le demande).
 
 ## Ce que les magasins vivent
 
@@ -15,29 +15,51 @@
 - **Après la mise en ligne** : chaque appareil passe à la nouvelle version au prochain rechargement de la page (téléphone : fermer et rouvrir l'onglet). Un appareil resté ouvert sur l'ancienne version continue de fonctionner.
 - **Temps d'indisponibilité totale : aucun** ; ralentissement possible de l'ordre d'une seconde pendant les ≈ 10 s du SQL.
 
-## Déroulé
+## Déroulé — vendredi 23 octobre 2026, à partir de 19 h 30
+
+Toutes les commandes « **Vous** » se collent telles quelles dans le **Terminal** du Mac (zsh). Elles lisent la connexion à la production dans `.prod-db-url.local`, **ne l'affichent jamais** (un éventuel message d'erreur est filtré), vérifient d'abord que le fichier vise bien la production et **s'arrêtent à la première erreur**. Claude ne fait **aucune écriture en production** : il ne lance que des lectures (sauvegarde, vérifications).
 
 | # | Qui | Quoi | Si ça ne va pas |
 |---|---|---|---|
-| 1 | Claude | **Arrêt de tous les essais** (règle « scripts d'essai » de CLAUDE.md) : serveurs locaux d'essai et navigateurs d'essai arrêtés, aucune batterie en cours. | — |
-| 2 | Claude | **Contrôles** : `git fetch` ; `origin/main` est toujours **11b8e1e** (sinon on s'arrête et on en parle) ; `plan-c-fusion` contient `origin/main` ; construction locale sans erreur ; `plan-c-retour` régénérée sur la tête de `plan-c-fusion` (code = 11b8e1e) et poussée. | On s'arrête. |
-| 3 | Claude | **Sauvegarde fraîche de la production** (lecture seule) dans `~/Sauvegardes/suivi-pro/prod-AAAA-MM-JJ_HHhMM-avant-plan-c/` (`base-complete.dump`, `nombre-de-lignes.txt`, `LISEZMOI.txt`), **vérifiée** par une restauration d'essai dans une base jetable du serveur de test (toutes les tables identiques), puis supprimée. Liste du temps réel de la production notée. | On s'arrête. |
-| 4 | **Vous** | Dire **« vas-y pour le SQL »**. | — |
-| 5 | Claude | **SQL en production**, la commande exacte (rien d'autre) : `cd "/Users/jeremie/Projets/App suivi Pro/suivi-pro-fusion" && for f in supabase-plan-c.sql supabase-plan-c-2bis.sql supabase-plan-c-complements.sql supabase-plan-c-etape3.sql supabase-plan-c-etape6.sql supabase-plan-c-etape7bis.sql; do /opt/homebrew/opt/libpq/bin/psql -X -q -v ON_ERROR_STOP=1 -d "$(cat ../suivi-livraisons/.prod-db-url.local)" -f "$f" \|\| break; done` — durée attendue ≈ 10 s. | Un fichier en erreur : il n'a rien appliqué ; les précédents sont en place et sans effet sur l'outil actuel. On s'arrête, on analyse ; marche arrière **A** si on renonce. |
-| 6 | Claude | **Vérifications en lecture seule** (mêmes contrôles qu'à la répétition) : 26 tables ; correspondance des 3 magasins (dont « 3 Bailly Rouffiac » → Bailly Rouffiac Tolosan) ; une marque = un fournisseur (aucune marque sans fournisseur), groupes convertis ; Reçu N-1 : autant de « saisi » que de montants tapés ; réassorts d'avant Été 2027 inchangés ; **coordonnées lues identiques** avant / après pour chaque marque × magasin × champ (3 939 lectures à la répétition, 0 écart) ; **temps réel** : un avis arrive sur une ancienne et une nouvelle table ; règles d'accès : rien sans connexion, pas de paie pour un compte magasin. | Écart : marche arrière **A**. |
-| 7 | **Vous** | **Mise en ligne du code** (copier-coller dans le Terminal) : `cd "/Users/jeremie/Projets/App suivi Pro/suivi-pro-fusion" && git push origin plan-c-fusion:main` — la dernière ligne doit ressembler à `11b8e1e..xxxxxxx  plan-c-fusion -> main`. Vercel met en ligne tout seul (1 à 2 minutes). | Refus du push (main a bougé) : on s'arrête, rien n'a changé côté code. |
-| 8 | Claude | **Vérifier le déploiement** en lecture seule : le site sert exactement la construction locale de la branche (comparaison octet pour octet, à l'adresse et la clé publique près) ; `api/send-mail` et `api/agenda` refusés sans connexion. | Marche arrière **B**. |
-| 9 | Claude | **Marquage « saisi » rejoué** (au cas où un Reçu N-1 aurait été tapé avec l'ancienne version pendant les minutes 5 → 8) : `update public.parametres set recu_n1_saisi = true where coalesce(recu_n1, 0) <> 0 and not recu_n1_saisi;` — attendu : 0 ligne (sinon les lignes concernées sont nommées). | — |
-| 10 | **Vous** | **Contrôles à l'écran** (liste plus bas), sur ordinateur puis téléphone, page rechargée. | Marche arrière **B**. |
-| 11 | **Vous** | **Décision « on garde »**. C'est le **point de non-retour** (voir plus bas). | — |
-| 12 | Vous | Envoyer le **message aux équipes** (plus bas, date à remplir). | — |
-| 13 | Claude | Mettre à jour `CLAUDE.md`, `SUIVI.md`, `VERIFICATION-PLAN-C.md` ; `dev` = `main` ; relance des essais seulement après. | — |
+| 1 | Claude | **Aucun essai ne tourne** (règle « scripts d'essai » de CLAUDE.md) : arrêt des serveurs locaux d'essai (5173, 5179, 5180) et des navigateurs d'essai, vérification qu'aucun script d'essai n'est en cours. Rien ne sera relancé avant la fin de l'étape 13. | — |
+| 2 | Claude | **Sauvegarde complète de la production, vérifiée** (lecture seule ; ≈ 1 min) : `node ~/.suivi-pro/repetition/sauvegarde-complete.mjs prod prod-2026-10-23_HHhMM-avant-plan-c` → `~/Sauvegardes/suivi-pro/prod-2026-10-23_…-avant-plan-c/` (`base-complete.dump`, `base-complete.sql`, `nombre-de-lignes.txt`, `temps-reel.txt`, `LISEZMOI.txt`). **Vérification** : restaurée dans une base jetable du serveur de test, chaque table comparée à la production (nombre de lignes + empreinte du contenu), base jetable supprimée. Puis **relevé d'avant** (lecture seule) : `node ~/.suivi-pro/repetition/verif-jour-j.mjs prod avant` (coordonnées de chaque marque × magasin, nombre de lignes, Reçu N-1 tapés, réassorts). | Sauvegarde non identique : **on s'arrête**. |
+| 3 | Claude | **Contrôles du code** (lecture seule) : `origin/main` est toujours **11b8e1e** (sinon on s'arrête) ; `plan-c-fusion` contient `origin/main` ; construction locale sans erreur ; `plan-c-retour` (code = 11b8e1e) à jour sur la tête de `plan-c-fusion` et poussée. | On s'arrête. |
+| 4 | **Vous** | **Noter deux chiffres** sur https://suivi-pro-app.vercel.app (compte Direction) : Plan de règlement, Hiver 2026 : « Total à régler » et « Reste à payer ». | — |
+| 5 | **Vous** | **SQL du plan C** : commande **S** ci-dessous (≈ 10 s). Vous devez voir 6 lignes « ✔ … appliqué », une ligne « NOTICE: Conversion : 101 marques, 100 fournisseurs, 172 modes, 8 plans chèques » (chiffres de la répétition ; ils peuvent varier si une marque a été ajoutée depuis), un petit tableau vide « synchroniser_reassort (0 rows) » (normal : aucun réassort d'Été 2027 à reprendre), puis « TERMINÉ : les 6 fichiers sont appliqués ». | « ARRÊT : erreur dans … » : ce fichier n'a rien appliqué, les suivants n'ont pas été lancés. Copiez-moi le message ; marche arrière **A** si on renonce. |
+| 6 | Claude | **Vérifications d'après le SQL** (lecture seule) : `node ~/.suivi-pro/repetition/verif-jour-j.mjs prod apres` — 26 tables ; anciennes tables au même nombre de lignes ; coordonnées identiques à l'étape 2 ; correspondance des 3 magasins ; chaque marque a un fournisseur ; Reçu N-1 tapés tous « saisi » ; réassorts inchangés ; filtrage par ligne sur toutes les tables ; temps réel. Doit finir par « TOUT EST CONFORME ». | Écart : marche arrière **A**. |
+| 7 | **Vous** | **Mise en ligne du code** : `cd "/Users/jeremie/Projets/App suivi Pro/suivi-pro-fusion" && git push origin plan-c-fusion:main` — la dernière ligne doit ressembler à `11b8e1e..xxxxxxx  plan-c-fusion -> main`. Vercel met en ligne tout seul (1 à 2 minutes). | Refus (main a bougé) : rien n'a changé côté code ; on s'arrête. |
+| 8 | Claude | **Vérifier le déploiement** (lecture seule) : le site sert exactement la construction locale de la branche (comparaison octet pour octet, à l'adresse et la clé publique près) ; `api/send-mail` et `api/agenda` refusés sans connexion. | Marche arrière **B**. |
+| 9 | **Vous** | **Marquage « saisi » rejoué** : commande **M** ci-dessous (au cas où un Reçu N-1 aurait été tapé avec l'ancienne version entre les étapes 5 et 8). Attendu : `UPDATE 0`. | — |
+| 10 | **Vous** | **Contrôles à l'écran** (liste plus bas), page rechargée, sur ordinateur puis téléphone ; les deux chiffres de l'étape 4 doivent être identiques. | Marche arrière **B**. |
+| 11 | **Vous** | **Décision « on garde »** : c'est le **point de non-retour** (voir plus bas). | — |
+| 12 | Vous | Si besoin, un mot aux équipes pour dire que c'est fini (le message principal part **avant 19 h 30**, plus bas). | — |
+| 13 | Claude | Mettre à jour `CLAUDE.md`, `SUIVI.md`, `VERIFICATION-PLAN-C.md` ; `dev` = `main` ; relance des essais **seulement après** (sur la base de test). | — |
+
+### Commande S — SQL du plan C (étape 5)
+
+```zsh
+cd "/Users/jeremie/Projets/App suivi Pro/suivi-pro-fusion" && ( setopt pipefail; LIEN=../suivi-livraisons/.prod-db-url.local; grep -q fftfrbpcsazkkvahscbg $LIEN || { echo "ARRÊT : ce fichier ne contient pas le lien de la production"; exit 1 }; for f in supabase-plan-c.sql supabase-plan-c-2bis.sql supabase-plan-c-complements.sql supabase-plan-c-etape3.sql supabase-plan-c-etape6.sql supabase-plan-c-etape7bis.sql; do echo "→ $f"; if /opt/homebrew/opt/libpq/bin/psql -X -q -v ON_ERROR_STOP=1 -d "$(cat $LIEN)" -f "$f" 2>&1 | sed -E 's#postgres(ql)?://[^ ]*#<lien masqué>#g; s#(user|utilisateur) "[^"]*"#\1 "<masqué>"#g; s#(server at|serveur) "[^"]*"#\1 "<masqué>"#g'; then echo "  ✔ $f appliqué"; else echo "ARRÊT : erreur dans $f — ce fichier n'a rien appliqué, les suivants n'ont pas été lancés"; exit 1; fi; done; echo "TERMINÉ : les 6 fichiers sont appliqués" )
+```
+
+### Commande M — marquage « saisi » rejoué (étape 9)
+
+```zsh
+cd "/Users/jeremie/Projets/App suivi Pro/suivi-pro-fusion" && ( setopt pipefail; LIEN=../suivi-livraisons/.prod-db-url.local; grep -q fftfrbpcsazkkvahscbg $LIEN || { echo "ARRÊT : ce fichier ne contient pas le lien de la production"; exit 1 }; /opt/homebrew/opt/libpq/bin/psql -X -v ON_ERROR_STOP=1 -d "$(cat $LIEN)" -c "update public.parametres set recu_n1_saisi = true where coalesce(recu_n1, 0) <> 0 and not recu_n1_saisi;" 2>&1 | sed -E 's#postgres(ql)?://[^ ]*#<lien masqué>#g; s#(user|utilisateur) "[^"]*"#\1 "<masqué>"#g; s#(server at|serveur) "[^"]*"#\1 "<masqué>"#g' )
+```
+
+### Commande A — marche arrière de la base (cas A)
+
+```zsh
+cd "/Users/jeremie/Projets/App suivi Pro/suivi-pro-fusion" && ( setopt pipefail; LIEN=../suivi-livraisons/.prod-db-url.local; grep -q fftfrbpcsazkkvahscbg $LIEN || { echo "ARRÊT : ce fichier ne contient pas le lien de la production"; exit 1 }; for f in supabase-plan-c-etape7bis-annulation.sql supabase-plan-c-etape6-annulation.sql supabase-plan-c-etape3-annulation.sql supabase-plan-c-complements-annulation.sql supabase-plan-c-2bis-annulation.sql supabase-plan-c-annulation.sql; do echo "→ $f"; if /opt/homebrew/opt/libpq/bin/psql -X -q -v ON_ERROR_STOP=1 -d "$(cat $LIEN)" -f "$f" 2>&1 | sed -E 's#postgres(ql)?://[^ ]*#<lien masqué>#g; s#(user|utilisateur) "[^"]*"#\1 "<masqué>"#g; s#(server at|serveur) "[^"]*"#\1 "<masqué>"#g'; then echo "  ✔ $f appliqué"; else echo "ARRÊT : erreur dans $f — ce fichier n'a rien appliqué, les suivants n'ont pas été lancés"; exit 1; fi; done; echo "TERMINÉ : la base est revenue à l'état d'avant le plan C" )
+```
+
+Les trois commandes ont été essayées le 23/10 sur des bases jetables du serveur de test (même texte, seul le fichier de connexion changeait) : arrêt à la première erreur sans rien appliquer, parcours complets réussis (A puis S sur une base contenant des commandes, réceptions et suppressions journalisées), aucune partie de la connexion affichée.
 
 ## Contrôles à l'écran (étape 10)
 
 Sur **https://suivi-pro-app.vercel.app**, page rechargée. On regarde, on n'écrit rien de réel.
 
-1. **Plan de règlement** (Direction), Hiver 2026 puis Été 2026 : mêmes « Total à régler » et « Reste à payer » qu'avant (notés à l'étape 3) ; un chèque déjà coché l'est toujours.
+1. **Plan de règlement** (Direction), Hiver 2026 puis Été 2026 : mêmes « Total à régler » et « Reste à payer » qu'avant (notés à l'étape 4) ; un chèque déjà coché l'est toujours.
 2. **Achats**, Été 2027 : vos Reçu N-1 tapés s'affichent avec le mot « saisi » ; Objectif et Réel inchangés.
 3. **Réglages → Fournisseurs et marques** : la liste des fournisseurs ; « Rautureau Apple Shoes » regroupe No Name et Schmoove ; le mode de règlement de deux ou trois fournisseurs comme avant.
 4. **Commandes fournisseurs** : l'écran s'ouvre (vide tant qu'aucune commande n'est importée).
@@ -50,9 +72,9 @@ Sur **https://suivi-pro-app.vercel.app**, page rechargée. On regarde, on n'écr
 
 | Cas | Quand | Action | Effet |
 |---|---|---|---|
-| **A** — base seulement | Le SQL est passé (étapes 5-6), le code n'est pas parti | Rien d'urgent : l'ancienne version fonctionne sur la base migrée. Pour tout retirer : **Claude** applique les annulations dans l'ordre inverse : `supabase-plan-c-etape7bis-annulation.sql` → `-etape6-annulation.sql` → `-etape3-annulation.sql` → `-complements-annulation.sql` → `-2bis-annulation.sql` → `supabase-plan-c-annulation.sql` (**5,8 s** à la répétition, aucune erreur côté outil). | Base revenue à l'identique d'avant (vérifié à la répétition : tables, données, structure, droits). |
+| **A** — base seulement | Le SQL est passé (étapes 5-6), le code n'est pas parti | Rien d'urgent : l'ancienne version fonctionne sur la base migrée. Pour tout retirer : **Vous** lancez la **commande A** (plus haut), qui applique les annulations dans l'ordre inverse : `supabase-plan-c-etape7bis-annulation.sql` → `-etape6-annulation.sql` → `-etape3-annulation.sql` → `-complements-annulation.sql` → `-2bis-annulation.sql` → `supabase-plan-c-annulation.sql` (**5,8 s** à la répétition, aucune erreur côté outil). | Base revenue à l'identique d'avant (vérifié à la répétition : tables, données, structure, droits). |
 | **B** — code et base | Le code est parti (étape 7), **avant** la décision « on garde » | 1. **Vous** : Vercel → projet suivi-pro → Deployments → le déploiement **11b8e1e** (« JOUR-J-DEFECTUEUX : branche de marche arrière prête ») → « … » → **Promote to Production** (retour en moins d'une minute). 2. **Vous** : `cd "/Users/jeremie/Projets/App suivi Pro/suivi-pro-fusion" && git push origin plan-c-retour:main` (remet `main` d'accord avec le site, sans réécrire l'historique). 3. Puis, si on retire aussi la base : cas **A**. | Retour exact à la version d'aujourd'hui. |
-| **C** — catastrophe | Données abîmées | Restauration de la sauvegarde de l'étape 3 (procédure du `LISEZMOI.txt` de la sauvegarde, avec l'étape obligatoire des droits et du temps réel). | Efface tout ce qui a été saisi après la sauvegarde : dernier recours. |
+| **C** — catastrophe | Données abîmées | Restauration de la sauvegarde de l'étape 2 (procédure du `LISEZMOI.txt` de la sauvegarde, avec l'étape obligatoire des droits et du temps réel). | Efface tout ce qui a été saisi après la sauvegarde : dernier recours. |
 
 ### Point de non-retour
 
@@ -60,13 +82,13 @@ Sur **https://suivi-pro-app.vercel.app**, page rechargée. On regarde, on n'écr
 
 ---
 
-## Message aux équipes (à envoyer le ……… 2026)
+## Message aux équipes (à envoyer le vendredi 23 octobre 2026, avant 19 h 30)
 
-**Objet : Suivi Pro — les commandes fournisseurs arrivent, à partir du ……… 2026**
+**Objet : Suivi Pro — mise à jour ce soir vendredi 23 octobre : les commandes fournisseurs arrivent**
 
 Bonjour à toutes et à tous,
 
-À partir du **………**, Suivi Pro connaît les **commandes passées aux fournisseurs**, à partir de l'été 2027. Rien ne change pour l'hiver 2026, que vous continuez à saisir comme aujourd'hui jusqu'au 31 mars 2027.
+À partir de **demain matin, samedi 24 octobre**, Suivi Pro connaît les **commandes passées aux fournisseurs**, à partir de l'été 2027. Rien ne change pour l'hiver 2026, que vous continuez à saisir comme aujourd'hui jusqu'au 31 mars 2027.
 
 **Été 2027 : les entrées se font à partir de la commande**
 - Dans le **Cahier des entrées**, « Entrée » vous fait choisir la **marque**, puis la **commande** (choisie d'office s'il n'y en a qu'une), puis le **modèle**. Les pointures sont **déjà remplies avec ce qui reste à recevoir** : vous corrigez seulement ce qui diffère du carton.
@@ -83,9 +105,9 @@ Bonjour à toutes et à tous,
 - **Répertoire** : quand plusieurs marques ont le même fournisseur, leurs coordonnées communes sont celles du fournisseur ; vos coordonnées de magasin ne bougent pas.
 - **Suppression de plusieurs entrées** : une réception d'Été 2027 ne se supprime pas dans un lot ; ouvrez-la et utilisez « Supprimer » dans sa fiche (l'outil vous prévient que c'est définitif).
 
-Après la mise en ligne, si vous voyez encore l'ancien affichage, rechargez la page (sur téléphone : fermez et rouvrez l'onglet). Vos identifiants ne changent pas.
+Demain matin, si vous voyez encore l'ancien affichage, rechargez la page (sur téléphone : fermez et rouvrez l'onglet). Vos identifiants ne changent pas.
 
-Le ……… entre ……… h et ……… h, merci de ne rien saisir dans Suivi Pro (mise à jour en cours, quelques minutes).
+**Ce soir, vendredi 23 octobre, de 19 h 30 à 20 h 30**, merci de ne rien saisir dans Suivi Pro (mise à jour en cours).
 
 En cas de doute, demandez à Jérémie ou à Raphaël.
 
