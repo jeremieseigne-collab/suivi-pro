@@ -9,7 +9,6 @@ import { MagasinProvider, useMagasin } from './context/MagasinContext'
 import Coque, { VueClients } from './shell/Coque'
 import { useVue, aller } from './shell/navigation'
 import { PageShell } from './shell/EnTete'
-import { useFournisseursReels } from './fournisseurs/contacts'
 import './App.css'
 import './styles/charte.css'
 import './styles/pont.css'
@@ -41,7 +40,6 @@ const SavDefectueux   = ecran(() => import('./savdef/SavDefectueux'))
 const Factures        = ecran(() => import('./factures/Factures'))
 const Reassort        = ecran(() => import('./reassort/Reassort'))
 const AgendaBoard     = ecran(() => import('./agenda/AgendaBoard'))
-const CommandesFournisseurs = ecran(() => import('./fournisseurs/CommandesFournisseurs'))
 
 // Écrans réservés aux comptes Direction (la base refuse de toute façon les écritures sensibles aux comptes magasin)
 const DIRECTION_VIEWS = new Set(['reglement', 'parametres', 'achats'])
@@ -53,12 +51,10 @@ function Root() {
   const home = () => aller('home')
   const { magasin, setMagasin } = useMagasin()
   const alerts  = useAlerts(magasin)
-  useFournisseursReels()   // fournisseurs en mémoire pour la lecture des contacts (mails SAV, défectueux, réassorts)
 
   let content
   if (vue === 'cahier')          content = <Cahier />
   else if (vue === 'commandes')  content = <Commandes onHome={home} />
-  else if (vue === 'fournisseurs') content = <CommandesFournisseurs />
   else if (vue === 'paie')       content = <PageShell title="Éléments variables de paie" withSeason={false}><Paie /></PageShell>
   else if (vue === 'achats')     content = <PageShell title="Achats"><Achats /></PageShell>
   else if (vue === 'repertoire') content = <Repertoire />

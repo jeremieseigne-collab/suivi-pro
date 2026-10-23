@@ -6,10 +6,7 @@ import { SIZE_TYPES } from '../data/sizes'
 import { LoadingState } from '../components/shared'
 import Icone from '../components/ui/Icone'
 import { Numero } from './Reperes'
-import { niveauJauge, CAT_DE_GRILLE } from './commun'
-import { suivieParCommandes } from '../fournisseurs/csvPolaris'
-import { commandesDeSaison, lignesDe } from '../fournisseurs/donnees'
-import { nomModele, grilleDe } from '../fournisseurs/reception'
+import { niveauJauge } from './commun'
 
 const pc = (r, a) => a > 0 ? Math.round(r / a * 100) : 0
 
@@ -44,7 +41,6 @@ export default function SuiviLivraisons({ magasinAppareil }) {
   const [filtre, setFiltre] = useState('all')         // all | pending | done | zero
   const [ouverte, setOuverte] = useState(null)        // marque dépliée (clé suiviId)
   const [modeleOuvert, setModeleOuvert] = useState(null)
-  const [famille, setFamille] = useState('')        // étape 5 bis : filtre par famille ('' = toutes)
 
   // ── Même calcul que l'outil actuel ──
   const rows = useLiveQuery(async () => {
@@ -56,7 +52,7 @@ export default function SuiviLivraisons({ magasinAppareil }) {
     ])
     const magasinMap = Object.fromEntries(magasins.map(m => [m.id, m.nom]))
     const fournisseurMap = Object.fromEntries(fournisseurs.map(f => [f.id, f.nom]))
-    const recuByKey = {}, recuModelByKey = {}, numeroModelByKey = {}, recuSizesByKey = {}, catModelByKey = {}
+    const recuByKey = {}, recuModelByKey = {}, numeroModelByKey = {}, recuSizesByKey = {}
     entrees.forEach(e => {
       if (e.statut === 'Retour') return // les retours ne sont pas comptabilisés dans le reçu
       const k = e.fournisseurId + '_' + e.magasinId
@@ -65,40 +61,9 @@ export default function SuiviLivraisons({ magasinAppareil }) {
       ;(recuModelByKey[k] ||= {})[mod] = (recuModelByKey[k][mod] || 0) + (e.total || 0)
       ;((numeroModelByKey[k] ||= {})[mod] ||= new Set())
       if (e.numero) numeroModelByKey[k][mod].add(e.numero)
-      if (e.categorie) { const c = ((catModelByKey[k] ||= {})[mod] ||= {}); c[e.categorie] = (c[e.categorie] || 0) + 1 }
       const rs = ((recuSizesByKey[k] ||= {})[mod] ||= {})
       for (const [t, q] of Object.entries(e.sizes || {})) { const n = Number(q) || 0; if (n) rs[t] = (rs[t] || 0) + n }
     })
-    // Famille d'un modèle (étape 5 bis) : celle de la commande ; sinon la catégorie la plus fréquente de ses entrées ; sinon sa grille
-    const catDe = (k, mod) => Object.entries((catModelByKey[k] || {})[mod] || {}).sort((a, b) => b[1] - a[1])[0]?.[0] || ''
-    // Plan C, étape 3 : pour une saison suivie par commandes, l'attendu vient des commandes (commandé − annulé, réassorts
-    // compris), par marque × magasin, modèle-coloris (« Code, Couleur ») et pointure ; le reçu reste lu dans le Cahier.
-    if (suivieParCommandes(season)) {
-      const commandes = await commandesDeSaison(season)
-      const lignes = commandes.length ? await lignesDe(commandes.map(c => c.id)) : []
-      const cmd = Object.fromEntries(commandes.map(c => [c.id, c]))
-      const att = {}
-      for (const l of lignes) {
-        const c = cmd[l.commande_id], key = c.fournisseur_id + '_' + c.magasin_id, mod = nomModele(l.code_modele, l.couleur), q = l.qte_commandee - l.qte_annulee
-        const a = (att[key] ||= { total: 0, modeles: {}, sizes: {}, types: {}, familles: {} })
-        a.total += q; a.modeles[mod] = (a.modeles[mod] || 0) + q
-        ;(a.sizes[mod] ||= {})[l.taille] = ((a.sizes[mod] || {})[l.taille] || 0) + q
-        a.types[mod] ||= grilleDe(l)
-        if (l.famille) a.familles[mod] ||= l.famille
-      }
-      return Object.entries(att).map(([key, a]) => {
-        const [fId, mId] = key.split('_').map(Number)
-        const recuModels = recuModelByKey[key] || {}, numeroModels = numeroModelByKey[key] || {}
-        const names = [...new Set([...Object.keys(a.modeles), ...Object.keys(recuModels)])]
-        const modeles = names.map(nom => ({
-          nom, recu: recuModels[nom] || 0, attendu: a.modeles[nom] || 0,
-          numero: [...(numeroModels[nom] || [])].sort((x, y) => x - y).join(', '),
-          sizesAttendu: a.sizes[nom] || {}, sizesRecu: (recuSizesByKey[key] || {})[nom] || {}, typeKey: a.types[nom] || null,
-          famille: a.familles[nom] || catDe(key, nom) || CAT_DE_GRILLE[a.types[nom]] || '',
-        })).sort((x, y) => (y.attendu - x.attendu) || (y.recu - x.recu) || x.nom.localeCompare(y.nom))
-        return { suiviId: key, magasin: magasinMap[mId] || '?', marque: fournisseurMap[fId] || '?', recu: recuByKey[key] || 0, attendu: a.total, modeles }
-      })
-    }
     return params.filter(p => p.fournisseurId && p.magasinId).map(p => {
       const key = p.fournisseurId + '_' + p.magasinId
       const recuModels = recuModelByKey[key] || {}, attenduModels = p.modeles || {}, numeroModels = numeroModelByKey[key] || {}
@@ -107,7 +72,6 @@ export default function SuiviLivraisons({ magasinAppareil }) {
         nom, recu: recuModels[nom] || 0, attendu: attenduModels[nom] || 0,
         numero: [...(numeroModels[nom] || [])].sort((a, b) => a - b).join(', '),
         sizesAttendu: (p.modelesSizes || {})[nom] || {}, sizesRecu: (recuSizesByKey[key] || {})[nom] || {}, typeKey: (p.modelesTypes || {})[nom] || null,
-        famille: catDe(key, nom) || CAT_DE_GRILLE[(p.modelesTypes || {})[nom]] || '',
       })).sort((a, b) => (b.attendu - a.attendu) || (b.recu - a.recu) || a.nom.localeCompare(b.nom))
       return { suiviId: p.id, magasin: magasinMap[p.magasinId] || '?', marque: fournisseurMap[p.fournisseurId] || '?', recu: recuByKey[key] || 0, attendu: p.quantite || 0, modeles }
     })
@@ -116,11 +80,7 @@ export default function SuiviLivraisons({ magasinAppareil }) {
   const tous = useMemo(() => rows ?? [], [rows])
   const magChoisi = magasin === null ? magasinAppareil : magasin
   const magasins = useMemo(() => [...new Set(tous.map(r => r.magasin))].sort(), [tous])
-  const duMagasinTous = tous.filter(r => !magChoisi || r.magasin === magChoisi)
-  const familles = useMemo(() => [...new Set(duMagasinTous.flatMap(r => r.modeles.map(m => m.famille)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr', { numeric: true })), [duMagasinTous])
-  const familleEff = familles.includes(famille) ? famille : ''
-  // Filtre famille : chaque marque ne garde que les modèles de la famille ; reçu et attendu = somme de ces modèles
-  const duMagasin = !familleEff ? duMagasinTous : duMagasinTous.map(r => { const modeles = r.modeles.filter(m => m.famille === familleEff); return { ...r, modeles, recu: modeles.reduce((s, m) => s + m.recu, 0), attendu: modeles.reduce((s, m) => s + m.attendu, 0) } }).filter(r => r.modeles.length)
+  const duMagasin = tous.filter(r => !magChoisi || r.magasin === magChoisi)
   const tot = duMagasin.reduce((t, r) => ({ r: t.r + r.recu, a: t.a + r.attendu }), { r: 0, a: 0 })
   const pcG = pc(tot.r, tot.a)
   const visibles = duMagasin.filter(r => {
@@ -150,12 +110,6 @@ export default function SuiviLivraisons({ magasinAppareil }) {
           <Icone nom="cherche" taille={20} style={{ color: 'var(--discret)' }} />
           <input className="champ" placeholder="Rechercher une marque" value={recherche} onChange={e => setRecherche(e.target.value)} aria-label="Rechercher une marque" />
         </div>
-        {familles.length > 1 && (
-          <select className="champ" style={{ width: 'auto', minWidth: 180, flex: '0 1 220px' }} aria-label="Famille" value={familleEff} onChange={e => { setFamille(e.target.value); setOuverte(null) }}>
-            <option value="">Toutes les familles</option>
-            {familles.map(f => <option key={f} value={f}>{f}</option>)}
-          </select>
-        )}
       </div>
 
       <div className="carte resume-global">

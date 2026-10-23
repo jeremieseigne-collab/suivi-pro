@@ -4,7 +4,7 @@ import { useSeason } from '../context/SeasonContext'
 import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { Statut } from './Reperes'
-import { STATUTS, CATEGORIES, libelleStatut, pluriel, aujourdhuiFr, frVersIso, isoVersFr, csvEntrees, telechargerCsv } from './commun'
+import { STATUTS, CATEGORIES, libelleStatut, pluriel, aujourdhuiFr, frVersIso, isoVersFr, cleDate } from './commun'
 
 // Feuille du bas (au centre sur ordinateur) et ligne de menu, communes aux actions groupées
 function Feuille({ titre, onFermer, children }) {
@@ -35,7 +35,7 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
   const [modif, setModif]     = useState(null)      // modification à confirmer : { champ, valeur, titre, texte, message }
   const [dateIso, setDateIso] = useState(() => frVersIso(aujourdhuiFr()))
   const [magasins, setMagasins] = useState(null)
-  const [suppr, setSuppr]     = useState(null)      // confirmation de suppression : { lignes, bloquees, receptions, lies }
+  const [suppr, setSuppr]     = useState(null)      // confirmation de suppression : { lignes, bloquees, lies }
   const [tape, setTape]       = useState('')        // nombre à retaper au-delà de 5 entrées
 
   const n = sel.size
@@ -45,17 +45,13 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
 
   // ── Modifications groupées (statut, date, catégorie, magasin, saison), avec « Annuler » qui remet les valeurs d'avant ──
   async function modifierLot(champ, valeur, message, ids) {
-    const toutes = choisies().filter(e => !ids || ids.includes(e.id)); if (!toutes.length) return
-    // Plan C, étape 3 : une réception rattachée à une commande garde sa date, son magasin et sa saison (corrigée une par une)
-    const gardees = ['date', 'magasinId', 'season'].includes(champ) ? toutes.filter(e => e.commandeId) : []
-    const lignes = toutes.filter(e => !gardees.includes(e))
-    if (!lignes.length) { setFeuille(null); setModif(null); onToast({ texte: `${pluriel(gardees.length, 'réception')} rattachée${gardees.length > 1 ? 's' : ''} à une commande : à corriger une par une (« Modifier »).` }); onFin(); return }
+    const lignes = choisies().filter(e => !ids || ids.includes(e.id)); if (!lignes.length) return
     const avant = lignes.map(e => [e.id, e[champ] ?? ''])
     setFeuille(null); setModif(null)
     let echecs = 0
     for (const e of lignes) { try { await db.entrees.update(e.id, { [champ]: valeur }) } catch { echecs++ } }
     onToast(echecs ? { texte: `${lignes.length - echecs} entrée(s) modifiée(s), ${echecs} en échec : vérifie la connexion.` }
-      : { texte: `${message} — ${pluriel(lignes.length, 'entrée')}${gardees.length ? ` (${pluriel(gardees.length, 'réception')} rattachée${gardees.length > 1 ? 's' : ''} à une commande laissée${gardees.length > 1 ? 's' : ''} telle${gardees.length > 1 ? 's' : ''} quelle${gardees.length > 1 ? 's' : ''})` : ''}`,
+      : { texte: `${message} — ${pluriel(lignes.length, 'entrée')}`,
           annuler: async () => { for (const [id, v] of avant) { try { await db.entrees.update(id, { [champ]: v }) } catch { /* ignore */ } } } })
     onFin()
   }
@@ -113,7 +109,17 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
   // ── Exporter la sélection en CSV (Direction) : une ligne par entrée, lisible dans Excel ──
   function exporterCsv() {
     setFeuille(null)
-    telechargerCsv(csvEntrees(choisies(), estPointe), `entrees-${season}-${frVersIso(aujourdhuiFr())}.csv`)
+    const nombre = v => String(Math.round((Number(v) || 0) * 100) / 100).replace('.', ',')
+    const cell = v => { const s = String(v ?? ''); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s }
+    const entete = ['Date', 'Magasin', 'Société', 'Marque', 'Modèle', 'N°', 'Catégorie', 'Statut', 'Paires', 'PHT', 'Pointures', 'Pointée']
+    const lignes = choisies().sort((a, b) => cleDate(a.date).localeCompare(cleDate(b.date)) || a.id - b.id).map(e => [
+      e.date, e.magasin, e.societe, e.marque, e.modele, e.numero, e.categorie, libelleStatut(e.statut || ''), e.total || 0, nombre(e.pht),
+      Object.entries(e.sizes || {}).filter(([, q]) => Number(q)).map(([t, q]) => `${t}:${q}`).join(' '), estPointe(e) ? 'oui' : 'non'])
+    const csv = '﻿' + [entete, ...lignes].map(l => l.map(cell).join(';')).join('\r\n')
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    a.download = `entrees-${season}-${frVersIso(aujourdhuiFr())}.csv`
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000)
     onToast({ texte: `Export CSV téléchargé (${entreesN})` })
   }
 
@@ -123,13 +129,10 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
     setFeuille(null)
     const lignesSel = choisies()
     const bloquees = estDirection ? [] : lignesSel.filter(e => estPointe(e))
-    // Plan C : une réception rattachée à une commande ne se supprime pas en lot (« Annuler » ne pourrait pas la remettre :
-    // seule la saisie de réception crée une réception) — une par une depuis sa fiche, avec l'avertissement (décision du 23/10)
-    const receptions = lignesSel.filter(e => e.commandeId && !bloquees.includes(e))
-    const lignes = lignesSel.filter(e => !bloquees.includes(e) && !receptions.includes(e))
+    const lignes = lignesSel.filter(e => !bloquees.includes(e))
     let lies = 0
     try { const ids = new Set(lignes.map(e => e.id)); lies = (await db.defectueux.toArray()).filter(d => ids.has(d.entreeId)).length } catch { /* simple information */ }
-    setTape(''); setSuppr({ lignes, bloquees, receptions, lies })
+    setTape(''); setSuppr({ lignes, bloquees, lies })
   }
   async function supprimerSel() {
     const { lignes } = suppr; setSuppr(null)
@@ -137,8 +140,7 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
     for (const e of lignes) { try { await db.entrees.delete(e.id); faites.push(e) } catch { /* compté en échec */ } }
     const echecs = lignes.length - faites.length
     // Copie exacte des lignes supprimées (sans les noms ajoutés pour l'affichage), pour pouvoir les remettre
-    // (champs d'affichage ajoutés par Cahier.jsx : noms, société, famille et repères de commande du plan C — absents de la table)
-    const copies = faites.map(e => { const brut = { ...e }; for (const k of ['magasin', 'marque', 'societe', 'famille', 'commandeBc', 'horsCommande']) delete brut[k]; return brut })
+    const copies = faites.map(e => { const brut = { ...e }; delete brut.magasin; delete brut.marque; delete brut.societe; return brut })
     const remettre = async () => {
       let ko = 0
       for (const c of copies) { try { await db.entrees.put(c) } catch { ko++ } }
@@ -246,12 +248,10 @@ export default function ActionsSelection({ sel, entrees, filtrees, estDirection,
         const nb = suppr.lignes.length, paires = suppr.lignes.reduce((t, e) => t + (Number(e.total) || 0), 0)
         const aTaper = nb > 5
         const bloq = suppr.bloquees.length ? `${pluriel(suppr.bloquees.length, 'entrée')} déjà pointée${suppr.bloquees.length > 1 ? 's' : ''} par la Direction ne ${suppr.bloquees.length > 1 ? 'seront' : 'sera'} pas supprimée${suppr.bloquees.length > 1 ? 's' : ''}. ` : ''
-        const nr = suppr.receptions?.length || 0
-        const recep = nr ? `${pluriel(nr, 'réception')} rattachée${nr > 1 ? 's' : ''} à une commande ne ${nr > 1 ? 'seront' : 'sera'} pas supprimée${nr > 1 ? 's' : ''} ici : ${nr > 1 ? 'les supprimer une par une' : 'la supprimer'} depuis ${nr > 1 ? 'leur' : 'sa'} fiche (« Annuler » ne pourrait pas ${nr > 1 ? 'les' : 'la'} remettre). ` : ''
-        if (!nb) return <Confirmation titre="Suppression impossible" texte={`${bloq}${recep}${suppr.bloquees.length ? 'Seule la Direction peut supprimer une entrée pointée.' : ''}`.trim()} confirmer="Compris" annuler="Fermer" onConfirmer={() => setSuppr(null)} onAnnuler={() => setSuppr(null)} />
+        if (!nb) return <Confirmation titre="Suppression impossible" texte={`${bloq}Seule la Direction peut supprimer une entrée pointée.`} confirmer="Compris" annuler="Fermer" onConfirmer={() => setSuppr(null)} onAnnuler={() => setSuppr(null)} />
         return (
           <Confirmation danger titre={`Supprimer ${pluriel(nb, 'entrée')} ?`} confirmer="Supprimer" actif={!aTaper || tape.trim() === String(nb)}
-            texte={`${pluriel(nb, 'entrée')} · ${pluriel(paires, 'paire')} au total. ${bloq}${recep}`} onAnnuler={() => setSuppr(null)} onConfirmer={supprimerSel}>
+            texte={`${pluriel(nb, 'entrée')} · ${pluriel(paires, 'paire')} au total. ${bloq}`} onAnnuler={() => setSuppr(null)} onConfirmer={supprimerSel}>
             {suppr.lignes.some(e => e.statut === 'Retour') && <div className="encart att" style={{ marginBottom: 12 }}>{avertRetours(suppr.lignes.filter(e => e.statut === 'Retour').length, 'retirera')}</div>}
             <ul className="liste-resume">
               {suppr.lignes.slice(0, 5).map(e => <li key={e.id}><span>{e.marque} · {e.modele || 'sans modèle'}</span><span>{e.date} · {e.total || 0} p.</span></li>)}

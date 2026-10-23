@@ -3,8 +3,7 @@ import { db } from '../db'
 import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { nomPropre, formeComparaison, marquesSemblables } from '../cahier/commun'
-import { coordMarque } from '../reassort/mail'
-import { enregistrerContacts } from '../fournisseurs/contactsEcriture'
+import { coordMarque, enregistrerEmailMagasin } from '../reassort/mail'
 import { nbPaires, resumePaires } from './paires'
 
 // Champs partagés des saisies SAV et défectueux (charte de la refonte)
@@ -192,7 +191,7 @@ export function EtapesMail({ texteEnregistre, fournisseur, magasinId, onEnvoyer,
       </div>
       <div className="feuille-pied">
         <button className="btn" onClick={onTerminer}>Non, terminer</button>
-        <button className="btn btn-prim" onClick={async () => { try { await enregistrerContacts(fournisseur.id, magasinId, { email: email.trim() }) } catch { /* ignore */ } onTerminer() }}>Enregistrer dans le répertoire</button>
+        <button className="btn btn-prim" onClick={async () => { try { await db.fournisseurs.update(fournisseur.id, { coordsMagasin: enregistrerEmailMagasin(fournisseur, magasinId, email) }) } catch { /* ignore */ } onTerminer() }}>Enregistrer dans le répertoire</button>
       </div>
     </>
   )

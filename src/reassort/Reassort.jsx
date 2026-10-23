@@ -10,8 +10,6 @@ import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { PageShell, BoutonMagasin } from '../shell/EnTete'
 import { aller } from '../shell/navigation'
-import SaisieReceptionCommande from '../fournisseurs/SaisieReception'
-import { suivieParCommandes } from '../fournisseurs/csvPolaris'
 import { Numero } from '../cahier/Reperes'
 import { Toast } from '../cahier/Reperes'
 import { buildReassortMailUrl, coordMarque } from './mail'
@@ -61,7 +59,7 @@ function Frise({ r }) {
 }
 
 // Fiche d'un top modèle : réassort en cours, stock, actions, historique
-function FicheTop({ t, act, onFermer, lienCommande }) {
+function FicheTop({ t, act, onFermer }) {
   const r = t.actif
   const n = r ? retard(r) : null
   const cnt = {}; t.histo.forEach(h => Object.entries(h.sizes || {}).forEach(([s, q]) => { cnt[s] = (cnt[s] || 0) + (Number(q) || 0) }))
@@ -91,7 +89,6 @@ function FicheTop({ t, act, onFermer, lienCommande }) {
                 {r.etapes?.Relance && <> · <b>relancé le {fmtDate(r.etapes.Relance)}</b></>}
               </div>
               {r.note && <div className="aide">{r.note}</div>}
-              {lienCommande && r.commandeId && <div className="aide">Commande de réassort n° {r.commandeId}{r.recuAvantCommande && Object.keys(r.recuAvantCommande).length ? ' (reprise : déjà reçu ' + fmtTailles(r.recuAvantCommande) + ')' : ''} · <button className="lien" style={{ minHeight: 0, padding: 0 }} onClick={() => aller('fournisseurs')}>Voir dans Commandes fournisseurs</button></div>}
               {n && <div className={`retard-texte retard-${n}`}>{r.statut === 'Demandé' ? `Demandé depuis ${joursEtape(r)} jours, sans confirmation — relancer la marque ?` : `En route depuis ${joursEtape(r)} jours — relancer la marque ?`}</div>}
               {/* Étape modifiable à la main (décision du 13/10) ; revenir en arrière demande confirmation */}
               {<div className="chips" style={{ flexWrap: 'wrap', marginTop: 10 }}>
@@ -144,7 +141,6 @@ function FicheTop({ t, act, onFermer, lienCommande }) {
 export default function Reassort() {
   const { season } = useSeason()
   const { magasin, setMagasin } = useMagasin()
-  const suivie = suivieParCommandes(season)   // étape 6 : réassorts en commandes pour les saisons suivies par commandes
   const [vue, setVue] = useState('magasin')
   const [rech, setRech] = useState('')
   const [filtre, setFiltre] = useState('')   // '' | rupture | encours | retard | recu | aucun | archive
@@ -231,8 +227,7 @@ export default function Reassort() {
       if (r.statut === 'À réassortir') changerEtape(r, 'Demandé', `${r.modele} : « Demandé » — en attente de la confirmation de la marque`)
       else relancer(r)
     },
-    // Saison suivie par commandes : la réception passe par la saisie commune, sur la commande du réassort (même chemin que le Cahier)
-    reception: (t, r) => setSaisie({ type: suivie && r.commandeId ? 'reception-commande' : 'reception', top: t, reassort: r }),
+    reception: (t, r) => setSaisie({ type: 'reception', top: t, reassort: r }),
     modifierReassort: (t, r) => setSaisie({ type: 'reassort', top: t, reassort: r }),
     nouveauReassort: t => setSaisie({ type: 'reassort', top: t }),
     stock: t => setSaisie({ type: 'stock', top: t }),
@@ -282,7 +277,6 @@ export default function Reassort() {
           {chip('rupture', 'À réassortir', stats.rupture)}{chip('encours', 'En cours', stats.encours)}{chip('retard', 'En retard', stats.retard)}
           {chip('recu', 'Réassortis', stats.recu)}{chip('aucun', 'Sans réassort', stats.aucun)}{chip('archive', 'Archivés', stats.archive)}
         </div>
-        {suivie && <div className="aide" style={{ marginTop: 8 }}>Saison suivie par commandes : un réassort devient une commande de réassort quand la marque a confirmé (« Commandé ») ; sa réception passe par la saisie commune (comme une commande de saison).</div>}
         <div className="sous-info">{magasin.nom} · {stats.tops} top modèle{stats.tops > 1 ? 's' : ''} · {stats.encours} réassort{stats.encours > 1 ? 's' : ''} en cours{stats.archive && filtre !== 'archive' ? ' · archivés masqués' : ''}</div>
         {!liste.length ? <div className="vide">{miens.length ? 'Aucun modèle ne correspond.' : 'Aucun top modèle pour ce magasin — touche « Nouveau top modèle ».'}</div> : (
           <div className="liste" style={{ marginTop: 10 }}>
@@ -336,19 +330,10 @@ export default function Reassort() {
         )}
       </>}
 
-      {fiche && !saisie && <FicheTop t={fiche} act={act} onFermer={() => setFicheId(null)} lienCommande={suivie} />}
+      {fiche && !saisie && <FicheTop t={fiche} act={act} onFermer={() => setFicheId(null)} />}
       {saisie?.type === 'top' && <SaisieTop top={saisie.top} magasinId={magasin.id} onFermer={() => setSaisie(null)} onToast={setToast} />}
       {saisie?.type === 'stock' && <SaisieStock top={saisie.top} onFermer={() => setSaisie(null)} onToast={setToast} />}
-      {saisie?.type === 'reassort' && <SaisieReassort top={saisie.top} reassort={saisie.reassort} proposition={saisie.top.prop} enCommande={saisie.top.enCommande} magasinNom={magasin.nom} suivie={suivie} onFermer={() => setSaisie(null)} onToast={setToast} />}
-      {saisie?.type === 'reception-commande' && <SaisieReceptionCommande magasinAppareil={saisie.top.magasinNom} entrees={[]} commandeInitiale={saisie.reassort.commandeId}
-        onFermer={() => setSaisie(null)} onToast={setToast}
-        onEnregistree={async articles => {
-          // Comme aujourd'hui (case « Ajouter ces paires au stock du top modèle » cochée par défaut) : le stock du top modèle suit la réception
-          if (!saisie.top?.id) return
-          const top = await db.topModeles.get(saisie.top.id), stock = { ...(top?.stock || {}) }
-          articles.forEach(a => Object.entries(a.tailles || {}).forEach(([s, n]) => { stock[s] = (Number(stock[s]) || 0) + (Number(n) || 0) }))
-          await db.topModeles.update(saisie.top.id, { stock, stockAt: new Date().toISOString() })
-        }} />}
+      {saisie?.type === 'reassort' && <SaisieReassort top={saisie.top} reassort={saisie.reassort} proposition={saisie.top.prop} enCommande={saisie.top.enCommande} magasinNom={magasin.nom} onFermer={() => setSaisie(null)} onToast={setToast} />}
       {saisie?.type === 'reception' && <SaisieReception top={saisie.top} reassort={saisie.reassort} magasinNom={saisie.top.magasinNom} onFermer={() => setSaisie(null)} onToast={setToast} />}
       {confirm && <Confirmation danger={confirm.danger} titre={confirm.titre} texte={confirm.texte} confirmer={confirm.confirmer} onAnnuler={() => setConfirm(null)} onConfirmer={() => { const a = confirm.action; setConfirm(null); a() }} />}
       <Toast toast={toast} onFermer={() => setToast(null)} />

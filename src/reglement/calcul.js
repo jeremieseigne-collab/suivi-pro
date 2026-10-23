@@ -109,36 +109,21 @@ export function seasonDeadline(seasonId) {
 }
 
 
-// ─── Fournisseurs (plan C, étape 2 bis) : la marque → son fournisseur, qui porte la règle et le plan chèque ───
-// cleDe(marqueId) → n° du fournisseur ; nom(fr) → nom affiché ; clePointage(fr) → clé des pointages de chèques
-// (n° de l'ancienne marque pilote pour les fournisseurs convertis) ; ordre = fournisseurs dans l'ordre de leur
-// première marque (même ordre de parcours que l'ancien calcul par groupe).
-export function groupes({ fournisseurs, fournisseursReels, reglements, plansCheques }, season) {
-  const frById = Object.fromEntries((fournisseursReels || []).map(f => [f.id, f]))
-  const marque = Object.fromEntries((fournisseurs || []).map(f => [f.id, f]))
-  const regles = Object.fromEntries((reglements || []).map(r => [`${r.fournisseurReelId}_${r.magasinId}`, { mode: r.modeReglement || '', cond: r.condition || {} }]))
-  const plans = Object.fromEntries((plansCheques || []).filter(p => p.season === season).map(p => [`${p.fournisseurReelId}|${p.magasinId}`, p.cheques]))
-  const ordre = []
-  for (const f of [...(fournisseurs || [])].sort((a, b) => a.id - b.id)) if (frById[f.fournisseurReelId] && !ordre.includes(f.fournisseurReelId)) ordre.push(f.fournisseurReelId)
-  return {
-    ordre,
-    cleDe: fId => { const fr = frById[marque[fId]?.fournisseurReelId]; return fr ? fr.id : null },
-    nom: gk => frById[gk]?.nom ?? '',
-    clePointage: gk => frById[gk]?.clePointage,
-    regle: (gk, magasinId) => regles[`${gk}_${magasinId}`],
-    planCheque: (gk, magasinId) => plans[`${gk}|${magasinId}`],
-  }
-}
-
 // Toutes les échéances d'une saison (corps identique à la requête de l'outil actuel)
-export function calculerPlan({ params, entrees, magasins, fournisseurs, fournisseursReels, reglements, plansCheques, defectueux, pointages }, season) {
+export function calculerPlan({ params, entrees, magasins, fournisseurs, modesReglement, defectueux, pointages }, season) {
     const magasinMap      = Object.fromEntries(magasins.map(m => [m.id, m.nom]))
-    const g = groupes({ fournisseurs, fournisseursReels, reglements, plansCheques }, season)
+    const fournisseurById = Object.fromEntries(fournisseurs.map(f => [f.id, f]))
+    const regleByKey      = Object.fromEntries(modesReglement.map(m => [`${m.fournisseurId}_${m.magasinId}`, { mode: m.modeReglement || '', cond: m.condition || {} }]))
 
-    // Regroupement par fournisseur (plan C, étape 2 bis) : la marque → son fournisseur ; le fournisseur porte la règle
-    // de règlement et le plan chèque (repris de l'ancienne marque pilote). Même calcul qu'avant, mêmes clés de pointage.
-    const groupKeyOf = g.cleDe
-    const regleForGroup = g.regle
+    // Regroupement par « vrai fournisseur » : clé = fournisseurs.groupe (si renseigné) sinon nom de la marque.
+    // La marque PILOTE (plus petit id du groupe) porte la config de règlement et son plan chèque éventuel.
+    const groupKeyOf = fId => { const f = fournisseurById[fId]; return f ? (((f.groupe || '').trim()) || f.nom) : null }
+    const canonicalId = {}
+    fournisseurs.forEach(f => {
+      const k = ((f.groupe || '').trim()) || f.nom
+      if (canonicalId[k] == null || f.id < canonicalId[k]) canonicalId[k] = f.id
+    })
+    const regleForGroup = (gk, magasinId) => regleByKey[`${canonicalId[gk]}_${magasinId}`]
 
     // statut du défectueux par entrée liée (pour ne compter l'avoir qu'une fois confirmé)
     const defStatutByEntree = {}
@@ -158,28 +143,31 @@ export function calculerPlan({ params, entrees, magasins, fournisseurs, fourniss
       if (!firstRecepGM[kk] || date < firstRecepGM[kk]) firstRecepGM[kk] = date
     })
     const reelByGM = {}        // `${gk}|${magasinId}` -> Σ reelN
+    const chequesByGM = {}     // `${gk}|${magasinId}` -> plan chèque perso (de la pilote)
     params.forEach(p => {
       const gk = groupKeyOf(p.fournisseurId)
       if (!gk) return
       const kk = `${gk}|${p.magasinId}`
       if (p.reelN) reelByGM[kk] = (reelByGM[kk] || 0) + p.reelN
+      if (Array.isArray(p.cheques) && p.cheques.length && p.fournisseurId === canonicalId[gk]) chequesByGM[kk] = p.cheques
     })
-    // Une série de chèques par (fournisseur × magasin) dont la règle est CHEQUE (même ordre de parcours qu'avant)
+    // Une série de chèques par (groupe × magasin) dont la règle pilote est CHEQUE
     const seenGM = new Set()
-    g.ordre.forEach(gk => {
+    fournisseurs.forEach(f => {
+      const gk = ((f.groupe || '').trim()) || f.nom
       magasins.forEach(m => {
         const kk = `${gk}|${m.id}`
         if (seenGM.has(kk)) return
         seenGM.add(kk)
         const regle = regleForGroup(gk, m.id)
         if (!regle || regle.mode !== 'CHEQUE') return
-        const keyBase = `cheque|${g.clePointage(gk)}|${m.id}|${season}`
-        const cheques = g.planCheque(gk, m.id)
+        const keyBase = `cheque|${canonicalId[gk]}|${m.id}|${season}`
+        const cheques = chequesByGM[kk]
         if (Array.isArray(cheques) && cheques.length) {
-          result.push(...echeancesChequeCustom(g.nom(gk), m.nom, cheques, keyBase))
+          result.push(...echeancesChequeCustom(gk, m.nom, cheques, keyBase))
         } else if (reelByGM[kk]) {
           const nb = parseInt(regle.cond.nb) || DEFAULT_NB_CHEQUE
-          result.push(...echeancesCheque(g.nom(gk), m.nom, reelByGM[kk], firstRecepGM[kk], nb, keyBase))
+          result.push(...echeancesCheque(gk, m.nom, reelByGM[kk], firstRecepGM[kk], nb, keyBase))
         }
       })
     })
@@ -198,7 +186,7 @@ export function calculerPlan({ params, entrees, magasins, fournisseurs, fourniss
       if (!mode || mode === 'CHEQUE') return
       const delais = (Array.isArray(regle.cond.delais) && regle.cond.delais.length) ? regle.cond.delais : (DEFAULT_DELAIS[mode] || [])
 
-      result.push(...echeancesLivraison(g.nom(gk), mNom, e.pht, date, mode, delais, `liv|${e.id}`))
+      result.push(...echeancesLivraison(gk, mNom, e.pht, date, mode, delais, `liv|${e.id}`))
     })
 
     // ── 3. Avoirs (retours/défectueux) : une échéance unique à la date du retour, sans règle.
@@ -213,7 +201,7 @@ export function calculerPlan({ params, entrees, magasins, fournisseurs, fourniss
       if (!date) return
       result.push({
         date, montant: e.pht, info: 'Avoir', mode: 'AVOIR',
-        fournisseur: g.nom(gk), magasin: mNom, societe: getSociete(mNom),
+        fournisseur: gk, magasin: mNom, societe: getSociete(mNom),
         source: `Retour${e.modele ? ' ' + e.modele : ''}`,
         key: `avoir|${e.id}`,
         entreeId: e.id,
@@ -288,10 +276,16 @@ export function groupesDuMois(items) {
 // Marques (ou groupes) en CHEQUE, sans plan chèque personnalisé, avec un réel achat mais aucune réception (hors retours) :
 // le calcul ci-dessus ne produit alors aucune échéance. On les liste à part, sans date, hors des échéances et des totaux.
 // Mêmes règles que calculerPlan pour le groupe, la marque pilote, la règle et la 1ère réception.
-export function chequesEnAttente({ params, entrees, magasins, fournisseurs, fournisseursReels, reglements, plansCheques }, season) {
+export function chequesEnAttente({ params, entrees, magasins, fournisseurs, modesReglement }) {
   const magasinMap      = Object.fromEntries(magasins.map(m => [m.id, m.nom]))
-  const g = groupes({ fournisseurs, fournisseursReels, reglements, plansCheques }, season)
-  const groupKeyOf = g.cleDe
+  const fournisseurById = Object.fromEntries(fournisseurs.map(f => [f.id, f]))
+  const regleByKey      = Object.fromEntries(modesReglement.map(m => [`${m.fournisseurId}_${m.magasinId}`, { mode: m.modeReglement || '', cond: m.condition || {} }]))
+  const groupKeyOf = fId => { const f = fournisseurById[fId]; return f ? (((f.groupe || '').trim()) || f.nom) : null }
+  const canonicalId = {}
+  fournisseurs.forEach(f => {
+    const k = ((f.groupe || '').trim()) || f.nom
+    if (canonicalId[k] == null || f.id < canonicalId[k]) canonicalId[k] = f.id
+  })
   const recu = new Set()
   entrees.forEach(e => {
     if (e.statut === 'Retour') return
@@ -299,26 +293,27 @@ export function chequesEnAttente({ params, entrees, magasins, fournisseurs, four
     if (!gk || !magasinMap[e.magasinId] || !parseDate(e.date)) return
     recu.add(`${gk}|${e.magasinId}`)
   })
-  const reelByGM = {}
+  const reelByGM = {}, chequesByGM = {}
   params.forEach(p => {
     const gk = groupKeyOf(p.fournisseurId)
     if (!gk) return
     const kk = `${gk}|${p.magasinId}`
     if (p.reelN) reelByGM[kk] = (reelByGM[kk] || 0) + p.reelN
+    if (Array.isArray(p.cheques) && p.cheques.length && p.fournisseurId === canonicalId[gk]) chequesByGM[kk] = p.cheques
   })
   const out = [], seen = new Set()
-  g.ordre.forEach(gk => {
+  fournisseurs.forEach(f => {
+    const gk = ((f.groupe || '').trim()) || f.nom
     magasins.forEach(m => {
       const kk = `${gk}|${m.id}`
       if (seen.has(kk)) return
       seen.add(kk)
-      const regle = g.regle(gk, m.id)
+      const regle = regleByKey[`${canonicalId[gk]}_${m.id}`]
       if (!regle || regle.mode !== 'CHEQUE') return
-      const plan = g.planCheque(gk, m.id)
-      if (Array.isArray(plan) && plan.length) return
+      if (Array.isArray(chequesByGM[kk]) && chequesByGM[kk].length) return
       if (!reelByGM[kk] || recu.has(kk)) return
       const nb = parseInt(regle.cond.nb) || DEFAULT_NB_CHEQUE
-      out.push({ fournisseur: g.nom(gk), magasin: m.nom, societe: getSociete(m.nom), mode: 'CHEQUE', montant: reelByGM[kk], nb,
+      out.push({ fournisseur: gk, magasin: m.nom, societe: getSociete(m.nom), mode: 'CHEQUE', montant: reelByGM[kk], nb,
         info: `Aucune réception — ${nb} chèque${nb > 1 ? 's' : ''} prévu${nb > 1 ? 's' : ''} à partir de la 1ère réception` })
     })
   })

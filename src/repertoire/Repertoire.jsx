@@ -9,9 +9,6 @@ import { useCompte } from '../context/CompteContext'
 import { PageShell } from '../shell/EnTete'
 import { Toast } from '../cahier/Reperes'
 import { ChoixMarque } from '../savdef/Champs'
-import Confirmation from '../components/ui/Confirmation'
-import { CLES_SOCIETE } from '../fournisseurs/contactsRegle'
-import { enregistrerContacts } from '../fournisseurs/contactsEcriture'
 import '../cahier/cahier.css'
 import '../savdef/savdef.css'
 import './repertoire.css'
@@ -24,14 +21,8 @@ const MAILS = ['email', 'emailCommandes', 'emailCompta']
 const gmail = e => e ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(e)}` : undefined
 const lien = u => u ? (/^https?:\/\//i.test(u) ? u : 'https://' + u) : undefined
 const telHref = t => t ? `tel:${t.replace(/[^\d+]/g, '')}` : undefined
-// Valeur pour le magasin choisi, avec repli sur la valeur commune, comme aujourd'hui — en lisant le fournisseur (plan C, étape 2 bis) :
-// marque qui hérite → les contacts du fournisseur ; marque à contacts propres → les siens, sinon ceux du fournisseur ;
-// comptabilité, adresse, notes → le fournisseur, sinon l'ancienne valeur de la marque
-const brut = (o, magId, key) => { if (!o) return ''; const cm = o.coordsMagasin && o.coordsMagasin[magId]; return (cm && cm[key] != null) ? cm[key] : (o[key] || '') }
-const valeur = (f, magId, key, fr) => {
-  if (CLES_SOCIETE.includes(key)) return (fr && fr[key]) || f[key] || ''
-  return f.contactsHerites === false ? (brut(f, magId, key) || brut(fr, magId, key)) : (brut(fr, magId, key) || brut(f, magId, key))
-}
+// Valeur pour le magasin choisi, avec repli sur l'ancienne valeur commune (données existantes), comme aujourd'hui
+const valeur = (f, magId, key) => STORE_KEYS.includes(key) ? (() => { const cm = f.coordsMagasin && f.coordsMagasin[magId]; return (cm && cm[key] != null) ? cm[key] : (f[key] || '') })() : (f[key] || '')
 
 const CHAMPS = [
   { titre: 'Commercial', champs: [['contact', 'Nom'], ['telephone', 'Téléphone', 'tel'], ['emailCommandes', 'Mail commandes', 'mail']] },
@@ -54,12 +45,12 @@ function BoutonContact({ type, v }) {
 
 // Coordonnées d'une marque pour le magasin choisi. Deux façons de modifier (point C) :
 // « Modifier » puis « Enregistrer », ou enregistrement en quittant le champ. Dans les deux cas, seules les valeurs changées sont écrites.
-function Coordonnees({ f, fr, magId, modeBouton, onToast, ouvertCommun = false }) {
+function Coordonnees({ f, magId, modeBouton, onToast, ouvertCommun = false }) {
   const [edition, setEdition] = useState(!modeBouton)
   const [brouillon, setBrouillon] = useState({})
   const [commun, setCommun] = useState(ouvertCommun)
   const tous = [...CHAMPS, ...COMMUNS].flatMap(g => g.champs.map(c => c[0]))
-  const actuel = Object.fromEntries(tous.map(k => [k, valeur(f, magId, k, fr)]))
+  const actuel = Object.fromEntries(tous.map(k => [k, valeur(f, magId, k)]))
   const v = k => brouillon[k] ?? actuel[k]
   const changer = (k, x) => setBrouillon(b => ({ ...b, [k]: TELS.includes(k) ? fmtTel(x) : x }))
 
@@ -68,9 +59,13 @@ function Coordonnees({ f, fr, magId, modeBouton, onToast, ouvertCommun = false }
     const valeurs = Object.fromEntries(Object.entries(brut).map(([k, x]) => [k, MAILS.includes(k) && typeof x === 'string' ? x.trim() : x]))
     const changes = cles.filter(k => valeurs[k] !== undefined && valeurs[k] !== actuel[k])
     if (!changes.length) return 0
-    // Au fournisseur quand la marque en hérite (et toujours comptabilité, adresse, notes), sinon à la marque
-    const res = await enregistrerContacts(f.id, magId, Object.fromEntries(changes.map(k => [k, valeurs[k]])))
-    onToast?.({ texte: `${f.nom} : ${changes.length} information${changes.length > 1 ? 's' : ''} enregistrée${changes.length > 1 ? 's' : ''}${res.auFournisseur && fr ? ` (fournisseur ${fr.nom})` : ''}`, annuler: res.annuler })
+    const avant = { coordsMagasin: f.coordsMagasin || null, ...Object.fromEntries(changes.filter(k => !STORE_KEYS.includes(k)).map(k => [k, f[k] ?? null])) }
+    const maj = {}
+    const parMag = changes.filter(k => STORE_KEYS.includes(k))
+    if (parMag.length) { const cm = { ...(f.coordsMagasin || {}) }; cm[magId] = { ...(cm[magId] || {}), ...Object.fromEntries(parMag.map(k => [k, valeurs[k]])) }; maj.coordsMagasin = cm }
+    changes.filter(k => !STORE_KEYS.includes(k)).forEach(k => { maj[k] = valeurs[k] })
+    await db.fournisseurs.update(f.id, maj)
+    onToast?.({ texte: `${f.nom} : ${changes.length} information${changes.length > 1 ? 's' : ''} enregistrée${changes.length > 1 ? 's' : ''}`, annuler: () => db.fournisseurs.update(f.id, avant) })
     return changes.length
   }
   async function enregistrer() { try { await ecrire(Object.keys(brouillon)); setBrouillon({}); setEdition(false) } catch (e) { onToast?.({ texte: 'Enregistrement impossible : ' + (e.message || 'vérifie la connexion.') }) } }
@@ -91,7 +86,7 @@ function Coordonnees({ f, fr, magId, modeBouton, onToast, ouvertCommun = false }
   return (
     <div className="coordonnees">
       {CHAMPS.map(groupe)}
-      <button className="lien" onClick={() => setCommun(o => !o)}>{commun ? '▾' : '▸'} Comptabilité · adresse · notes <span className="aide">(communs aux 3 magasins{fr ? `, au fournisseur ${fr.nom}` : ''})</span></button>
+      <button className="lien" onClick={() => setCommun(o => !o)}>{commun ? '▾' : '▸'} Comptabilité · adresse · notes <span className="aide">(communs aux 3 magasins)</span></button>
       {commun && COMMUNS.map(groupe)}
       {modeBouton && <div className="actions-bloc">
         {edition ? <><button className="btn" onClick={() => { setBrouillon({}); setEdition(false) }}>Annuler</button><button className="btn btn-prim" onClick={enregistrer}>Enregistrer</button></>
@@ -101,44 +96,18 @@ function Coordonnees({ f, fr, magId, modeBouton, onToast, ouvertCommun = false }
   )
 }
 
-// Fiche d'une marque : son fournisseur ; contacts du fournisseur (communs à ses marques) ou propres à la marque
-function FicheMarque({ f, fr, nbMarquesFr, magId, magNom, peutBasculer, onToast, onFermer }) {
-  const [confirmer, setConfirmer] = useState(false)
-  const herite = f.contactsHerites !== false
-  async function basculer() {
-    setConfirmer(false)
-    try {
-      if (herite) {   // contacts propres : on part de ceux du fournisseur, recopiés à la marque
-        const champs = ['contact', 'telephone', 'email', 'contactSav', 'telephoneFixe', 'numeroClient', 'btob']
-        await db.fournisseurs.update(f.id, { contactsHerites: false, coordsMagasin: fr?.coordsMagasin || {}, ...Object.fromEntries(champs.map(k => [k, fr?.[k] || ''])) })
-        onToast?.({ texte: `${f.nom} : contacts propres à la marque` })
-      } else {
-        await db.fournisseurs.update(f.id, { contactsHerites: true })
-        onToast?.({ texte: `${f.nom} : contacts du fournisseur ${fr?.nom || ''}`, annuler: () => db.fournisseurs.update(f.id, { contactsHerites: false }) })
-      }
-    } catch (e) { onToast?.({ texte: 'Changement impossible : ' + (e.message || 'vérifie la connexion.') }) }
-  }
+function FicheMarque({ f, magId, magNom, groupe, onToast, onFermer }) {
   return (
     <>
       <div className="feuille-fond" onClick={onFermer} />
       <div className="feuille" role="dialog" aria-label={f.nom}>
         <div className="feuille-entete"><h2>{f.nom}</h2><button className="icone-btn" onClick={onFermer} aria-label="Fermer"><Icone nom="fermer" /></button></div>
         <div className="feuille-corps">
-          {fr && <div className="encart neutre" style={{ marginBottom: 10, flexDirection: 'column', gap: 4 }}>
-            <span>Fournisseur : <b>{fr.nom}</b>{nbMarquesFr > 1 ? ` (${nbMarquesFr} marques)` : ''}</span>
-            <span className="aide" style={{ margin: 0 }}>{herite
-              ? (nbMarquesFr > 1 ? `Contacts du fournisseur, communs à ses ${nbMarquesFr} marques : une modification vaut pour toutes.` : 'Contacts saisis au fournisseur.')
-              : 'Contacts propres à cette marque (un champ vide reprend celui du fournisseur).'}</span>
-            {peutBasculer && <button className="lien" style={{ paddingLeft: 0, alignSelf: 'flex-start' }} onClick={() => setConfirmer(true)}>{herite ? 'Donner à cette marque ses propres contacts' : 'Reprendre les contacts du fournisseur'}</button>}
-          </div>}
           <div className="aide" style={{ marginBottom: 6 }}>Commercial, SAV et compte : propres à <b>{magNom}</b>.</div>
-          <Coordonnees key={f.id + '-' + magId + '-' + herite} f={f} fr={fr} magId={magId} modeBouton onToast={onToast} />   {/* « Modifier » puis « Enregistrer » (décision du 13/10) */}
+          {groupe && <div className="encart neutre" style={{ marginBottom: 10 }}>Réglé avec le groupe « {groupe.nom} » (marque pilote : {groupe.pilote}) — le mode de règlement est celui de la marque pilote.</div>}
+          <Coordonnees key={f.id + '-' + magId} f={f} magId={magId} modeBouton onToast={onToast} />   {/* « Modifier » puis « Enregistrer » (décision du 13/10) */}
         </div>
       </div>
-      {confirmer && <Confirmation titre={herite ? 'Contacts propres à cette marque ?' : 'Reprendre les contacts du fournisseur ?'}
-        texte={herite ? `${f.nom} aura ses propres contacts (recopiés de ceux de ${fr?.nom}), modifiables sans toucher aux autres marques du fournisseur.`
-          : `${f.nom} reprendra les contacts de ${fr?.nom}. Ses contacts propres sont gardés, mais ne sont plus utilisés.`}
-        confirmer={herite ? 'Contacts propres' : 'Reprendre'} onAnnuler={() => setConfirmer(false)} onConfirmer={basculer} />}
     </>
   )
 }
@@ -172,11 +141,16 @@ function NouvelleMarque({ fournisseurs, gardeFou, onCree, onFermer }) {
   )
 }
 
+// Marque rattachée à un groupe sans en être la pilote (plus petit n°) : réglée avec le groupe (même règle que le Plan de règlement)
+function groupeDe(f, fournisseurs) {
+  const gk = ((f.groupe || '').trim()) || f.nom
+  const pilote = fournisseurs.filter(x => (((x.groupe || '').trim()) || x.nom) === gk).sort((a, b) => a.id - b.id)[0]
+  return pilote && pilote.id !== f.id ? { nom: gk, pilote: pilote.nom } : null
+}
+
 export default function Repertoire() {
   const { estDirection } = useCompte()
   const fournisseurs = useLiveQuery(() => db.fournisseurs.orderBy('nom').toArray(), [])
-  const frs = useLiveQuery(() => db.fournisseursReels.toArray(), [])
-  const frDe = f => (frs || []).find(x => x.id === f.fournisseurReelId)
   const magasins = useLiveQuery(() => db.magasins.orderBy('nom').toArray(), [])
   const { magasin: magasinCourant } = useMagasin()
   const [magId, setMagId] = useState(() => magasinCourant?.id || (() => { try { const x = localStorage.getItem('repertoire_magasin'); return x ? Number(x) : null } catch { return null } })())
@@ -193,11 +167,10 @@ export default function Repertoire() {
     const tous = fournisseurs || []
     if (!rech) return tous
     const q = rech.toLowerCase()
-    return tous.filter(f => { const fr = (frs || []).find(x => x.id === f.fournisseurReelId)
-      return [f.nom, fr?.nom, ...CLES_SOCIETE.map(k => valeur(f, mId, k, fr)), ...STORE_KEYS.map(k => valeur(f, mId, k, fr))].some(x => String(x || '').toLowerCase().includes(q)) })
-  }, [fournisseurs, frs, rech, mId])
+    return tous.filter(f => [f.nom, f.contactCompta, f.telCompta, f.emailCompta, f.notes, ...STORE_KEYS.map(k => valeur(f, mId, k))].some(x => String(x || '').toLowerCase().includes(q)))
+  }, [fournisseurs, rech, mId])
 
-  const contenu = (fournisseurs === undefined || magasins === undefined || frs === undefined) ? <LoadingState /> : (() => {
+  const contenu = (fournisseurs === undefined || magasins === undefined) ? <LoadingState /> : (() => {
     const magNom = (magasins.find(m => m.id === mId) || {}).nom || ''
     const fiche = ficheId && fournisseurs.find(f => f.id === ficheId)
     return <>
@@ -211,14 +184,12 @@ export default function Repertoire() {
         : (   /* liste compacte qui ouvre la fiche (décision du 13/10) */
           <div className="liste" style={{ marginTop: 10 }}>
             {liste.map(f => {
-              const fr = frDe(f)
-              const contact = valeur(f, mId, 'contact', fr), tel = valeur(f, mId, 'telephone', fr) || valeur(f, mId, 'telephoneFixe', fr), mail = valeur(f, mId, 'email', fr)
+              const contact = valeur(f, mId, 'contact'), tel = valeur(f, mId, 'telephone') || valeur(f, mId, 'telephoneFixe'), mail = valeur(f, mId, 'email')
               return (
                 <div key={f.id} className="ligne ligne-entree ligne-marque">
                   <button className="zone-ouvrir" onClick={() => setFicheId(f.id)}>
                     <span className="txt"><span className="t1">{f.nom}</span>
-                      {fr && fr.nom !== f.nom && <span className="t2">Fournisseur : {fr.nom}</span>}
-                      <span className="t2">{[contact, valeur(f, mId, 'telephone', fr) && fmtTel(valeur(f, mId, 'telephone', fr))].filter(Boolean).join(' · ') || 'Commercial non renseigné'}</span>
+                      <span className="t2">{[contact, valeur(f, mId, 'telephone') && fmtTel(valeur(f, mId, 'telephone'))].filter(Boolean).join(' · ') || 'Commercial non renseigné'}</span>
                       <span className="t2">{mail ? `SAV : ${mail}` : 'Mail SAV non renseigné'}</span></span>
                   </button>
                   <span className="contacts-ligne"><BoutonContact type="tel" v={tel} /><BoutonContact type="mail" v={mail} /></span>
@@ -230,8 +201,7 @@ export default function Repertoire() {
       <div style={{ textAlign: 'center', marginTop: 24 }} className="seulement-petit"><button className="btn btn-ghost" onClick={() => setImporter(true)}>Importer des contacts (CSV)</button></div>
       <div style={{ height: 72 }} className="seulement-petit" aria-hidden="true" />
       <button className="btn btn-prim action-flottante" onClick={() => setNouvelle(true)}><Icone nom="ajout" taille={20} />Marque</button>
-      {fiche && <FicheMarque f={fiche} fr={frDe(fiche)} nbMarquesFr={fournisseurs.filter(x => x.fournisseurReelId === fiche.fournisseurReelId).length} magId={mId} magNom={magNom}
-        peutBasculer={estDirection}   /* « contacts propres » : Direction seulement (choix du 15/10) */ onToast={setToast} onFermer={() => setFicheId(null)} />}
+      {fiche && <FicheMarque f={fiche} magId={mId} magNom={magNom} groupe={estDirection ? groupeDe(fiche, fournisseurs) : null} onToast={setToast} onFermer={() => setFicheId(null)} />}
       {nouvelle && <NouvelleMarque fournisseurs={fournisseurs} gardeFou onFermer={() => setNouvelle(false)}
         onCree={(id, nom) => { setNouvelle(false); setToast({ texte: `Marque « ${nom} »` }); setFicheId(id) }} />}
       {importer && <RepertoireImportModal onClose={() => setImporter(false)} onDone={() => setImporter(false)} />}

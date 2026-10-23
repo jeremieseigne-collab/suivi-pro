@@ -32,21 +32,19 @@ export default function Plan() {
   const [reportDismiss,  setReportDismiss]  = useState(false)
   const [erreur,         setErreur]         = useState('')
 
-  // Mêmes lectures que l'outil actuel + fournisseurs (plan C, étape 2 bis), puis le calcul (calcul.js, inchangé sur le fond)
+  // Mêmes lectures que l'outil actuel, puis le calcul déplacé tel quel (calcul.js)
   const data = useLiveQuery(async () => {
-    const [params, entrees, magasins, fournisseurs, fournisseursReels, reglements, plansCheques, defectueux, pointages] = await Promise.all([
+    const [params, entrees, magasins, fournisseurs, modesReglement, defectueux, pointages] = await Promise.all([
       db.parametres.where('season').equals(season).toArray(),
       db.entrees.where('season').equals(season).toArray(),
       db.magasins.toArray(),
       db.fournisseurs.toArray(),
-      db.fournisseursReels.toArray(),
-      db.reglementsFournisseurs.toArray(),
-      db.plansCheques.where('season').equals(season).toArray(),
+      db.modesReglement.toArray(),
       db.defectueux.toArray(),
       db.reglementPaye.toArray(),
     ])
-    const sources = { params, entrees, magasins, fournisseurs, fournisseursReels, reglements, plansCheques, defectueux, pointages }
-    return { ...calculerPlan(sources, season), attente: chequesEnAttente(sources, season) }
+    const sources = { params, entrees, magasins, fournisseurs, modesReglement, defectueux, pointages }
+    return { ...calculerPlan(sources, season), attente: chequesEnAttente(sources) }
   }, [season])
 
   const allEcheances = data?.echeances ?? []

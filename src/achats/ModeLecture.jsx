@@ -4,20 +4,21 @@ import { ouvrirAvec } from '../shell/navigation'
 import { DEFAULT_NB_CHEQUE, DEFAULT_DELAIS } from '../data/reglement'
 
 // Mode de règlement d'une marque × magasin, en lecture seule dans la fiche d'achat (décision A1).
-// Même règle que le Plan de règlement : le mode est celui du fournisseur de la marque (plan C, étape 2 bis).
+// Même règle que le Plan de règlement : c'est la marque pilote du groupe (plus petit n°) qui porte le mode.
 export default function ModeLecture({ fournisseur, magasin }) {
   const d = useLiveQuery(async () => {
-    const [fournisseurs, magasins, frs, modes] = await Promise.all([db.fournisseurs.toArray(), db.magasins.toArray(), db.fournisseursReels.toArray(), db.reglementsFournisseurs.toArray()])
-    return { fournisseurs, magasins, frs, modes }
+    const [fournisseurs, magasins, modes] = await Promise.all([db.fournisseurs.toArray(), db.magasins.toArray(), db.modesReglement.toArray()])
+    return { fournisseurs, magasins, modes }
   }, [])
   if (!d) return null
   const f = d.fournisseurs.find(x => x.nom === fournisseur)
   const m = d.magasins.find(x => x.nom === magasin)
   let texte = 'non renseigné', groupe = null
   if (f && m) {
-    const fr = d.frs.find(x => x.id === f.fournisseurReelId)
-    if (fr && fr.nom !== f.nom) groupe = { nom: fr.nom }
-    const r = d.modes.find(x => x.fournisseurReelId === fr?.id && x.magasinId === m.id)
+    const gk = ((f.groupe || '').trim()) || f.nom
+    const pilote = d.fournisseurs.filter(x => (((x.groupe || '').trim()) || x.nom) === gk).sort((a, b) => a.id - b.id)[0]
+    if (pilote && pilote.id !== f.id) groupe = { nom: gk, pilote: pilote.nom }
+    const r = d.modes.find(x => x.fournisseurId === pilote?.id && x.magasinId === m.id)
     if (r?.modeReglement) {
       const c = r.condition || {}
       const detail = r.modeReglement === 'CHEQUE'
@@ -29,8 +30,8 @@ export default function ModeLecture({ fournisseur, magasin }) {
   return (
     <div style={{ padding: '6px 0', fontSize: 14 }}>
       <strong>{texte}</strong>
-      {groupe && <div style={{ fontSize: 13, color: 'var(--texte)', marginTop: 4 }}>Réglé au fournisseur « {groupe.nom} »</div>}
-      <button type="button" className="lien" style={{ paddingLeft: 0, marginTop: 2 }} onClick={() => ouvrirAvec('parametres', 'fournisseurs-marques')}>Modifier dans Réglages → Fournisseurs et marques</button>
+      {groupe && <div style={{ fontSize: 13, color: 'var(--texte)', marginTop: 4 }}>Réglé avec le groupe « {groupe.nom} » (marque pilote : {groupe.pilote})</div>}
+      <button type="button" className="lien" style={{ paddingLeft: 0, marginTop: 2 }} onClick={() => ouvrirAvec('parametres', 'modes')}>Modifier dans Réglages → Modes de règlement</button>
     </div>
   )
 }

@@ -95,9 +95,7 @@ export default function AchatAddModal({ onClose, onSaved }) {
         statut:        form.statut,
         fournisseurId: fournisseurRow.id,
         magasinId:     magasinRow.id,
-        // Reçu N-1 : vide = calculé d'après le Cahier de la même saison l'an dernier ; rempli = saisi (montant forcé)
-        recuN1:        form.recuN1 !== '' ? (Number(form.recuN1) || 0) : 0,
-        recuN1Saisi:   form.recuN1 !== '',
+        recuN1:        Number(form.recuN1)    || 0,
         objectifN:     Number(form.objectifN) || 0,
         reelN:         reelN,
         quantite:      quantite,
@@ -135,7 +133,7 @@ export default function AchatAddModal({ onClose, onSaved }) {
           <form onSubmit={handleSubmit} className="modal-body">
             <div className="form-grid">
               <div className="form-field">
-                <label>Décision</label>
+                <label>Statut</label>
                 <select value={form.statut} onChange={e => set('statut', e.target.value)}>
                   {STATUTS.map(s => <option key={s} value={s}>{s || '— Choisir —'}</option>)}
                 </select>
@@ -168,7 +166,7 @@ export default function AchatAddModal({ onClose, onSaved }) {
               <div className="form-field">
                 <label>Reçu N-1 (€)</label>
                 <input type="number" step="0.01" min="0" value={form.recuN1}
-                  onChange={e => set('recuN1', e.target.value)} placeholder="vide = calculé"
+                  onChange={e => set('recuN1', e.target.value)} placeholder="0"
                   data-achat-index="0" onKeyDown={navAchat} />
               </div>
               <div className="form-field">

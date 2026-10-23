@@ -88,9 +88,6 @@ export default function FicheEntree({ entree: e, estDirection, pointe, onPointer
             <span>Magasin <b>{e.magasin}</b></span>
             {estDirection && pointe && <span><b style={{ color: 'var(--ok)' }}>Pointée</b></span>}
           </div>
-          {e.commandeId && <div className="encart neutre" style={{ marginTop: 10 }}>
-            Réception de la commande {e.commandeBc?.length ? 'BC ' + e.commandeBc.join(', ') : 'sans n° de BC'}{e.horsCommande ? ' — avec des paires « hors commande »' : ''}. « Modifier » corrige ses pointures et sa date ; la commande se met à jour.
-          </div>}
 
           <span className="etiquette" style={{ marginTop: 16 }}>Statut</span>
           <div className="chips" style={{ flexWrap: 'wrap' }}>
@@ -145,7 +142,7 @@ export default function FicheEntree({ entree: e, estDirection, pointe, onPointer
       )}
       {confirmSuppr && (
         <Confirmation danger titre="Supprimer cette entrée ?"
-          texte={`${e.marque} · ${e.modele || 'sans modèle'} · ${pluriel(e.total || 0, 'paire')} du ${e.date}. ${e.commandeId ? 'Réception rattachée à une commande : ses paires seront retirées de la commande (le reste à recevoir remonte d\'autant) et du stock suivi. ' : ''}Cette suppression est définitive.`}
+          texte={`${e.marque} · ${e.modele || 'sans modèle'} · ${pluriel(e.total || 0, 'paire')} du ${e.date}. Cette suppression est définitive.`}
           confirmer="Supprimer" onAnnuler={() => setConfirmSuppr(false)} onConfirmer={supprimer} />
       )}
     </>

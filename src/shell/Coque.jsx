@@ -10,7 +10,7 @@ import './coque.css'
 
 // ─── Menu : mêmes destinations et mêmes intitulés qu'aujourd'hui, rangés selon le plan ───
 // (les intitulés « Réassorts » et « SAV & défectueux » changeront avec la refonte de ces écrans)
-const MENU_BASE = [
+const MENU = [
   { items: [
     { id: 'home',       icone: 'accueil',    label: 'Accueil' },
     { id: 'agenda',     icone: 'agenda',     label: 'Agenda' },
@@ -31,14 +31,6 @@ const MENU_BASE = [
     { id: 'parametres', icone: 'reglages',  label: 'Réglages' },
   ] },
 ]
-// Commandes fournisseurs (plan C, étape 2) : premier groupe, juste sous « Cahier des entrées » (choix du 14/10)
-const CF = { id: 'fournisseurs', icone: 'livraison', label: 'Commandes fournisseurs' }
-const MENU = MENU_BASE.map((g, i) => {
-  if (i !== 0) return g
-  const items = [...g.items]
-  items.splice(items.findIndex(it => it.id === 'cahier') + 1, 0, CF)
-  return { ...g, items }
-})
 // Onglets du téléphone (en bas, à portée du pouce) ; le reste est dans « Plus »
 const ONGLETS = [
   { id: 'home',     icone: 'accueil',  label: 'Accueil' },

@@ -2,13 +2,9 @@ import { supabase } from '../lib/supabase'
 
 // ─── Mapping camelCase JS ↔ snake_case Postgres ───────────────────────────────
 const FIELD_TO_DB = {
-  fournisseurs:    { modelesBySeason: 'modeles_by_season', contactSav: 'contact_sav', telephoneFixe: 'telephone_fixe', numeroClient: 'numero_client', coordsMagasin: 'coords_magasin', contactCompta: 'contact_compta', telCompta: 'tel_compta', emailCompta: 'email_compta', fournisseurReelId: 'fournisseur_reel_id', contactsHerites: 'contacts_herites' },
-  // Plan C, étape 2 bis : fournisseurs (une ou plusieurs marques), leur règlement et leurs plans chèques
-  fournisseurs_reels:      { contactSav: 'contact_sav', telephoneFixe: 'telephone_fixe', numeroClient: 'numero_client', coordsMagasin: 'coords_magasin', contactCompta: 'contact_compta', telCompta: 'tel_compta', emailCompta: 'email_compta', clePointage: 'cle_pointage', creeLe: 'cree_le', nbMarques: 'nb_marques' },
-  reglements_fournisseurs: { fournisseurReelId: 'fournisseur_reel_id', magasinId: 'magasin_id', modeReglement: 'mode_reglement' },
-  plans_cheques:           { fournisseurReelId: 'fournisseur_reel_id', magasinId: 'magasin_id' },
-  parametres:      { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id', recuN1: 'recu_n1', recuN1Saisi: 'recu_n1_saisi', objectifN: 'objectif_n', reelN: 'reel_n', prixModeles: 'prix_modeles', modelesSizes: 'modeles_sizes', modelesTypes: 'modeles_types' },
-  entrees:         { magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', typeKey: 'type_key', commandeId: 'commande_id' },
+  fournisseurs:    { modelesBySeason: 'modeles_by_season', contactSav: 'contact_sav', telephoneFixe: 'telephone_fixe', numeroClient: 'numero_client', coordsMagasin: 'coords_magasin', contactCompta: 'contact_compta', telCompta: 'tel_compta', emailCompta: 'email_compta' },
+  parametres:      { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id', recuN1: 'recu_n1', objectifN: 'objectif_n', reelN: 'reel_n', prixModeles: 'prix_modeles', modelesSizes: 'modeles_sizes', modelesTypes: 'modeles_types' },
+  entrees:         { magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', typeKey: 'type_key' },
   modes_reglement: { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id', modeReglement: 'mode_reglement' },
   suivi:           { fournisseurId: 'fournisseur_id', magasinId: 'magasin_id' },
   commandes:       { createdAt: 'created_at', clientNom: 'client_nom', clientPrenom: 'client_prenom' },
@@ -19,7 +15,7 @@ const FIELD_TO_DB = {
   planning:        { heureDebut: 'heure_debut', heureFin: 'heure_fin', createdAt: 'created_at' },
   sav:             { magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', clientNom: 'client_nom', clientTel: 'client_tel', defectueuxId: 'defectueux_id', createdAt: 'created_at', prixReparation: 'prix_reparation', enCoursAt: 'en_cours_at' },
   top_modeles:     { createdAt: 'created_at', magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', typeKey: 'type_key', stockAt: 'stock_at', archivedAt: 'archived_at', relanceAt: 'relance_at' },
-  reassorts:       { createdAt: 'created_at', topId: 'top_id', magasinId: 'magasin_id', fournisseurId: 'fournisseur_id', commandeId: 'commande_id', recuAvantCommande: 'recu_avant_commande', prixUnitaire: 'prix_unitaire' },
+  reassorts:       { createdAt: 'created_at', topId: 'top_id', magasinId: 'magasin_id', fournisseurId: 'fournisseur_id' },
 }
 
 const FIELD_FROM_DB = {}
@@ -54,7 +50,7 @@ function dbf(table, field) {
 // Supabase/PostgREST plafonne chaque réponse à 1000 lignes (max-rows) : on lit par pages.
 // build() doit renvoyer une requête triée (ordre stable entre les pages).
 const PAGE = 1000
-export async function fetchAll(build) {
+async function fetchAll(build) {
   const out = []
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await build().range(from, from + PAGE - 1)
@@ -229,7 +225,4 @@ export const db = {
   sav:            new SupabaseTable('sav'),
   topModeles:     new SupabaseTable('top_modeles'),
   reassorts:      new SupabaseTable('reassorts'),
-  fournisseursReels:      new SupabaseTable('fournisseurs_reels'),
-  reglementsFournisseurs: new SupabaseTable('reglements_fournisseurs'),
-  plansCheques:           new SupabaseTable('plans_cheques'),
 }

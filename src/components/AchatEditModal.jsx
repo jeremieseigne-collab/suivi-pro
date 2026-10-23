@@ -18,16 +18,14 @@ const STRAT_COLORS = {
   '🛑 ARRÊTER':   '#fee2e2',
 }
 
-// recuCalc : calcul du Reçu N-1 de cette ligne ({ montant, nb, sansPrix } ou null) ; saisonN1 : libellé de la saison lue (ex. « Été 2026 »)
-export default function AchatEditModal({ row, onClose, onSaved, recuCalc = null, saisonN1 = '' }) {
+export default function AchatEditModal({ row, onClose, onSaved }) {
   const { params } = useParams()
 
   const [form, setForm] = useState({
     statut:      row.statut      || '',
     magasin:     row.magasin     || '',
     fournisseur: row.fournisseur || '',
-    recuN1:      row.recuN1 || (recuCalc ? String(Math.round(recuCalc.montant)) : ''),   // montant saisi gardé, sinon le calcul comme point de départ
-    recuN1Saisi: !!row.recuN1Saisi,
+    recuN1:      row.recuN1      || '',
     objectifN:   row.objectifN   || '',
     univers:     emptyUnivers(row.univers),
     strategie:   row.strategie   || '',
@@ -97,9 +95,7 @@ export default function AchatEditModal({ row, onClose, onSaved, recuCalc = null,
         statut:        form.statut,
         magasinId:     magasinRow.id,
         fournisseurId: fournisseurRow.id,
-        // Reçu N-1 : saisi (montant forcé) ou calculé d'après le Cahier ; en mode calculé, le montant saisi précédent reste gardé de côté
-        ...(form.recuN1Saisi ? { recuN1: Number(form.recuN1) || 0 } : {}),
-        recuN1Saisi:   !!form.recuN1Saisi,
+        recuN1:        Number(form.recuN1)    || 0,
         objectifN:     Number(form.objectifN) || 0,
         reelN:         reelN,
         quantite:      quantite,
@@ -158,7 +154,7 @@ export default function AchatEditModal({ row, onClose, onSaved, recuCalc = null,
           <form onSubmit={handleSubmit} className="modal-body">
             <div className="form-grid">
               <div className="form-field">
-                <label>Décision</label>
+                <label>Statut</label>
                 <select value={form.statut} onChange={e => set('statut', e.target.value)}>
                   {STATUTS.map(s => <option key={s} value={s}>{s || '— Choisir —'}</option>)}
                 </select>
@@ -185,19 +181,9 @@ export default function AchatEditModal({ row, onClose, onSaved, recuCalc = null,
             <div className="form-grid">
               <div className="form-field">
                 <label>Reçu N-1 (€)</label>
-                <div className="chips" role="group" aria-label="Reçu N-1 : calculé ou saisi" style={{ marginBottom: 6 }}>
-                  <button type="button" className="chip" aria-pressed={!form.recuN1Saisi} onClick={() => set('recuN1Saisi', false)}>Calculé</button>
-                  <button type="button" className="chip" aria-pressed={form.recuN1Saisi} onClick={() => set('recuN1Saisi', true)}>Saisi</button>
-                </div>
-                {form.recuN1Saisi
-                  ? <input type="number" step="0.01" min="0" value={form.recuN1}
-                      onChange={e => set('recuN1', e.target.value)} placeholder="0"
-                      data-achat-index="0" onKeyDown={navAchat} />
-                  : <div className="aide" style={{ margin: 0 }}>
-                      <b style={{ color: 'var(--text)' }}>{recuCalc ? eur0(recuCalc.montant) : '—'}</b>{saisonN1 ? ` d'après le Cahier de ${saisonN1}` : ''}
-                      {recuCalc?.sansPrix > 0 && <span style={{ color: 'var(--att, #b45309)' }}> · {recuCalc.sansPrix} entrée{recuCalc.sansPrix > 1 ? 's' : ''} sans prix : chiffre sous-estimé</span>}
-                      {row.recuN1 > 0 && <><br />Montant saisi gardé de côté : {eur0(row.recuN1)}</>}
-                    </div>}
+                <input type="number" step="0.01" min="0" value={form.recuN1}
+                  onChange={e => set('recuN1', e.target.value)} placeholder="0"
+                  data-achat-index="0" onKeyDown={navAchat} />
               </div>
               <div className="form-field">
                 <label>Objectif N (€)</label>

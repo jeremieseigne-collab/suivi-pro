@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
-import { supabase } from '../lib/supabase'
 import { useSeason } from '../context/SeasonContext'
 import { SIZE_TYPES, DEFAULT_GRID_BY_MARQUE } from '../data/sizes'
 import Icone from '../components/ui/Icone'
@@ -157,7 +156,7 @@ export function SaisieStock({ top, onFermer, onToast }) {
 }
 
 // ─── Nouveau réassort / modification (quantités proposées = stock mini − stock − déjà en commande) ───
-export function SaisieReassort({ top, reassort, proposition = {}, enCommande = {}, magasinNom, onFermer, onToast, suivie = false }) {
+export function SaisieReassort({ top, reassort, proposition = {}, enCommande = {}, magasinNom, onFermer, onToast }) {
   const modif = !!reassort?.id
   const { season } = useSeason()
   const salaries = useLiveQuery(() => db.salaries.orderBy('nom').toArray(), [])
@@ -169,14 +168,6 @@ export function SaisieReassort({ top, reassort, proposition = {}, enCommande = {
   const [erreur, setErreur] = useState('')
   const [enCours, setEnCours] = useState(false)
   const [confirmSuppr, setConfirmSuppr] = useState(false)
-  const [prix, setPrix] = useState(reassort?.prixUnitaire ? String(reassort.prixUnitaire).replace('.', ',') : '')
-  // Saison suivie par commandes (étape 6) : prix repris du même modèle-coloris dans la commande de saison (null = pas trouvé)
-  const prixCommande = useLiveQuery(async () => {
-    if (!suivie) return null
-    const [code, ...reste] = String(top.modele || '').split(','), couleur = reste.join(',').trim()
-    const { data } = await supabase.rpc('prix_article_reassort', { p_fournisseur: top.fournisseurId, p_magasin: top.magasinId, p_season: top.season || season, p_code: code.trim(), p_couleur: couleur, p_taille: (top.pointures || [])[0] || '' })
-    return data != null ? Number(data) : null
-  }, [suivie, top.id])
   const total = Object.values(qtes).reduce((t, v) => t + num(v), 0)
   const salariesMag = (salaries || []).filter(s => !s.magasin || memeMagasin(s.magasin, magasinNom))
   // Déjà en commande, sans compter ce réassort-ci (en modification)
@@ -188,9 +179,8 @@ export function SaisieReassort({ top, reassort, proposition = {}, enCommande = {
     setEnCours(true); setErreur('')
     try {
       const sizes = {}; Object.entries(qtes).forEach(([s, v]) => { if (num(v) > 0) sizes[s] = num(v) })
-      const prixUnitaire = suivie && prixCommande == null ? (parseFloat(String(prix).replace(',', '.')) || null) : (reassort?.prixUnitaire ?? null)
-      if (modif) await db.reassorts.update(reassort.id, { sizes, par, note, ...(suivie ? { prixUnitaire } : {}) })
-      else await db.reassorts.add({ topId: top.id, magasinId: top.magasinId, fournisseurId: top.fournisseurId, modele: top.modele, season: top.season || season, statut: etape, sizes, recu: {}, receptions: [], par, note, etapes: { [etape]: new Date().toISOString() }, ...(suivie ? { prixUnitaire } : {}) })
+      if (modif) await db.reassorts.update(reassort.id, { sizes, par, note })
+      else await db.reassorts.add({ topId: top.id, magasinId: top.magasinId, fournisseurId: top.fournisseurId, modele: top.modele, season: top.season || season, statut: etape, sizes, recu: {}, receptions: [], par, note, etapes: { [etape]: new Date().toISOString() } })
       onToast?.({ texte: modif ? 'Réassort modifié' : `Réassort lancé : ${total} paire${total > 1 ? 's' : ''}` }); onFermer()
     } catch (e) { setEnCours(false); setErreur('Enregistrement impossible : ' + (e.message || 'vérifie la connexion et réessaie.')) }
   }
@@ -220,13 +210,6 @@ export function SaisieReassort({ top, reassort, proposition = {}, enCommande = {
           <span className="etiquette">Étape</span>
           <div className="chips" style={{ flexWrap: 'wrap' }}>{ETAPES_CHOIX.map(x => <button key={x} type="button" className="chip" aria-pressed={etape === x} onClick={() => setEtape(x)}>{x}</button>)}</div>
         </>}
-        {suivie && (prixCommande != null
-          ? <div className="aide" style={{ marginTop: 12 }}>Prix repris de la commande de saison : <b>{prixCommande.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</b> la paire.</div>
-          : prixCommande === null && <>
-            {!(parseFloat(String(prix).replace(',', '.')) > 0) && <div className="encart att" style={{ marginTop: 12 }}>Ce modèle n’est pas dans la commande de saison : sans prix, la réception sera à 0 € dans le Cahier et le Plan de règlement.</div>}
-            <label className="etiquette">Prix unitaire HT (€, facultatif)<input className="champ" inputMode="decimal" value={prix} onChange={e => setPrix(e.target.value)} placeholder="Ex. 42,50" /></label>
-          </>)}
-        {suivie && <div className="aide" style={{ marginTop: 8 }}>Quand la marque a confirmé (« Commandé »), le réassort devient une commande de réassort (Commandes fournisseurs) ; « Demandé » = mail envoyé, pas encore une commande ; sa réception passe par la saisie commune.</div>}
         <span className="etiquette">Demandé par</span>
         <ChoixSalarie valeur={par} onChange={setPar} salaries={salariesMag} />
         <label className="etiquette">Note<textarea className="champ" rows={2} value={note} onChange={e => setNote(e.target.value)} /></label>

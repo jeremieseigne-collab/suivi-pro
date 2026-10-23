@@ -3,17 +3,14 @@ import { SOCIETES } from '../data/societes'
 import Icone from '../components/ui/Icone'
 import ActionsSelection from './ActionsSelection'
 import { Numero, Statut } from './Reperes'
-import { STATUTS, libelleStatut, cleDate, libelleJour, fmtEur, pluriel, csvEntrees, telechargerCsv, frVersIso, aujourdhuiFr } from './commun'
-import { useSeason } from '../context/SeasonContext'
+import { STATUTS, libelleStatut, cleDate, libelleJour, fmtEur, pluriel } from './commun'
 
 const PAR_PAGE = 50
-const FILTRES_VIDES = { societe: '', magasin: null, marque: '', categorie: '', famille: '', statut: '', pointe: '' }   // magasin null = celui de l'appareil
+const FILTRES_VIDES = { societe: '', magasin: null, marque: '', categorie: '', statut: '', pointe: '' }   // magasin null = celui de l'appareil
 const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b))
 
 // Liste des entrées de la saison : recherche, filtres, regroupement par jour, sélection multiple, pointage (Direction)
 export default function ListeEntrees({ rapideInitial = 'toutes', entrees, magasinAppareil, estDirection, estPointe, onPointer, onOuvrir, onToast, onModeSelection }) {
-  const mentionCommande = true   // plan C, étape 3 : « Commande BC … » sous une réception (choix du 15/10)
-  const { season } = useSeason()
   const [recherche, setRecherche] = useState('')
   const [rapide, setRapide]       = useState(estDirection ? rapideInitial : 'toutes')   // toutes | apointer | retours
   const [filtres, setFiltres]     = useState(FILTRES_VIDES)
@@ -32,7 +29,6 @@ export default function ListeEntrees({ rapideInitial = 'toutes', entrees, magasi
       if (f.societe && e.societe !== f.societe) return false
       if (f.marque && e.marque !== f.marque) return false
       if (f.categorie && e.categorie !== f.categorie) return false
-      if (f.famille && e.famille !== f.famille) return false
       if (f.statut && (f.statut === 'aucun' ? e.statut : e.statut !== f.statut)) return false
       if (estDirection && f.pointe === 'oui' && !estPointe(e)) return false
       if (estDirection && f.pointe === 'non' && estPointe(e)) return false
@@ -43,7 +39,7 @@ export default function ListeEntrees({ rapideInitial = 'toutes', entrees, magasi
     }).sort((a, b) => cleDate(b.date).localeCompare(cleDate(a.date)) || (b.id || 0) - (a.id || 0))
   }, [entrees, recherche, rapide, f, magasinFiltre, estDirection, estPointe])
 
-  const nbFiltres = [f.societe, f.marque, f.categorie, f.famille, f.statut, estDirection && f.pointe, filtres.magasin !== null].filter(Boolean).length
+  const nbFiltres = [f.societe, f.marque, f.categorie, f.statut, estDirection && f.pointe, filtres.magasin !== null].filter(Boolean).length
   const visibles = filtrees.slice(0, nb)
   const parJour = []
   for (const e of visibles) { const g = parJour[parJour.length - 1]; if (g && g.date === e.date) g.lignes.push(e); else parJour.push({ date: e.date, lignes: [e] }) }
@@ -54,11 +50,6 @@ export default function ListeEntrees({ rapideInitial = 'toutes', entrees, magasi
   const toutSelectionne = filtrees.length > 0 && filtrees.every(e => sel.has(e.id))
 
   const opts = (cle) => uniq(entrees.map(e => e[cle]))
-  // Export CSV (Direction, étape 5 bis) : exactement les entrées affichées par les filtres et la recherche (toutes, pas seulement la page)
-  function exporter() {
-    telechargerCsv(csvEntrees(filtrees, estPointe), `entrees-${season}${magasinFiltre ? '-' + magasinFiltre.replace(/\s+/g, '-') : ''}-${frVersIso(aujourdhuiFr())}.csv`)
-    onToast?.({ texte: `Export CSV téléchargé (${pluriel(filtrees.length, 'entrée')})` })
-  }
   const statutsPresents = STATUTS.filter(s => s && entrees.some(e => e.statut === s))
 
   return (
@@ -74,7 +65,6 @@ export default function ListeEntrees({ rapideInitial = 'toutes', entrees, magasi
           <button className="chip" aria-pressed={rapide === 'retours'} onClick={() => setRapide('retours')}>Retours</button>
         </div>
         <button className="chip" aria-pressed={nbFiltres > 0} onClick={() => setFeuilleFiltres(true)}><Icone nom="filtre" taille={18} />Filtres{nbFiltres ? ` · ${nbFiltres}` : ''}</button>
-        {estDirection && !selection && filtrees.length > 0 && <button className="chip" onClick={exporter} title="Exporter en CSV les entrées affichées (filtres et recherche compris)">Exporter CSV</button>}
         <button className="chip" aria-pressed={!!selection} onClick={() => setSelection(s => s ? null : new Set())}>{selection ? 'Terminer' : 'Sélectionner'}</button>
       </div>
       {magasinFiltre && <div className="sous-info">{magasinFiltre}{filtres.magasin === null ? ' · magasin de cet appareil' : ''} · {pluriel(filtrees.length, 'entrée')}</div>}
@@ -101,7 +91,6 @@ export default function ListeEntrees({ rapideInitial = 'toutes', entrees, magasi
                     <span className="txt">
                       <span className="t1">{e.marque} <span>· {e.modele || 'sans modèle'}</span><Numero n={e.numero} /></span>
                       <span className="t2">{estDirection || plusieursMagasins ? e.magasin + ' · ' : ''}{pluriel(e.total || 0, 'paire')} · {e.pht ? fmtEur(e.pht) : '—'}</span>
-                      {e.commandeId && (mentionCommande || e.horsCommande) && <span className="t2">{mentionCommande ? (e.commandeBc?.length ? 'Commande BC ' + e.commandeBc.join(', ') : 'Commande sans n° de BC') : ''}{e.horsCommande && <span className="etat-mot att">{mentionCommande ? ' · ' : ''}hors commande</span>}</span>}
                     </span>
                     <Statut s={e.statut} />
                   </button>
@@ -148,10 +137,6 @@ export default function ListeEntrees({ rapideInitial = 'toutes', entrees, magasi
                 <select className="champ" value={f.categorie} onChange={e => setFiltres(x => ({ ...x, categorie: e.target.value }))}>
                   <option value="">Toutes les catégories</option>{opts('categorie').map(c => <option key={c}>{c}</option>)}
                 </select></label>
-              {opts('famille').length > 0 && <label className="etiquette">Famille
-                <select className="champ" value={f.famille} onChange={e => setFiltres(x => ({ ...x, famille: e.target.value }))}>
-                  <option value="">Toutes les familles</option>{opts('famille').map(c => <option key={c}>{c}</option>)}
-                </select></label>}
               <label className="etiquette">Statut
                 <select className="champ" value={f.statut} onChange={e => setFiltres(x => ({ ...x, statut: e.target.value }))}>
                   <option value="">Tous les statuts</option><option value="aucun">Aucun</option>

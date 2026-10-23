@@ -8,7 +8,6 @@ import Icone from '../components/ui/Icone'
 import Confirmation from '../components/ui/Confirmation'
 import { Numero, Statut } from './Reperes'
 import { prixRetour, ORIGINE_PRIX, MENTION_ESTIME } from '../savdef/regles'
-import { suivieParCommandes } from '../fournisseurs/csvPolaris'
 import { STATUTS, CATEGORIES, CAT_TO_KEY, CAT_DE_GRILLE, libelleStatut, aujourdhuiFr, frVersIso, isoVersFr, classeNumero, fmtEur, pluriel, nomPropre, formeComparaison, marquesSemblables } from './commun'
 
 // Quantités par pointure { [pointure]: nombre } ; gardées par pointure (et non par position) pour ne rien perdre
@@ -23,14 +22,14 @@ const listeTailles = sz => Object.entries(sz).map(([t, q]) => Math.abs(q) > 1 ? 
  * - entrees : entrées de la saison (avec noms de magasin/marque) — rappel, doublons, déjà reçu
  * Les données enregistrées sont exactement celles de l'outil actuel (Retour saisi au Cahier : statut « Retour », quantités positives).
  */
-export default function SaisieEntree({ entree, entrees, magasinAppareil, retourInitial = false, onFermer, onToast }) {
+export default function SaisieEntree({ entree, entrees, magasinAppareil, onFermer, onToast }) {
   const modif = !!entree
   const { season } = useSeason()
   const { params } = useParams()
   const [f, setF] = useState(() => modif ? {
     retour: entree.statut === 'Retour', statut: entree.statut || '', magasin: entree.magasin || '', date: entree.date || aujourdhuiFr(),
     marque: entree.marque || '', modele: entree.modele || '', numero: entree.numero || '', categorie: entree.categorie || '', typeKey: entree.typeKey || 'F',
-  } : { retour: retourInitial, statut: retourInitial ? 'Retour' : '', magasin: magasinAppareil || '', date: aujourdhuiFr(), marque: '', modele: '', numero: '', categorie: '', typeKey: 'F' })
+  } : { retour: false, statut: '', magasin: magasinAppareil || '', date: aujourdhuiFr(), marque: '', modele: '', numero: '', categorie: '', typeKey: 'F' })
   const [tailles, setTailles]   = useState(() => modif ? versCarte(entree.sizes) : {})
   const [retirer, setRetirer]   = useState(false)                 // mode « − » : toucher une pointure retire une paire
   const [panneau, setPanneau]   = useState(modif ? null : 'marque') // 'marque' | 'modele' | 'details' | null
@@ -48,9 +47,6 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, retourI
   const [confirmMarque, setConfirmMarque] = useState(false)
   const [initial] = useState(() => JSON.stringify([f, tailles]))
   const saisieClavier = useRef('')   // chiffres tapés au clavier sur une pointure
-  // Plan C, étape 3 : entrée sans commande dans une saison suivie par commandes → prix unitaire HT saisi (pas de prix de modèle
-  // dans les Achats pour ces saisons) ; vide = entrée à 0 € (avertissement, comme le SAV)
-  const [prixSaisi, setPrixSaisi] = useState(() => modif && entree.total && entree.pht && entree.statut !== 'Retour' ? String(Math.round(Math.abs(entree.pht / entree.total) * 100) / 100).replace('.', ',') : '')
 
   const set = (k, v) => { setF(x => ({ ...x, [k]: v })); setConfirmDoublon(false) }
   const grille = SIZE_TYPES[f.typeKey]?.sizes ?? []
@@ -108,9 +104,7 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, retourI
     return () => { actif = false }
   }, [cleRetour])  // eslint-disable-line react-hooks/exhaustive-deps
   const retourAuto = cleRetour && prixAuto.cle === cleRetour ? prixAuto.r : null
-  const prixLibre = suivieParCommandes(season) && !f.retour
-  const prixTape = parseFloat(String(prixSaisi).replace(',', '.')) || 0
-  const prixUnitaire = prixLibre ? (prixTape || prixModele) : (prixModele || prixOrigine || (retourAuto?.unit || 0))
+  const prixUnitaire = prixModele || prixOrigine || (retourAuto?.unit || 0)
   const pht = prixUnitaire > 0 && total !== 0 ? Math.round(prixUnitaire * total * 100) / 100 : 0
 
   // ── Choix de la marque et du modèle ──
@@ -446,16 +440,9 @@ export default function SaisieEntree({ entree, entrees, magasinAppareil, retourI
               Déjà reçu ce jour pour ce modèle et ce N° : {pluriel(memes[0].total || 0, 'paire')} ({listeTailles(memes[0].sizes || {})}). Autre carton ? Tu peux continuer.
             </div>
           )}
-          {prixLibre && (
-            <div style={{ flexBasis: '100%' }}>
-              <label className="etiquette" style={{ marginTop: 0 }}>Prix unitaire HT (€)
-                <input className="champ" inputMode="decimal" value={prixSaisi} onChange={e => setPrixSaisi(e.target.value)} placeholder="Ex. 45,50" aria-label="Prix unitaire HT" /></label>
-              {!(prixUnitaire > 0) && <div className="encart att" style={{ marginTop: 8 }}>Prix unitaire non renseigné : cette entrée sera à 0 € (aucune échéance dans le Plan de règlement).</div>}
-            </div>
-          )}
           <div className="total">
             <b>{f.retour ? 'Retour : ' : ''}{pluriel(total, 'paire')}</b>
-            {pht ? fmtEur(pht) + (prixModele || prixLibre ? '' : prixOrigine ? ' (prix d\'origine)' : retourAuto?.unit ? ` (${ORIGINE_PRIX[retourAuto.source]}${['modele-autre-saison', 'prix-moyen-saison-modele'].includes(retourAuto.source) ? ' : ' + retourAuto.saison.replace('ETE_', 'Été ').replace('HIVER_', 'Hiver ') : ''}${retourAuto.estime ? ' — ' + MENTION_ESTIME : ''})` : '') : f.modele ? 'Prix du modèle non renseigné (Paramètres → Marques)' : 'Choisis un modèle'}
+            {pht ? fmtEur(pht) + (prixModele ? '' : prixOrigine ? ' (prix d\'origine)' : retourAuto?.unit ? ` (${ORIGINE_PRIX[retourAuto.source]}${['modele-autre-saison', 'prix-moyen-saison-modele'].includes(retourAuto.source) ? ' : ' + retourAuto.saison.replace('ETE_', 'Été ').replace('HIVER_', 'Hiver ') : ''}${retourAuto.estime ? ' — ' + MENTION_ESTIME : ''})` : '') : f.modele ? 'Prix du modèle non renseigné (Paramètres → Marques)' : 'Choisis un modèle'}
           </div>
           <button className="btn btn-prim" onClick={enregistrer} disabled={enCours} style={identique ? { background: 'var(--err)' } : undefined}>
             {enCours ? 'Enregistrement…' : identique ? (confirmDoublon ? 'Confirmer : enregistrer quand même' : 'Enregistrer quand même…') : 'Enregistrer'}

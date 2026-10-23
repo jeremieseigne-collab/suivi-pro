@@ -68,25 +68,3 @@ export function marquesSemblables(nom, marques) {
   return marques.map(m => ({ m, d: formeComparaison(m) === f ? 0 : ecart(f, formeComparaison(m)) }))
     .filter(x => x.d <= seuil).sort((a, b) => a.d - b.d || a.m.localeCompare(b.m)).map(x => x.m)
 }
-
-// ── Famille d'une entrée (étape 5 bis) : celle de la ligne de commande (colonne Famille du fichier) pour une réception
-// rattachée, sinon la catégorie de l'entrée (saisons d'avant, entrées sans commande). familles = { 'commande|modèle': famille }
-export const familleEntree = (e, familles = {}) => (e.commandeId && familles[e.commandeId + '|' + e.modele]) || e.categorie || ''
-
-// ── Export CSV d'une liste d'entrées (Direction) : une ligne par entrée, lisible dans Excel (séparateur « ; », BOM) ──
-export function csvEntrees(lignes, estPointe) {
-  const nombre = v => String(Math.round((Number(v) || 0) * 100) / 100).replace('.', ',')
-  const cell = v => { const s = String(v ?? ''); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s }
-  const entete = ['Date', 'Magasin', 'Société', 'Marque', 'Modèle', 'N°', 'Catégorie', 'Famille', 'Statut', 'Paires', 'PHT', 'Pointures', 'Commande', 'Pointée']
-  const corps = [...lignes].sort((a, b) => cleDate(a.date).localeCompare(cleDate(b.date)) || a.id - b.id).map(e => [
-    e.date, e.magasin, e.societe, e.marque, e.modele, e.numero, e.categorie, e.famille || '', libelleStatut(e.statut || ''), e.total || 0, nombre(e.pht),
-    Object.entries(e.sizes || {}).filter(([, q]) => Number(q)).map(([t, q]) => `${t}:${q}`).join(' '),
-    e.commandeId ? 'BC ' + ((e.commandeBc || []).join(', ') || '—') + (e.horsCommande ? ' (hors commande)' : '') : '', estPointe(e) ? 'oui' : 'non'])
-  return '﻿' + [entete, ...corps].map(l => l.map(cell).join(';')).join('\r\n')
-}
-export function telechargerCsv(csv, nom) {
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
-  a.download = nom
-  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000)
-}

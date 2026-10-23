@@ -1,17 +1,16 @@
-import { fusionnerRecuN1 } from '../achats/recuN1'
 import { useState, useRef, useMemo, useEffect } from 'react'
 import { actionDemandee, effacerAction } from '../shell/navigation'
 import { useLiveQuery } from '../lib/useLiveQuery'
 import { db } from '../db'
 import { useSeason } from '../context/SeasonContext'
+import { DEFAULT_DELAIS, DEFAULT_NB_CHEQUE } from '../data/reglement'
 import { SIZE_TYPES, DEFAULT_GRID_BY_MARQUE } from '../data/sizes'
 import { getSociete } from '../data/societes'
 import { confirmDanger } from '../components/DangerConfirm'
 import { supabase } from '../lib/supabase'
-import CorrespondanceMagasins from '../fournisseurs/CorrespondanceMagasins'
-import FournisseursMarques from '../fournisseurs/FournisseursMarques'
-import { aDesCommandes } from '../fournisseurs/donnees'
+import Icone from '../components/ui/Icone'
 
+const MODES_REGLEMENT = ['', 'PRELEVEMENT', 'CHEQUE', 'GARANT', 'VIREMENT', 'GMS', 'LCR']
 
 // Enlève les accents et met en minuscules (pour comparer Famille, etc.)
 const stripLow = s => (s || '').normalize('NFD').split('').filter(c => { const n = c.charCodeAt(0); return n < 0x300 || n > 0x36f }).join('').trim().toLowerCase()
@@ -102,14 +101,6 @@ function AddForm({ placeholder, onAdd, disabled }) {
   )
 }
 
-// Plan C : une marque, un magasin ou une saison qui ont des commandes fournisseurs ne se suppriment ni ne se fusionnent ici
-// (la base le refuserait de toute façon, pour ne rien perdre) — message clair avant toute action.
-async function bloqueParCommandes(champ, valeur, quoi) {
-  const n = await aDesCommandes(champ, valeur)
-  if (n) alert(`${quoi} a ${n} commande${n > 1 ? 's' : ''} fournisseur${n > 1 ? 's' : ''} (écran Commandes fournisseurs) : ${champ === 'fournisseur_id' ? 'suppression et fusion impossibles' : 'suppression impossible'} ici, pour ne rien perdre.`)
-  return n > 0
-}
-
 // ─── Section Magasins ───────────────────────────────────────────────────────
 function SectionMagasins() {
   const magasins = useLiveQuery(() => db.magasins.orderBy('nom').toArray(), [])
@@ -123,7 +114,6 @@ function SectionMagasins() {
   async function del(id) {
     const mag = (magasins || []).find(m => m.id === id)
     if (!mag) return
-    if (await bloqueParCommandes('magasin_id', id, `Le magasin « ${mag.nom} »`)) return
     const nbEntrees = (await db.entrees.where('magasinId').equals(id).toArray()).length
     const ok = await confirmDanger({
       title: `Supprimer le magasin « ${mag.nom} » ?`,
@@ -144,7 +134,6 @@ function SectionMagasins() {
   }
 
   return (
-    <>
     <div className="store-card">
       <h3 style={{ marginBottom: 16, fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Magasins</h3>
       {(magasins || []).length === 0
@@ -155,8 +144,6 @@ function SectionMagasins() {
       }
       <AddForm placeholder="Nom du magasin…" onAdd={add} />
     </div>
-    <CorrespondanceMagasins magasins={magasins || []} />
-    </>
   )
 }
 
@@ -494,7 +481,6 @@ function SectionFournisseurs() {
   async function del(id) {
     const four = (fournisseurs || []).find(f => f.id === id)
     if (!four) return
-    if (await bloqueParCommandes('fournisseur_id', id, `La marque « ${four.nom} »`)) return
     const nbEntrees = (await db.entrees.where('fournisseurId').equals(id).toArray()).length
     const ok = await confirmDanger({
       title: `Supprimer la marque « ${four.nom} » ?`,
@@ -522,7 +508,6 @@ function SectionFournisseurs() {
     const src = (fournisseurs || []).find(f => f.id === sId)
     const tgt = (fournisseurs || []).find(f => f.id === tId)
     if (!src || !tgt) return
-    if (await bloqueParCommandes('fournisseur_id', sId, `La marque « ${src.nom} »`)) return
     const ok = await confirmDanger({
       title: `Fusionner « ${src.nom} » dans « ${tgt.nom} » ?`,
       message: `Toutes les entrées, achats, SAV, défectueux et modèles de « ${src.nom} » seront rattachés à « ${tgt.nom} », puis « ${src.nom} » sera supprimée.`,
@@ -559,7 +544,7 @@ function SectionFournisseurs() {
           prixModeles:  fill(tp.prixModeles, sp.prixModeles),
           modelesSizes: fillSz(tp.modelesSizes, sp.modelesSizes),
           modelesTypes: fill(tp.modelesTypes, sp.modelesTypes),
-          ...fusionnerRecuN1(tp, sp),   // Reçu N-1 : la cible gagne ; la source ne comble que si son montant est saisi (étape 7 bis)
+          recuN1:    tp.recuN1    || sp.recuN1    || 0,
           objectifN: tp.objectifN || sp.objectifN || 0,
           reelN:     tp.reelN     || sp.reelN     || 0,
           quantite:  tp.quantite  || sp.quantite  || 0,
@@ -755,20 +740,268 @@ function SectionFournisseurs() {
 }
 
 // ─── Modale : plan chèque personnalisé (dates + montants) par saison ─────────
-// ─── Modes de règlement : réglés au fournisseur (plan C, étape 2 bis, décision Q8) ───
-function SectionModes({ onOuvrir }) {
+function ChequePlanModal({ fournisseur, magasin, seasonLabel, initial, onSave, onClose }) {
+  const [rows, setRows] = useState(initial.length ? initial.map(c => ({ date: c.date || '', montant: c.montant ?? '' })) : [{ date: '', montant: '' }])
+  const set = (i, field, val) => { setAlerte(null); setRows(rs => rs.map((r, j) => j === i ? { ...r, [field]: val } : r)) }
+  const add = () => setRows(rs => [...rs, { date: '', montant: '' }])
+  const del = i => setRows(rs => rs.filter((_, j) => j !== i))
+  const total = rows.reduce((s, r) => s + (Number(r.montant) || 0), 0)
+
+  const [alerte, setAlerte] = useState(null)   // lignes incomplètes signalées avant l'enregistrement
+  function save(forcer = false) {
+    // Une ligne sans date (ou sans montant) n'est pas enregistrée et n'apparaît pas dans le Plan de règlement (inchangé) : on prévient d'abord
+    const incompletes = rows.map((r, i) => ({ ...r, n: i + 1 })).filter(r => (r.date || r.montant !== '') && !(r.date && Number(r.montant)))
+    if (incompletes.length && !forcer) { setAlerte(incompletes); return }
+    const clean = rows.filter(r => r.date && Number(r.montant)).map(r => ({ date: r.date, montant: Number(r.montant) }))
+    onSave(clean)
+  }
+
+  const inp = { padding: '7px 9px', border: '1px solid var(--border)', borderRadius: 7, fontSize: 13, outline: 'none', background: 'var(--surface)', color: 'var(--text)' }
+
   return (
-    <div className="store-card" style={{ padding: 18 }}>
-      <h3 style={{ margin: '0 0 6px', fontSize: 16, color: 'var(--text)' }}>Modes de règlement</h3>
-      <p style={{ margin: '0 0 14px', fontSize: 14, color: 'var(--text-3)', lineHeight: 1.5 }}>
-        Le mode de règlement, ses conditions (nombre de chèques, délais) et le plan chèque se règlent désormais <strong>au fournisseur</strong>,
-        dans sa fiche : un fournisseur peut avoir plusieurs marques, réglées ensemble (comme l'ancien « Fournisseur réel »).
-      </p>
-      <button className="btn btn-prim" onClick={onOuvrir}>Ouvrir Fournisseurs et marques</button>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0, 0, 0, .32)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
+      <div style={{ background: 'var(--surface)', borderRadius: 14, padding: 24, width: 440, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px var(--shadow-lg)' }} onClick={e => e.stopPropagation()}>
+        <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>Plan chèque</h2>
+        <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-3)' }}>
+          {fournisseur} × {magasin} — <strong>{seasonLabel}</strong><br />
+          Saisis chaque chèque (date d'encaissement + montant). Remplace le calcul automatique.
+        </p>
+
+        {rows.map((r, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-4)', width: 18 }}>{i + 1}</span>
+            <input type="date" value={r.date} onChange={e => set(i, 'date', e.target.value)} style={{ ...inp, flex: 1 }} />
+            <input type="number" min="0" step="0.01" placeholder="montant" value={r.montant} onChange={e => set(i, 'montant', e.target.value)} style={{ ...inp, width: 110 }} />
+            <span style={{ fontSize: 13, color: 'var(--text-3)' }}>€</span>
+            <button onClick={() => del(i)} title="Supprimer" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#cbd5e1', fontSize: 15 }}
+              onMouseEnter={e => e.currentTarget.style.color = '#ef4444'} onMouseLeave={e => e.currentTarget.style.color = '#cbd5e1'} aria-label="Supprimer ce chèque"><Icone nom="corbeille" taille={18} /></button>
+          </div>
+        ))}
+
+        <button onClick={add} style={{ marginTop: 2, padding: '6px 12px', borderRadius: 8, border: '1px dashed var(--border)', background: 'var(--surface)', color: 'var(--accent)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+          ＋ Ajouter un chèque
+        </button>
+
+        <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)', fontSize: 14, color: 'var(--text-2)' }}>
+          Total : <strong>{total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}</strong>
+        </div>
+
+        {alerte && (
+          <div className="encart att" style={{ display: 'block', marginTop: 14 }}>
+            {alerte.map(r => <div key={r.n}>Chèque n° {r.n} : {r.date ? 'pas de montant' : 'pas de date'} — ce chèque n'apparaîtra pas dans le Plan de règlement.</div>)}
+            <div style={{ marginTop: 8 }}>Complète {alerte.length > 1 ? 'ces lignes' : 'cette ligne'}, ou enregistre sans {alerte.length > 1 ? 'elles' : 'elle'}.</div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+              <button className="btn" onClick={() => setAlerte(null)}>Corriger</button>
+              <button className="btn" onClick={() => save(true)}>Enregistrer sans {alerte.length > 1 ? 'ces chèques' : 'ce chèque'}</button>
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>
+          <button onClick={onClose} style={{ padding: '10px 18px', borderRadius: 9, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', cursor: 'pointer', fontSize: 14 }}>Annuler</button>
+          <button onClick={() => save()} style={{ padding: '10px 22px', borderRadius: 9, border: 'none', background: 'var(--accent)', color: 'var(--on-accent, #fff)', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>Enregistrer</button>
+        </div>
+      </div>
     </div>
   )
 }
 
+// ─── Section Modes de règlement ─────────────────────────────────────────────
+function SectionModes() {
+  const { season, seasons } = useSeason()
+  const seasonLabel    = (seasons.find(s => s.id === season) || {}).label || season
+  const magasins       = useLiveQuery(() => db.magasins.orderBy('nom').toArray(), [])
+  const fournisseurs   = useLiveQuery(() => db.fournisseurs.orderBy('nom').toArray(), [])
+  const modesReglement = useLiveQuery(() => db.modesReglement.toArray(), [])
+  const params         = useLiveQuery(() => db.parametres.where('season').equals(season).toArray(), [season])
+
+  const [chequeModal, setChequeModal] = useState(null) // { fId, mId, fNom, mNom }
+
+  const modeMap = {}
+  const idMap   = {}
+  const condMap = {}
+  ;(modesReglement || []).forEach(m => {
+    const k = m.fournisseurId + '_' + m.magasinId
+    modeMap[k] = m.modeReglement || ''
+    idMap[k]   = m.id
+    condMap[k] = m.condition || {}
+  })
+
+  // Plan chèque par saison (stocké dans parametres.cheques)
+  const chequesMap = {}
+  ;(params || []).forEach(p => { chequesMap[p.fournisseurId + '_' + p.magasinId] = Array.isArray(p.cheques) ? p.cheques : [] })
+
+  async function setCheques(fId, mId, cheques) {
+    // recherche en base (et pas seulement dans le snapshot) pour ne jamais créer de doublon de ligne parametres
+    const existing = await db.parametres.where({ fournisseurId: fId, magasinId: mId }).filter(p => p.season === season).first()
+    if (existing) await db.parametres.update(existing.id, { cheques })
+    else          await db.parametres.add({ fournisseurId: fId, magasinId: mId, season, cheques })
+  }
+
+  async function setMode(fId, mId, mode) {
+    const k = fId + '_' + mId
+    // changer de mode réinitialise la condition (elle dépend du mode)
+    if (idMap[k]) await db.modesReglement.update(idMap[k], { modeReglement: mode, condition: {} })
+    else          await db.modesReglement.add({ fournisseurId: fId, magasinId: mId, modeReglement: mode, condition: {} })
+  }
+
+  async function setCondition(fId, mId, condition) {
+    const k = fId + '_' + mId
+    if (idMap[k]) await db.modesReglement.update(idMap[k], { condition })
+    else          await db.modesReglement.add({ fournisseurId: fId, magasinId: mId, condition })
+  }
+
+  const MODE_COLORS = {
+    CHEQUE:      '#dbeafe', VIREMENT:    '#d1fae5', LCR: '#fef3c7',
+    GARANT:      '#ede9fe', PRELEVEMENT: '#fee2e2', GMS: '#fce7f3',
+  }
+  const inputStyle = { width: 92, padding: '4px 6px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, textAlign: 'center', background: 'var(--surface)', color: 'var(--text)' }
+
+  async function setGroupe(fId, value) {
+    await db.fournisseurs.update(fId, { groupe: (value || '').trim() || null })
+  }
+
+  if (!magasins || !fournisseurs) return null
+
+  // Regroupement par « vrai fournisseur » : clé = groupe (si renseigné) sinon nom de la marque.
+  // La marque PILOTE d'un groupe (plus petit id) porte la config de règlement de tout le groupe.
+  const groupKeyOf = f => ((f.groupe || '').trim()) || f.nom
+  const groupMembers = {}
+  fournisseurs.forEach(f => { (groupMembers[groupKeyOf(f)] ||= []).push(f) })
+  const canonicalId = {}
+  Object.entries(groupMembers).forEach(([k, arr]) => { canonicalId[k] = arr.reduce((mn, f) => Math.min(mn, f.id), arr[0].id) })
+  const sortedFournisseurs = [...fournisseurs].sort((a, b) => groupKeyOf(a).localeCompare(groupKeyOf(b)) || a.id - b.id)
+  const groupeOptions = [...new Set(fournisseurs.map(f => (f.groupe || '').trim()).filter(Boolean))].sort()
+
+  return (
+    <>
+    <datalist id="groupe-options">{groupeOptions.map(g => <option key={g} value={g} />)}</datalist>
+    <div className="store-card" style={{ padding: 0, overflow: 'hidden' }}>
+      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
+        <p style={{ fontSize: 13, color: 'var(--text-3)', margin: 0 }}>
+          Mode de règlement <strong>et conditions</strong> par <strong>fournisseur</strong> × magasin (utilisé dans le plan de règlement).
+          <br />Renseigne le champ <strong>« Fournisseur réel »</strong> sous une marque pour la rattacher à un vrai fournisseur (ex. <em>No Name</em> et <em>Schmoove</em> → <em>Rautureau Apple Shoes</em>) : le règlement se configure alors <strong>une seule fois</strong> pour le fournisseur (sur sa 1ʳᵉ marque), et le plan additionne ses marques.
+          <br /><strong>CHEQUE</strong> : nombre de chèques (montant ÷ N sur N fins de mois) <em>ou</em> bouton « Dates perso » pour saisir un <strong>plan chèque personnalisé</strong> (dates + montants), <strong>par saison</strong> (saison active : <strong>{seasonLabel}</strong>) — le plan perso remplace le calcul auto. <strong>Autres</strong> : délais en jours, séparés par des virgules — ex. <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>0</code> (jour de livraison), <code style={{ background: 'var(--surface-3)', padding: '1px 5px', borderRadius: 4 }}>30, 60</code> (2 échéances). Vide = valeur par défaut.
+        </p>
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th style={{ minWidth: 140 }}>Marque</th>
+              {magasins.map(m => <th key={m.id} style={{ textAlign: 'center', minWidth: 150 }}>{m.nom}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {sortedFournisseurs.map(f => {
+              const gk = groupKeyOf(f)
+              const grouped = groupMembers[gk].length > 1
+              const isPilote = canonicalId[gk] === f.id
+              return (
+              <tr key={f.id}>
+                <td style={{ verticalAlign: 'top' }}>
+                  <strong>{f.nom}</strong>
+                  {grouped && (
+                    <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 10, background: 'var(--accent-bg)', color: 'var(--accent)' }}>
+                      {isPilote ? 'pilote' : `↳ ${gk}`}
+                    </span>
+                  )}
+                  <div style={{ marginTop: 4 }}>
+                    <input list="groupe-options" defaultValue={f.groupe || ''} placeholder="Fournisseur réel (optionnel)"
+                      onBlur={e => setGroupe(f.id, e.target.value)}
+                      title="Rattacher cette marque à un vrai fournisseur (paiement groupé)"
+                      style={{ width: 150, padding: '3px 6px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 11, background: 'var(--surface)', color: 'var(--text-2)' }} />
+                  </div>
+                </td>
+                {magasins.map(m => {
+                  if (!isPilote) {
+                    return (
+                      <td key={m.id} style={{ textAlign: 'center', verticalAlign: 'top', fontSize: 11, color: 'var(--text-4)' }}>
+                        réglé avec le groupe « <strong style={{ color: 'var(--text-3)' }}>{gk}</strong> »
+                      </td>
+                    )
+                  }
+                  const k = f.id + '_' + m.id
+                  const cur = modeMap[k] || ''
+                  const cond = condMap[k] || {}
+                  return (
+                    <td key={m.id} style={{ textAlign: 'center', verticalAlign: 'top' }}>
+                      <select
+                        value={cur}
+                        onChange={e => setMode(f.id, m.id, e.target.value)}
+                        style={{
+                          padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 6,
+                          fontSize: 12, background: MODE_COLORS[cur] || 'var(--surface)',
+                          color: cur ? '#1e293b' : 'var(--text)', cursor: 'pointer',
+                        }}
+                      >
+                        {MODES_REGLEMENT.map(mo => <option key={mo} value={mo}>{mo || '—'}</option>)}
+                      </select>
+                      {cur === 'CHEQUE' && (() => {
+                        const plan = chequesMap[k] || []
+                        return (
+                          <div style={{ marginTop: 5, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                            <div>
+                              <input key={k + '-ch'} type="number" min="1" defaultValue={cond.nb ?? ''}
+                                onBlur={e => setCondition(f.id, m.id, { nb: parseInt(e.target.value) || null })}
+                                placeholder={String(DEFAULT_NB_CHEQUE)} title="Nombre de chèques (calcul auto)"
+                                disabled={plan.length > 0}
+                                style={{ ...inputStyle, width: 64, opacity: plan.length > 0 ? 0.45 : 1 }} />
+                              <span style={{ fontSize: 11, color: 'var(--text-4)', marginLeft: 4 }}>chèq.</span>
+                            </div>
+                            <button onClick={() => setChequeModal({ fId: f.id, mId: m.id, fNom: f.nom, mNom: m.nom })}
+                              title="Plan chèque personnalisé (dates + montants), par saison"
+                              style={{
+                                padding: '3px 8px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
+                                border: '1px solid', borderColor: plan.length ? 'var(--accent)' : 'var(--border)',
+                                background: plan.length ? 'var(--accent-bg)' : 'var(--surface)',
+                                color: plan.length ? 'var(--accent)' : 'var(--text-3)', fontWeight: plan.length ? 700 : 400,
+                              }}>
+                              {plan.length ? `${plan.length} date(s)` : 'Dates perso'}
+                            </button>
+                          </div>
+                        )
+                      })()}
+                      {cur && cur !== 'CHEQUE' && (
+                        <div style={{ marginTop: 5 }}>
+                          <input key={k + '-de'} type="text" defaultValue={(cond.delais || []).join(', ')}
+                            onBlur={e => setCondition(f.id, m.id, { delais: e.target.value.split(/[^0-9]+/).filter(Boolean).map(Number) })}
+                            placeholder={(DEFAULT_DELAIS[cur] || []).join(', ')} title="Délais en jours (séparés par des virgules)"
+                            style={inputStyle} />
+                          <span style={{ fontSize: 11, color: 'var(--text-4)', marginLeft: 4 }}>j.</span>
+                        </div>
+                      )}
+                    </td>
+                  )
+                })}
+              </tr>
+              )
+            })}
+            {fournisseurs.length === 0 && (
+              <tr><td colSpan={magasins.length + 1} style={{ textAlign: 'center', padding: 32, color: 'var(--text-4)' }}>
+                Aucune marque — ajoutez-en dans l'onglet Marques.
+              </td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {chequeModal && (
+      <ChequePlanModal
+        fournisseur={chequeModal.fNom} magasin={chequeModal.mNom} seasonLabel={seasonLabel}
+        initial={chequesMap[chequeModal.fId + '_' + chequeModal.mId] || []}
+        onSave={async (cheques) => { await setCheques(chequeModal.fId, chequeModal.mId, cheques); setChequeModal(null) }}
+        onClose={() => setChequeModal(null)}
+      />
+    )}
+    </>
+  )
+}
+
+// ─── Onglet principal ────────────────────────────────────────────────────────
+// ─── Section Appareils : déconnecter à distance tous les appareils d'un compte ──────────
+// (salarié qui part, téléphone perdu). La base vérifie que le compte connecté est un compte Direction.
+// ─── Section Saisons : suppression d'une saison (déplacée de l'en-tête le 12/10) ────────────────
 // Efface toutes les entrées et lignes d'achats de la saison, pour tous les magasins : nom à retaper.
 function SectionSaisons() {
   const { seasons, season, removeSeason } = useSeason()
@@ -777,7 +1010,6 @@ function SectionSaisons() {
   async function supprimer(s) {
     setBusy(s.id)
     try {
-      if (await bloqueParCommandes('season', s.id, `La saison « ${s.label} »`)) return
       const [nbEntrees, nbAchats] = await Promise.all([
         db.entrees.where('season').equals(s.id).toArray().then(r => r.length),
         db.parametres.where('season').equals(s.id).toArray().then(r => r.length),
@@ -790,7 +1022,6 @@ function SectionSaisons() {
       if (!ok) return
       await db.entrees.where('season').equals(s.id).delete()
       await db.parametres.where('season').equals(s.id).delete()
-      await db.plansCheques.where('season').equals(s.id).delete()   // plans chèques de la saison (au fournisseur depuis le plan C)
       removeSeason(s.id)
     } catch (err) {
       alert('La suppression a échoué : ' + (err.message || err) + '\nRien n\'a été retiré de la liste des saisons.')
@@ -858,13 +1089,12 @@ function SectionAppareils() {
 }
 
 export default function Parametres() {
-  const [section, setSection] = useState(() => ['magasins', 'salaries', 'fournisseurs-marques', 'fournisseurs', 'modes', 'saisons', 'appareils'].find(t => actionDemandee(t)) || 'magasins')
+  const [section, setSection] = useState(() => ['magasins', 'salaries', 'fournisseurs', 'modes', 'saisons', 'appareils'].find(t => actionDemandee(t)) || 'magasins')
   useEffect(() => { effacerAction() }, [])
 
   const TABS = [
     { id: 'magasins',     label: 'Magasins' },
     { id: 'salaries',     label: 'Salariés' },
-    { id: 'fournisseurs-marques', label: 'Fournisseurs et marques' },
     { id: 'fournisseurs', label: 'Marques' },
     { id: 'modes',        label: 'Modes de règlement' },
     { id: 'saisons',      label: 'Saisons' },
@@ -876,9 +1106,8 @@ export default function Parametres() {
       <SubNav tabs={TABS} active={section} onChange={setSection} />
       {section === 'magasins'     && <SectionMagasins />}
       {section === 'salaries'     && <SectionSalaries />}
-      {section === 'fournisseurs-marques' && <FournisseursMarques />}
       {section === 'fournisseurs' && <SectionFournisseurs />}
-      {section === 'modes'        && <SectionModes onOuvrir={() => setSection('fournisseurs-marques')} />}
+      {section === 'modes'        && <SectionModes />}
       {section === 'saisons'      && <SectionSaisons />}
       {section === 'appareils'    && <SectionAppareils />}
     </div>

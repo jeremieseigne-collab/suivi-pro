@@ -12,16 +12,11 @@ import Icone from '../components/ui/Icone'
 import { PageShell, BoutonMagasin } from '../shell/EnTete'
 import { aller, actionDemandee, effacerAction } from '../shell/navigation'
 import ListeEntrees from './ListeEntrees'
-import { familleEntree } from './commun'
 import SaisieEntree from './SaisieEntree'
 import FicheEntree from './FicheEntree'
 import SuiviLivraisons from './SuiviLivraisons'
 import { Toast } from './Reperes'
 import './cahier.css'
-import SaisieReception from '../fournisseurs/SaisieReception'
-import { lignesDe, commandesDeSaison, entreesHorsCommande } from '../fournisseurs/donnees'
-import { nomModele } from '../fournisseurs/reception'
-import { suivieParCommandes } from '../fournisseurs/csvPolaris'
 
 // Cahier des entrées : onglet « Entrées » (ouvert par défaut) et « Suivi des livraisons »
 export default function Cahier() {
@@ -41,21 +36,13 @@ export default function Cahier() {
 
   // Entrées de la saison avec les noms (comme l'outil actuel)
   const entrees = useLiveQuery(async () => {
-    const [lignes, magasins, fournisseurs, commandes] = await Promise.all([
+    const [lignes, magasins, fournisseurs] = await Promise.all([
       db.entrees.where('season').equals(season).toArray(),
       db.magasins.toArray(),
       db.fournisseurs.toArray(),
-      suivieParCommandes(season) ? commandesDeSaison(season) : Promise.resolve([]),
     ])
-    // Réceptions rattachées (plan C, étape 3) : n° de BC de la commande et paires « hors commande »
-    const bc = Object.fromEntries(commandes.map(c => [c.id, c.numeros_bc || []]))
-    const hors = commandes.length ? await entreesHorsCommande(lignes.filter(e => e.commandeId).map(e => e.id)) : new Set()
-    // Famille (étape 5 bis) : colonne Famille du fichier de commande, par modèle-coloris ; sinon la catégorie de l'entrée
-    const familles = {}
-    if (commandes.length) for (const l of await lignesDe(commandes.map(c => c.id))) familles[l.commande_id + '|' + nomModele(l.code_modele, l.couleur)] ||= l.famille || ''
     const mag = Object.fromEntries(magasins.map(m => [m.id, m.nom])), four = Object.fromEntries(fournisseurs.map(f => [f.id, f.nom]))
-    return lignes.map(e => ({ ...e, magasin: mag[e.magasinId] || '', marque: four[e.fournisseurId] || '', societe: getSociete(mag[e.magasinId] || ''), famille: familleEntree(e, familles),
-      ...(e.commandeId ? { commandeBc: bc[e.commandeId] || [], horsCommande: hors.has(e.id) } : {}) }))
+    return lignes.map(e => ({ ...e, magasin: mag[e.magasinId] || '', marque: four[e.fournisseurId] || '', societe: getSociete(mag[e.magasinId] || '') }))
   }, [season])
 
   // Le message du bas disparaît seul après 5 s (ou la durée demandée, ex. 10 s après une suppression en lot)
@@ -105,13 +92,9 @@ export default function Cahier() {
         <FicheEntree entree={fiche} estDirection={estDirection} pointe={estPointe(fiche)} onPointer={v => pointer([fiche.id], v)}
           onModifier={() => setSaisie({ entree: fiche })} onFermer={() => setFicheId(null)} onToast={setToast} />
       )}
-      {saisie && (saisie.entree?.commandeId || (!saisie.entree && !saisie.ancienne && suivieParCommandes(season))
-        // Saison suivie par commandes : réception rattachée à une commande (nouvelle ou correction) — plan C, étape 3
-        ? <SaisieReception key={saisie.entree?.id || 'reception'} entree={saisie.entree} entrees={entrees || []} magasinAppareil={magasinAppareil}
-            onFermer={() => { setSaisie(null); if (saisie.entree) setFicheId(null) }} onToast={setToast}
-            onSansCommande={() => setSaisie({ ancienne: true })} onRetour={() => setSaisie({ ancienne: true, retour: true })} />
-        : <SaisieEntree key={saisie.entree?.id || (saisie.retour ? 'retour' : 'nouvelle')} entree={saisie.entree} entrees={entrees || []} magasinAppareil={magasinAppareil}
-            retourInitial={!!saisie.retour} onFermer={() => { setSaisie(null); if (saisie.entree) setFicheId(null) }} onToast={setToast} />
+      {saisie && (
+        <SaisieEntree key={saisie.entree?.id || 'nouvelle'} entree={saisie.entree} entrees={entrees || []} magasinAppareil={magasinAppareil}
+          onFermer={() => { setSaisie(null); if (saisie.entree) setFicheId(null) }} onToast={setToast} />
       )}
       {importer && <EntreeImportModal onClose={() => setImporter(false)} onSaved={() => setImporter(false)} />}
       <Toast toast={toast} onFermer={() => setToast(null)} />

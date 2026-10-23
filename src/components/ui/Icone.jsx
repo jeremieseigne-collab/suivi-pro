@@ -34,7 +34,6 @@ const TRACES = {
   telephone:  'M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z',
   message:    'M4 4h16v12H8l-4 4z',
   apparence:  'M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z',
-  livraison:  'M2 6h12v11H2z M14 10h4l4 4v3h-8z M6 17a2 2 0 1 1 0 4 2 2 0 0 1 0-4z M18 17a2 2 0 1 1 0 4 2 2 0 0 1 0-4z',
 }
 
 export default function Icone({ nom, taille, style, titre }) {
