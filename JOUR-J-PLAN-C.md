@@ -159,4 +159,21 @@ Outils (hors du projet) : `~/.suivi-pro/repetition/` (`repetition.mjs`, `migrer-
 
 ## Journal du jour J (vendredi 23/10/2026)
 
-<!-- JOURNAL -->
+**Plan C en production depuis le vendredi 23/10/2026 à 14 h 19** (SQL à 14 h 12, décision « on garde » ensuite). Sauvegarde d'avant : `~/Sauvegardes/suivi-pro/prod-2026-10-23_13h58-avant-plan-c/` (gardée).
+
+- 13:56 vérification Vercel (lecture seule) : variables inchangées ; aperçus NON protégés (200 sans connexion)
+- 13:58 étape 1 : serveurs d'essai 5173, 5179, 5180 arrêtés ; aucun navigateur ni script d'essai en cours
+- 13:58 étape 2 : sauvegarde complète prod-2026-10-23_13h58-avant-plan-c (18 tables, 3 853 lignes) restaurée à l'identique dans une base jetable (27 s), base jetable supprimée ; relevé d'avant (3 939 lectures de coordonnées, 8 réassorts, Reçu N-1 tapés : 1 / 53 / 58)
+- 13:59 contrôle d'après SQL adapté à la journée (lignes en plus admises, en moins = anomalie)
+- 14:01 étape 3 : origin/main = 11b8e1e ; plan-c-fusion (c2f6f12) contient main ; copie propre ; construction sans erreur (48 fichiers) ; aucun fichier d'essai dans public/ ; plan-c-retour (= 11b8e1e) régénérée et poussée (b0f19a4)
+- 14:12 étape 5 (vous) : commande S lancée (sortie non transmise dans le message)
+- 14:12 étape 6 : contrôles d'après SQL en lecture seule → TOUT EST CONFORME (26 tables ; aucune ligne en moins ; 3 939 coordonnées identiques ; 3 magasins ; 101 marques / 100 fournisseurs / 172 règlements / 8 plans chèques ; Reçu N-1 1/1, 53/53, 58/58 « saisi » ; 8 réassorts inchangés ; filtrage 26 tables, 38 règles ; temps réel 24 tables)
+- 14:12 étape 4 (vous) : Plan de règlement Hiver 2026 avant le SQL — Total à régler 341 098 ; Reste à payer 329 788
+- 14:19 étape 7 (vous) : push 11b8e1e..c2f6f12 ; Vercel prêt à 14:18:57 (suivi-pro-3dp725jis)
+- 14:20 étape 8 : site publié = construction locale de c2f6f12 (58/58 fichiers, aux empreintes de noms, adresse et clé de la base près) ; lit la base de PRODUCTION (fftfrbpcsazkkvahscbg, clé anon de la production), aucune trace de la base de test ; /api/agenda et /api/send-mail → 401 sans connexion ; aucune page d'essai publiée
+- 14:29 étape 9 (vous) : commande M → UPDATE 0 (aucun Reçu N-1 tapé avec l'ancienne version entre le SQL et la mise en ligne)
+- 14:33 étape 10 (vous) : 8 contrôles à l'écran conformes (Plan Hiver 2026 341 098 / 329 788, chèques cochés inchangés ; Cahier et Suivi ; Commandes fournisseurs ; Fournisseurs et marques ; Achats « saisi » ; Répertoire ; SAV/Réassorts/Agenda ; temps réel entre deux appareils)
+- 14:33 étape 11 (vous) : décision « on garde » — plan C en production (mise en ligne du code à 14:19, SQL à 14:12)
+- 14:33 étape 13 : relevé d'avant (coordonnées réelles) effacé ; sauvegarde de 13 h 58 gardée
+- 14:33 étape 13 : export quotidien du Cahier lancé à la main (lecture seule) → 11 747 lignes, 2 182 entrées, OK ; l'export automatique de 6 h était bon aussi
+

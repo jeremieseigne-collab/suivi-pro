@@ -5,6 +5,8 @@
 
 ## Où on en est
 
+> **23/10/2026 — Plan C en ligne depuis 14 h 19** (SQL lancé par vous à 14 h 12, push 11b8e1e..c2f6f12 à 14 h 19, contrôles conformes, décision « on garde »). Déroulé et journal : `JOUR-J-PLAN-C.md` ; sauvegarde d'avant : `~/Sauvegardes/suivi-pro/prod-2026-10-23_13h58-avant-plan-c/`. Essais arrêtés jusqu'au lundi 26/10.
+
 | Étape | État |
 |---|---|
 | 1. Audit (`AUDIT.md`) | ✅ fait, propositions triées |
