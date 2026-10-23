@@ -6,7 +6,7 @@
 > `supabase-plan-c.sql` → `supabase-plan-c-2bis.sql` → `supabase-plan-c-complements.sql` → `supabase-plan-c-etape3.sql` → `supabase-plan-c-etape6.sql` → `supabase-plan-c-etape7bis.sql`.
 > Ils **ajoutent** (tables, colonnes, fonctions, déclencheurs, règles d'accès, temps réel) ; aucune donnée existante n'est effacée. Trois écritures voulues : fournisseurs créés à partir des marques et de leurs groupes (dans de nouvelles tables), réassorts « Commandé / En route » d'Été 2027 et après repris en commandes (aucun aujourd'hui), Reçu N-1 déjà tapés marqués « saisi ».
 > **Répétition générale du 23/10 sur une copie de la production** : voir le dernier chapitre.
-> **Date : vendredi 23 octobre 2026, à partir de 19 h 30**, magasins fermés, avec **45 minutes** devant vous. Personne ne saisit pendant ce temps (le message aux équipes, envoyé avant 19 h 30, le demande).
+> **Date : vendredi 23 octobre 2026, en journée, magasins ouverts** (décision du 23/10 vers 13 h 55 ; d'abord prévu le soir). La répétition montre que l'outil reste utilisable pendant le SQL (≈ 10 s) et que l'ancienne version fonctionne sur la base migrée ; le message aux équipes part **avant le push** (étape 7) et demande de recharger la page ensuite. **L'heure de chaque étape est notée** dans « Journal du jour J » en bas.
 
 ## Ce que les magasins vivent
 
@@ -15,7 +15,7 @@
 - **Après la mise en ligne** : chaque appareil passe à la nouvelle version au prochain rechargement de la page (téléphone : fermer et rouvrir l'onglet). Un appareil resté ouvert sur l'ancienne version continue de fonctionner.
 - **Temps d'indisponibilité totale : aucun** ; ralentissement possible de l'ordre d'une seconde pendant les ≈ 10 s du SQL.
 
-## Déroulé — vendredi 23 octobre 2026, à partir de 19 h 30
+## Déroulé — vendredi 23 octobre 2026, en journée
 
 Toutes les commandes « **Vous** » se collent telles quelles dans le **Terminal** du Mac (zsh, le shell par défaut ; elles refusent de tourner ailleurs). Elles lisent la connexion à la production dans `.prod-db-url.local`, **ne l'affichent jamais** (un éventuel message d'erreur est filtré), vérifient d'abord que le fichier vise bien la production et **s'arrêtent à la première erreur**. Claude ne fait **aucune écriture en production** : il ne lance que des lectures (sauvegarde, vérifications).
 
@@ -26,13 +26,14 @@ Toutes les commandes « **Vous** » se collent telles quelles dans le **Terminal
 | 3 | Claude | **Contrôles du code** (lecture seule) : `origin/main` est toujours **11b8e1e** (sinon on s'arrête) ; `plan-c-fusion` contient `origin/main` ; construction locale sans erreur ; `plan-c-retour` (code = 11b8e1e) à jour sur la tête de `plan-c-fusion` et poussée. | On s'arrête. |
 | 4 | **Vous** | **Noter deux chiffres** sur https://suivi-pro-app.vercel.app (compte Direction) : Plan de règlement, Hiver 2026 : « Total à régler » et « Reste à payer ». | — |
 | 5 | **Vous** | **SQL du plan C** : commande **S** ci-dessous (≈ 10 s). Vous devez voir 6 lignes « ✔ … appliqué », une ligne « NOTICE: Conversion : 101 marques, 100 fournisseurs, 172 modes, 8 plans chèques » (chiffres de la répétition ; ils peuvent varier si une marque a été ajoutée depuis), un petit tableau vide « synchroniser_reassort (0 rows) » (normal : aucun réassort d'Été 2027 à reprendre), puis « TERMINÉ : les 6 fichiers sont appliqués ». | « ARRÊT : erreur dans … » : ce fichier n'a rien appliqué, les suivants n'ont pas été lancés. Copiez-moi le message ; marche arrière **A** si on renonce. |
-| 6 | Claude | **Vérifications d'après le SQL** (lecture seule) : `node ~/.suivi-pro/repetition/verif-jour-j.mjs prod apres` — 26 tables ; anciennes tables au même nombre de lignes ; coordonnées identiques à l'étape 2 ; correspondance des 3 magasins ; chaque marque a un fournisseur ; Reçu N-1 tapés tous « saisi » ; réassorts inchangés ; filtrage par ligne sur toutes les tables ; temps réel. Doit finir par « TOUT EST CONFORME ». | Écart : marche arrière **A**. |
+| 6 | Claude | **Vérifications d'après le SQL** (lecture seule) : `node ~/.suivi-pro/repetition/verif-jour-j.mjs prod apres` — 26 tables ; anciennes tables au même nombre de lignes ; coordonnées identiques à l'étape 2 ; correspondance des 3 magasins ; chaque marque a un fournisseur ; Reçu N-1 tapés tous « saisi » ; réassorts inchangés ; filtrage par ligne sur toutes les tables ; temps réel. Doit finir par « TOUT EST CONFORME ». | **Pas « TOUT EST CONFORME » : on s'arrête, vous lancez la commande A sans discuter, avant tout push.** |
+| 6 bis | **Vous** | **Envoyer le message aux équipes** (plus bas) — avant le push. | — |
 | 7 | **Vous** | **Mise en ligne du code** : `cd "/Users/jeremie/Projets/App suivi Pro/suivi-pro-fusion" && git push origin plan-c-fusion:main` — la dernière ligne doit ressembler à `11b8e1e..xxxxxxx  plan-c-fusion -> main`. Vercel met en ligne tout seul (1 à 2 minutes). | Refus (main a bougé) : rien n'a changé côté code ; on s'arrête. |
 | 8 | Claude | **Vérifier le déploiement** (lecture seule) : le site sert exactement la construction locale de la branche (comparaison octet pour octet, à l'adresse et la clé publique près) ; `api/send-mail` et `api/agenda` refusés sans connexion. | Marche arrière **B**. |
 | 9 | **Vous** | **Marquage « saisi » rejoué** : commande **M** ci-dessous (au cas où un Reçu N-1 aurait été tapé avec l'ancienne version entre les étapes 5 et 8). Attendu : `UPDATE 0`. | — |
 | 10 | **Vous** | **Contrôles à l'écran** (liste plus bas), page rechargée, sur ordinateur puis téléphone ; les deux chiffres de l'étape 4 doivent être identiques. | Marche arrière **B**. |
 | 11 | **Vous** | **Décision « on garde »** : c'est le **point de non-retour** (voir plus bas). | — |
-| 12 | Vous | Si besoin, un mot aux équipes pour dire que c'est fini (le message principal part **avant 19 h 30**, plus bas). | — |
+| 12 | Vous | Si besoin, un mot aux équipes pour dire que c'est fini (le message principal est parti à l'étape 6 bis). | — |
 | 13 | Claude | Mettre à jour `CLAUDE.md`, `SUIVI.md`, `VERIFICATION-PLAN-C.md` ; `dev` = `main` ; effacer le relevé d'avant (`~/.suivi-pro/repetition/jour-j-avant-prod.json`, coordonnées réelles) ; relance des essais **seulement après** (sur la base de test). | — |
 
 ### Commande S — SQL du plan C (étape 5)
@@ -82,13 +83,13 @@ Sur **https://suivi-pro-app.vercel.app**, page rechargée. On regarde, on n'écr
 
 ---
 
-## Message aux équipes (à envoyer le vendredi 23 octobre 2026, avant 19 h 30)
+## Message aux équipes (à envoyer le vendredi 23 octobre 2026, à l'étape 6 bis, avant le push)
 
-**Objet : Suivi Pro — mise à jour ce soir vendredi 23 octobre : les commandes fournisseurs arrivent**
+**Objet : Suivi Pro — mise à jour cet après-midi : les commandes fournisseurs arrivent**
 
 Bonjour à toutes et à tous,
 
-À partir de **demain matin, samedi 24 octobre**, Suivi Pro connaît les **commandes passées aux fournisseurs**, à partir de l'été 2027. Rien ne change pour l'hiver 2026, que vous continuez à saisir comme aujourd'hui jusqu'au 31 mars 2027.
+À partir de **cet après-midi, vendredi 23 octobre**, Suivi Pro connaît les **commandes passées aux fournisseurs**, à partir de l'été 2027. Rien ne change pour l'hiver 2026, que vous continuez à saisir comme aujourd'hui jusqu'au 31 mars 2027.
 
 **Été 2027 : les entrées se font à partir de la commande**
 - Dans le **Cahier des entrées**, « Entrée » vous fait choisir la **marque**, puis la **commande** (choisie d'office s'il n'y en a qu'une), puis le **modèle**. Les pointures sont **déjà remplies avec ce qui reste à recevoir** : vous corrigez seulement ce qui diffère du carton.
@@ -105,9 +106,8 @@ Bonjour à toutes et à tous,
 - **Répertoire** : quand plusieurs marques ont le même fournisseur, leurs coordonnées communes sont celles du fournisseur ; vos coordonnées de magasin ne bougent pas.
 - **Suppression de plusieurs entrées** : une réception d'Été 2027 ne se supprime pas dans un lot ; ouvrez-la et utilisez « Supprimer » dans sa fiche (l'outil vous prévient que c'est définitif).
 
-Demain matin, si vous voyez encore l'ancien affichage, rechargez la page (sur téléphone : fermez et rouvrez l'onglet). Vos identifiants ne changent pas.
+Dans quelques minutes, **rechargez la page** pour passer à la nouvelle version (sur téléphone : fermez et rouvrez l'onglet). Vos identifiants ne changent pas, et vous pouvez continuer à travailler pendant la mise à jour : si un écran vous semble figé, rechargez-le.
 
-**Ce soir, vendredi 23 octobre, de 19 h 30 à 20 h 30**, merci de ne rien saisir dans Suivi Pro (mise à jour en cours).
 
 En cas de doute, demandez à Jérémie ou à Raphaël.
 
@@ -155,3 +155,8 @@ Copie fraîche de la production (lecture seule, 23/10 matin : 18 tables, 2 179 e
 
 Outils (hors du projet) : `~/.suivi-pro/repetition/` (`repetition.mjs`, `migrer-mesure.sh`, `sonde-api.mjs`, `temps-reel.mjs`, `contacts-repetition.mjs`, `comptes-repetition.mjs`, `verif-acces.mjs`, rapports de synthèse) et `~/.suivi-pro/essais/` (`photo-repetition.mjs`, `lancer-photo.sh`, `comparer-photos.mjs`, `garde-base-test.mjs`).
 
+---
+
+## Journal du jour J (vendredi 23/10/2026)
+
+<!-- JOURNAL -->
